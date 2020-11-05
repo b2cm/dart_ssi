@@ -18,6 +18,8 @@ dependencies:
   web3dart: ^2.0.0-dev.7
   hex:
   ethereum_util:
+  pbkdf2_dart:
+  crypto:
 
 dev_dependencies:
   flutter_test:

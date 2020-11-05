@@ -2,8 +2,10 @@ library flutter_ssi_wallet;
 
 import 'package:bip32/bip32.dart';
 import 'package:bip39/bip39.dart';
+import 'package:crypto/crypto.dart';
 import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
+import 'package:pbkdf2_dart/pbkdf2_dart.dart';
 import 'package:web3dart/credentials.dart';
 
 import 'hive_model.dart';
@@ -15,12 +17,17 @@ class WalletStore {
 
   WalletStore(String path) {
     Hive.init(path);
+    Hive.registerAdapter(CredentialAdapter());
   }
 
   Future<void> openBoxes(String password) async {
-    //TODO password to AES-Key
-    this._keyBox = await Hive.openBox('keyBox');
-    this._credentialBox = await Hive.openBox<Credential>('credentialBox');
+    //password to AES-Key
+    var generator = new PBKDF2(hash: sha256);
+    var aesKey = generator.generateKey(password, "salt", 1000, 32);
+    //only values are encrypted, keys are stored in plaintext
+    this._keyBox = await Hive.openBox('keyBox', encryptionKey: aesKey);
+    this._credentialBox =
+        await Hive.openBox<Credential>('credentialBox', encryptionKey: aesKey);
   }
 
   Future<void> closeBoxes() async {
@@ -41,6 +48,23 @@ class WalletStore {
     return mne;
   }
 
+  Future<String> initializeIssuer() async {
+    var master = BIP32.fromSeed(_keyBox.get('seed'));
+    var key = master.derivePath('m/456/1/0');
+    var issuerDid = await _bip32KeyToDid(key);
+    _keyBox.put('issuerDid', issuerDid);
+    _credentialBox.put(issuerDid, new Credential('m/456/1/0', ''));
+    return issuerDid;
+  }
+
+  String getStandardIssuerDid() {
+    return _keyBox.get('issuerDid');
+  }
+
+  String getStandardIssuerPrivateKey() {
+    return getPrivateKeyToDid(getStandardIssuerDid());
+  }
+
   List<String> getAllCredentials() {
     var credMap = _credentialBox.toMap();
     var credList = new List();
@@ -55,7 +79,7 @@ class WalletStore {
   }
 
   void storeCredential(String cred, String hdPath) {
-    Credential tmp = new Credential(hdPath, cred);
+    var tmp = new Credential(hdPath, cred);
     this._credentialBox.put('did:ethr', tmp);
   }
 
@@ -65,7 +89,7 @@ class WalletStore {
 
   Future<String> getNextDID() async {
     //generate new keypair
-    BIP32 master = BIP32.fromSeed(_keyBox.get('seed'));
+    var master = BIP32.fromSeed(_keyBox.get('seed'));
     var lastIndex = _keyBox.get('lastIndex');
     var path = '$standardPath${lastIndex.toString()}';
     var key = master.derivePath(path);
@@ -76,7 +100,7 @@ class WalletStore {
 
     var did = await _bip32KeyToDid(key);
 
-    // store temporarily
+    //store temporarily
     _keyBox.put(did, path);
 
     return did;
@@ -87,21 +111,28 @@ class WalletStore {
   }
 
   Future<String> getDid(String hdPath) async {
-    BIP32 master = BIP32.fromSeed(_keyBox.get('seed'));
+    var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(hdPath);
     return await _bip32KeyToDid(key);
   }
 
   String getPrivateKey(String hdPath) {
-    BIP32 master = BIP32.fromSeed(_keyBox.get('seed'));
+    var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(hdPath);
     return HEX.encode(key.privateKey);
   }
 
   String getPublicKey(String hdPath) {
-    BIP32 master = BIP32.fromSeed(_keyBox.get('seed'));
+    var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(hdPath);
     return HEX.encode(key.publicKey);
+  }
+
+  String getPrivateKeyToDid(String did) {
+    var cred = _credentialBox.get(did);
+    var master = BIP32.fromSeed(_keyBox.get('seed'));
+    var key = master.derivePath(cred.hdPath);
+    return HEX.encode(key.privateKey);
   }
 
   Future<String> _bip32KeyToDid(BIP32 key) async {
