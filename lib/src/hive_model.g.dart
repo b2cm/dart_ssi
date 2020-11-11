@@ -19,17 +19,20 @@ class CredentialAdapter extends TypeAdapter<Credential> {
     return Credential(
       fields[0] as String,
       fields[1] as String,
+      fields[2] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Credential obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
       ..write(obj.hdPath)
       ..writeByte(1)
-      ..write(obj.jsonCredential);
+      ..write(obj.w3cCredential)
+      ..writeByte(2)
+      ..write(obj.plaintextCredential);
   }
 
   @override

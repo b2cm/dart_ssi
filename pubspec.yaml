@@ -20,6 +20,8 @@ dependencies:
   ethereum_util:
   pbkdf2_dart:
   crypto:
+  uuid: 2.2.2
+  json_schema: 2.2.1
 
 dev_dependencies:
   flutter_test:

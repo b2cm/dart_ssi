@@ -17,7 +17,6 @@ class WalletStore {
 
   WalletStore(String path) {
     Hive.init(path);
-    Hive.registerAdapter(CredentialAdapter());
   }
 
   Future<void> openBoxes(String password) async {
@@ -53,7 +52,7 @@ class WalletStore {
     var key = master.derivePath('m/456/1/0');
     var issuerDid = await _bip32KeyToDid(key);
     _keyBox.put('issuerDid', issuerDid);
-    _credentialBox.put(issuerDid, new Credential('m/456/1/0', ''));
+    _credentialBox.put(issuerDid, new Credential('m/456/1/0', '', ''));
     return issuerDid;
   }
 
@@ -65,22 +64,20 @@ class WalletStore {
     return getPrivateKeyToDid(getStandardIssuerDid());
   }
 
-  List<String> getAllCredentials() {
+  Map<dynamic, Credential> getAllCredentials() {
     var credMap = _credentialBox.toMap();
-    var credList = new List();
-    for (var item in credMap.values) {
-      credList.add(item.jsonCredential);
-    }
-    return credList;
+    return credMap;
   }
 
-  String getCredential(String did) {
-    return this._credentialBox.get(did).jsonCredential;
+  Credential getCredential(String did) {
+    return this._credentialBox.get(did);
   }
 
-  void storeCredential(String cred, String hdPath) {
-    var tmp = new Credential(hdPath, cred);
-    this._credentialBox.put('did:ethr', tmp);
+  Future<void> storeCredential(
+      String w3cCred, String plaintextCred, String hdPath) async {
+    var did = await getDid(hdPath);
+    var tmp = new Credential(hdPath, w3cCred, plaintextCred);
+    await this._credentialBox.put(did, tmp);
   }
 
   int getLastIndex() {
@@ -96,12 +93,12 @@ class WalletStore {
 
     //increment derivation index
     lastIndex++;
-    _keyBox.put('lastIndex', lastIndex);
+    await _keyBox.put('lastIndex', lastIndex);
 
     var did = await _bip32KeyToDid(key);
 
     //store temporarily
-    _keyBox.put(did, path);
+    _credentialBox.put(did, new Credential(path, '', ''));
 
     return did;
   }
@@ -129,7 +126,7 @@ class WalletStore {
   }
 
   String getPrivateKeyToDid(String did) {
-    var cred = _credentialBox.get(did);
+    var cred = getCredential(did);
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(cred.hdPath);
     return HEX.encode(key.privateKey);
