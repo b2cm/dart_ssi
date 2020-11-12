@@ -3,11 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_ssi_wallet/src/hive_model.dart';
-import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 
 void main() async {
-  Hive.registerAdapter(CredentialAdapter());
-
   //init issuer
   var issuer = new WalletStore('issuer1');
   await issuer.openBoxes('iss1passsowrd');
@@ -33,12 +31,14 @@ void main() async {
 
   //Holder fill in it's data in a template
   Map<String, dynamic> immatrikulation = {
+    '@context': ['https://schema.org'],
     'dateCreated': DateTime.now().toIso8601String().substring(0, 10),
     'title': '???',
     'student': {
       'givenName': 'Max',
       'familyName': 'Mustermann',
-      'birthDate': new DateTime(1999, 10, 14).toIso8601String(),
+      'birthDate':
+          new DateTime(1999, 10, 14).toIso8601String().substring(0, 10),
       'birthPlace': 'Berlin',
       'address': {
         'addressLocality': 'Mittweida',
@@ -71,7 +71,9 @@ void main() async {
   //Issuer checks the values and builds a W3C Verifiable credential over
   //a hash of all value-hashes
   var w3CImmaCred = buildW3cCredentialToPlaintextCred(
-      plaintextCred, immaDid, issuer.getStandardIssuerDid());
+      plaintextCred, immaDid, issuer.getStandardIssuerDid(),
+      type: ['HashCredential'],
+      context: 'https://identity.hs-mittweida.de/credentials/ld-context/');
   //Issuer signs the credential
   var signedImma = signCredential(issuer, w3CImmaCred);
   await new File('signedImma.json').writeAsString(signedImma);
@@ -86,9 +88,14 @@ void main() async {
   //** Holder shows this Credential to verifier and    **
   //** only discloses the University, where he studies **
   //*****************************************************
+
+  //Verifier generates nonce/challenge for this presentation
+  // and sends it to holder
+  var challenge = new Uuid().v4();
+
   //Holder builds a Presentation with the W3C-Credential
   Credential c = holder.getCredential(immaDid);
-  var presentation = buildPresentation([c.w3cCredential], holder);
+  var presentation = buildPresentation([c.w3cCredential], holder, challenge);
   await new File('presentation.json').writeAsString(presentation);
   //Holder hides all values he wouldn't show
   Map<String, dynamic> plaintextDis = jsonDecode(c.plaintextCredential);
@@ -108,12 +115,14 @@ void main() async {
   await new File('disclosedImma.json').writeAsString(jsonEncode(plaintextDis));
   //Holder sends both to verifier
   //Verifier looks, if presentation is correct
-  print(verifyPresentation(presentation));
-  //Verifier checks, if plaintext Credential belogs to the Credential in the presentation
+  print(verifyPresentation(presentation, challenge));
+  //Verifier checks, if plaintext Credential belogs to the Credential
+  // in the presentation
   var disclosedHash = buildCredentialHash(plaintextDis);
   var presMap = jsonDecode(presentation);
   var hashInPresentation =
       presMap['verifiableCredential'][0]['credentialSubject']['claimHash'];
   print(
-      'Hash from given Plaintext: $disclosedHash; Hash found in Presentation: $hashInPresentation; equivalent: ${disclosedHash == hashInPresentation}');
+      'Hash from given Plaintext: $disclosedHash; Hash found in Presentation: '
+      '$hashInPresentation; equivalent: ${disclosedHash == hashInPresentation}');
 }

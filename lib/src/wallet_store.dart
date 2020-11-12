@@ -17,6 +17,9 @@ class WalletStore {
 
   WalletStore(String path) {
     Hive.init(path);
+    try {
+      Hive.registerAdapter(CredentialAdapter());
+    } catch (HiveError) {}
   }
 
   Future<void> openBoxes(String password) async {

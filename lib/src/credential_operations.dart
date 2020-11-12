@@ -28,7 +28,7 @@ final mapOfHashedAttributesSchema = {
   'properties': {r'^.*$': hashedAttributeSchema}
 };
 
-bool verifyPresentation(dynamic presentation) {
+bool verifyPresentation(dynamic presentation, String challenge) {
   var presentationMap = _credentialToMap(presentation);
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
@@ -45,6 +45,8 @@ bool verifyPresentation(dynamic presentation) {
 
   proofs.forEach((element) {
     var verifMeth = element['verificationMethod'];
+    var includedNonce = element['challenge'];
+    if (includedNonce != challenge) throw Exception('Challenge does not match');
     if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
     if (!_verifyProof(element, presentationHash, verifMeth))
       throw Exception('Proof for $verifMeth could not been verified');
@@ -54,7 +56,8 @@ bool verifyPresentation(dynamic presentation) {
   return true;
 }
 
-String buildPresentation(List<dynamic> credentials, WalletStore wallet) {
+String buildPresentation(
+    List<dynamic> credentials, WalletStore wallet, String challenge) {
   var credMapList = new List<Map<String, dynamic>>();
   var holderDids = new List<String>();
   credentials.forEach((element) {
@@ -73,7 +76,9 @@ String buildPresentation(List<dynamic> credentials, WalletStore wallet) {
   var presentationHash = util.sha256(jsonEncode(presentation));
   var proofList = new List<Map<String, dynamic>>();
   holderDids.forEach((element) {
-    var proof = _buildProof(presentationHash, element, wallet);
+    var proof = _buildProof(presentationHash, element, wallet,
+        proofOptions: buildProofOptions(
+            verificationMethod: element, challenge: challenge));
     proofList.add(proof);
   });
   presentation.putIfAbsent('proof', () => proofList);
@@ -86,6 +91,10 @@ String buildHashedValueCredential(dynamic credential) {
 
   if (credMap.containsKey('credentialSubject')) {
     credMap = credMap['credentialSubject'];
+  }
+  if (credMap.containsKey('@context')) {
+    finalCred['@context'] = credMap['@context'];
+    credMap.remove('@context');
   }
 
   credMap.forEach((key, value) {
@@ -127,25 +136,29 @@ String buildCredentialHash(dynamic credential) {
   var credMap = _credentialToMap(credential);
   String hashes = '';
   credMap.forEach((key, value) {
-    if (value is List) {
-      String listHash = '';
-      value.forEach((element) {
-        if (element is Map<String, dynamic> &&
-            JsonSchema.createSchema(hashedAttributeSchema).validate(element)) {
-          listHash += (element['hash'] as String..substring(2));
-        } else {
-          throw Exception('unknown type  with key $key');
-        }
-        hashes += util.bufferToHex(util.keccak256(hashes)).substring(2);
-      });
-    } else if (value is Map<String, dynamic> &&
-        JsonSchema.createSchema(hashedAttributeSchema).validate(value)) {
-      hashes += (value['hash'] as String..substring(2));
-    } else if (value is Map<String, dynamic> &&
-        JsonSchema.createSchema(mapOfHashedAttributesSchema).validate(value)) {
-      hashes += buildCredentialHash(value);
-    } else {
-      throw Exception('unknown type  with key $key');
+    if (key != '@context') {
+      if (value is List) {
+        String listHash = '';
+        value.forEach((element) {
+          if (element is Map<String, dynamic> &&
+              JsonSchema.createSchema(hashedAttributeSchema)
+                  .validate(element)) {
+            listHash += (element['hash'] as String..substring(2));
+          } else {
+            throw Exception('unknown type  with key $key');
+          }
+          hashes += util.bufferToHex(util.keccak256(hashes)).substring(2);
+        });
+      } else if (value is Map<String, dynamic> &&
+          JsonSchema.createSchema(hashedAttributeSchema).validate(value)) {
+        hashes += (value['hash'] as String..substring(2));
+      } else if (value is Map<String, dynamic> &&
+          JsonSchema.createSchema(mapOfHashedAttributesSchema)
+              .validate(value)) {
+        hashes += buildCredentialHash(value);
+      } else {
+        throw Exception('unknown type  with key $key');
+      }
     }
   });
 
@@ -153,14 +166,41 @@ String buildCredentialHash(dynamic credential) {
 }
 
 String buildW3cCredentialToPlaintextCred(
-    dynamic credential, String holderDid, String issuerDid) {
+    dynamic credential, String holderDid, String issuerDid,
+    {dynamic type, dynamic context}) {
   var plaintextHash = buildCredentialHash(credential);
+
+  var credTypes = new List<String>();
+  credTypes.add('VerifiableCredential');
+  if (type != null) {
+    if (type is String && type != 'VerifiableCredential')
+      credTypes.add(type);
+    else if (type is List<String>) {
+      if (type.contains('VerifiableCredential')) {
+        type.remove('VerifiableCredential');
+      }
+      credTypes += type;
+    } else
+      throw Exception('type has unknown datatype');
+  }
+
+  var credContext = new List<String>();
+  credContext.add('https://www.w3.org/2018/credentials/v1');
+  if (context != null) {
+    if (context is String &&
+        context != 'https://www.w3.org/2018/credentials/v1')
+      credContext.add(context);
+    else if (context is List<String>) {
+      if (context.contains('https://www.w3.org/2018/credentials/v1')) {
+        context.remove('https://www.w3.org/2018/credentials/v1');
+      }
+      credContext += context;
+    } else
+      throw Exception('type has unknown datatype');
+  }
   var w3cCred = {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://identity.hs-mittweida.de/credentials/context'
-    ],
-    'type': ['VerifiableCredential'],
+    '@context': credContext,
+    'type': credTypes,
     'credentialSubject': {'id': holderDid, 'claimHash': plaintextHash},
     'issuer': issuerDid,
     'issuanceDate': DateTime.now().toUtc().toIso8601String()
@@ -250,7 +290,7 @@ bool verifyCredential(dynamic credential) {
 }
 
 String buildProofOptions(
-    {@required String verificationMethod, String domain, String nonce}) {
+    {@required String verificationMethod, String domain, String challenge}) {
   Map<String, dynamic> jsonObject = new Map();
   jsonObject.putIfAbsent('type', () => 'EcdsaSecp256k1RecoverySignature2020');
   jsonObject.putIfAbsent('proofPurpose', () => 'assertionMethod');
@@ -262,8 +302,8 @@ String buildProofOptions(
     jsonObject.putIfAbsent('domain', () => domain);
   }
 
-  if (nonce != null) {
-    jsonObject.putIfAbsent('nonce', () => nonce);
+  if (challenge != null) {
+    jsonObject.putIfAbsent('challenge', () => challenge);
   }
 
   return json.encode(jsonObject);
