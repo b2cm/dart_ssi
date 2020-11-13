@@ -28,64 +28,7 @@ final mapOfHashedAttributesSchema = {
   'properties': {r'^.*$': hashedAttributeSchema}
 };
 
-bool verifyPresentation(dynamic presentation, String challenge) {
-  var presentationMap = _credentialToMap(presentation);
-  var proofs = presentationMap['proof'] as List;
-  presentationMap.remove('proof');
-  var presentationHash = util.sha256(jsonEncode(presentationMap));
-
-  var credentials = presentationMap['verifiableCredential'] as List;
-  var holderDids = new List<String>();
-  credentials.forEach((element) {
-    if (!verifyCredential(element))
-      throw Exception('Credential $element cold not been verified');
-    else
-      holderDids.add(getHolderDidFromCredential(element));
-  });
-
-  proofs.forEach((element) {
-    var verifMeth = element['verificationMethod'];
-    var includedNonce = element['challenge'];
-    if (includedNonce != challenge) throw Exception('Challenge does not match');
-    if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
-    if (!_verifyProof(element, presentationHash, verifMeth))
-      throw Exception('Proof for $verifMeth could not been verified');
-  });
-
-  if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
-  return true;
-}
-
-String buildPresentation(
-    List<dynamic> credentials, WalletStore wallet, String challenge) {
-  var credMapList = new List<Map<String, dynamic>>();
-  var holderDids = new List<String>();
-  credentials.forEach((element) {
-    var credMap = _credentialToMap(element);
-    credMapList.add(credMap);
-    holderDids.add(getHolderDidFromCredential(credMap));
-  });
-  var presentation = {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://identity.hs-mittweida.de/credentials/context'
-    ],
-    'type': ['VerifiablePresentation'],
-    'verifiableCredential': credMapList
-  };
-  var presentationHash = util.sha256(jsonEncode(presentation));
-  var proofList = new List<Map<String, dynamic>>();
-  holderDids.forEach((element) {
-    var proof = _buildProof(presentationHash, element, wallet,
-        proofOptions: buildProofOptions(
-            verificationMethod: element, challenge: challenge));
-    proofList.add(proof);
-  });
-  presentation.putIfAbsent('proof', () => proofList);
-  return jsonEncode(presentation);
-}
-
-String buildHashedValueCredential(dynamic credential) {
+String buildPlaintextCredential(dynamic credential) {
   Map<String, dynamic> credMap = _credentialToMap(credential);
   Map<String, dynamic> finalCred = new Map();
 
@@ -98,7 +41,9 @@ String buildHashedValueCredential(dynamic credential) {
   }
 
   credMap.forEach((key, value) {
-    if (value is String || value is num || value is bool) {
+    if (key == 'type' || key == '@type') {
+      finalCred[key] = value;
+    } else if (value is String || value is num || value is bool) {
       finalCred[key] = _hashStringOrNum(value);
     } else if (value is List) {
       List<Map<String, dynamic>> newValue = new List();
@@ -106,13 +51,13 @@ String buildHashedValueCredential(dynamic credential) {
         if (element is String || element is num || element is bool)
           newValue.add(_hashStringOrNum(element));
         else if (element is Map<String, dynamic>) {
-          newValue.add(jsonDecode(buildHashedValueCredential(element)));
+          newValue.add(jsonDecode(buildPlaintextCredential(element)));
         } else
           throw Exception('unknown type with key $key');
       });
       finalCred[key] = newValue;
     } else if (value is Map<String, dynamic>) {
-      finalCred[key] = jsonDecode(buildHashedValueCredential(value));
+      finalCred[key] = jsonDecode(buildPlaintextCredential(value));
     } else {
       throw Exception('unknown datatype  with key $key');
     }
@@ -121,22 +66,11 @@ String buildHashedValueCredential(dynamic credential) {
   return jsonEncode(finalCred);
 }
 
-Map<String, dynamic> _hashStringOrNum(dynamic value) {
-  var uuid = Uuid();
-  Map<String, dynamic> hashed = new Map();
-  var salt = uuid.v4();
-  var hash = util.bufferToHex(util.keccak256(salt + value.toString()));
-  hashed.putIfAbsent('value', () => value);
-  hashed.putIfAbsent('salt', () => salt);
-  hashed.putIfAbsent('hash', () => hash);
-  return hashed;
-}
-
 String buildCredentialHash(dynamic credential) {
   var credMap = _credentialToMap(credential);
   String hashes = '';
   credMap.forEach((key, value) {
-    if (key != '@context') {
+    if (!(key == '@context' || key == 'type' || key == '@type')) {
       if (value is List) {
         String listHash = '';
         value.forEach((element) {
@@ -165,7 +99,7 @@ String buildCredentialHash(dynamic credential) {
   return util.bufferToHex(util.keccak256(hashes));
 }
 
-String buildW3cCredentialToPlaintextCred(
+String buildW3cCredentialSingleHash(
     dynamic credential, String holderDid, String issuerDid,
     {dynamic type, dynamic context}) {
   var plaintextHash = buildCredentialHash(credential);
@@ -198,6 +132,7 @@ String buildW3cCredentialToPlaintextCred(
     } else
       throw Exception('type has unknown datatype');
   }
+
   var w3cCred = {
     '@context': credContext,
     'type': credTypes,
@@ -209,35 +144,59 @@ String buildW3cCredentialToPlaintextCred(
   return jsonEncode(w3cCred);
 }
 
-Map<String, dynamic> _buildProof(
-    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
-    {String proofOptions}) {
-  String pOptions;
-  if (proofOptions == null) {
-    pOptions = buildProofOptions(verificationMethod: didToSignWith);
-  } else {
-    pOptions = proofOptions;
+String buildW3cCredentialwithHashes(
+    dynamic credential, String holderDid, String issuerDid,
+    {dynamic type, dynamic context}) {
+  var hashCred = _collectHashes(credential, id: holderDid);
+
+  var credTypes = new List<String>();
+  credTypes.add('VerifiableCredential');
+  if (type != null) {
+    if (type is String && type != 'VerifiableCredential')
+      credTypes.add(type);
+    else if (type is List<String>) {
+      if (type.contains('VerifiableCredential')) {
+        type.remove('VerifiableCredential');
+      }
+      credTypes += type;
+    } else
+      throw Exception('type has unknown datatype');
   }
 
-  var pOptionsHash = util.sha256(pOptions);
-  var hash = util.sha256(pOptionsHash + hashToSign);
-  var privKeyHex = wallet.getPrivateKeyToDid(didToSignWith);
-  var key = EthPrivateKey.fromHex(privKeyHex);
-  MsgSignature signature = sign(hash, key.privateKey);
-  var sigArray = intToBytes(signature.r) +
-      intToBytes(signature.s) +
-      util.intToBuffer(signature.v - 27);
+  var credContext = new List<String>();
+  credContext.add('https://www.w3.org/2018/credentials/v1');
+  if (context != null) {
+    if (context is String &&
+        context != 'https://www.w3.org/2018/credentials/v1')
+      credContext.add(context);
+    else if (context is List<String>) {
+      if (context.contains('https://www.w3.org/2018/credentials/v1')) {
+        context.remove('https://www.w3.org/2018/credentials/v1');
+      }
+      credContext += context;
+    } else
+      throw Exception('type has unknown datatype');
+  }
+  var w3cCred = {
+    '@context': credContext,
+    'type': credTypes,
+    'credentialSubject': jsonDecode(hashCred),
+    'issuer': issuerDid,
+    'issuanceDate': DateTime.now().toUtc().toIso8601String()
+  };
 
-  Map<String, dynamic> optionsMap = jsonDecode(pOptions);
+  return jsonEncode(w3cCred);
+}
 
-  var critical = new Map<String, dynamic>();
-  critical.putIfAbsent('b64', () => false);
-  optionsMap.putIfAbsent(
-      'jws',
-      () => '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
-          '.${base64Encode(sigArray)}');
+bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
+  var w3cMap = _credentialToMap(w3cCred);
+  var plainMap = _credentialToMap(plaintext);
+  if (w3cMap.containsKey('credentialSubject'))
+    w3cMap = w3cMap['credentialSubject'];
 
-  return optionsMap;
+  Map<String, dynamic> plainHash = jsonDecode(_collectHashes(plainMap));
+
+  return _checkHashes(w3cMap, plainHash);
 }
 
 String signCredential(WalletStore wallet, String credential,
@@ -261,21 +220,6 @@ String signCredential(WalletStore wallet, String credential,
   return jsonEncode(credMap);
 }
 
-bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
-  var signature = getSignatureFromJws(proof['jws']);
-
-  proof.remove('jws');
-
-  var proofHash = util.sha256(jsonEncode(proof));
-  var hashToSign = util.sha256(proofHash + hash);
-
-  var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
-  var recoverdDid =
-      'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55.substring(2)}';
-
-  return recoverdDid == did;
-}
-
 bool verifyCredential(dynamic credential) {
   Map<String, dynamic> credMap = _credentialToMap(credential);
   if (!credMap.containsKey('proof')) {
@@ -289,24 +233,61 @@ bool verifyCredential(dynamic credential) {
   return _verifyProof(proof, credHash, issuerDid);
 }
 
-String buildProofOptions(
-    {@required String verificationMethod, String domain, String challenge}) {
-  Map<String, dynamic> jsonObject = new Map();
-  jsonObject.putIfAbsent('type', () => 'EcdsaSecp256k1RecoverySignature2020');
-  jsonObject.putIfAbsent('proofPurpose', () => 'assertionMethod');
-  jsonObject.putIfAbsent('verificationMethod', () => verificationMethod);
-  jsonObject.putIfAbsent(
-      'created', () => DateTime.now().toUtc().toIso8601String());
+String buildPresentation(
+    List<dynamic> credentials, WalletStore wallet, String challenge) {
+  var credMapList = new List<Map<String, dynamic>>();
+  var holderDids = new List<String>();
+  credentials.forEach((element) {
+    var credMap = _credentialToMap(element);
+    credMapList.add(credMap);
+    holderDids.add(getHolderDidFromCredential(credMap));
+  });
+  var presentation = {
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://identity.hs-mittweida.de/credentials/context'
+    ],
+    'type': ['VerifiablePresentation'],
+    'verifiableCredential': credMapList
+  };
+  var presentationHash = util.sha256(jsonEncode(presentation));
+  var proofList = new List<Map<String, dynamic>>();
+  holderDids.forEach((element) {
+    var proof = _buildProof(presentationHash, element, wallet,
+        proofOptions: _buildProofOptions(
+            verificationMethod: element, challenge: challenge));
+    proofList.add(proof);
+  });
+  presentation.putIfAbsent('proof', () => proofList);
+  return jsonEncode(presentation);
+}
 
-  if (domain != null) {
-    jsonObject.putIfAbsent('domain', () => domain);
-  }
+bool verifyPresentation(dynamic presentation, String challenge) {
+  var presentationMap = _credentialToMap(presentation);
+  var proofs = presentationMap['proof'] as List;
+  presentationMap.remove('proof');
+  var presentationHash = util.sha256(jsonEncode(presentationMap));
 
-  if (challenge != null) {
-    jsonObject.putIfAbsent('challenge', () => challenge);
-  }
+  var credentials = presentationMap['verifiableCredential'] as List;
+  var holderDids = new List<String>();
+  credentials.forEach((element) {
+    if (!verifyCredential(element))
+      throw Exception('Credential $element cold not been verified');
+    else
+      holderDids.add(getHolderDidFromCredential(element));
+  });
 
-  return json.encode(jsonObject);
+  proofs.forEach((element) {
+    var verifMeth = element['verificationMethod'];
+    var includedNonce = element['challenge'];
+    if (includedNonce != challenge) throw Exception('Challenge does not match');
+    if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
+    if (!_verifyProof(element, presentationHash, verifMeth))
+      throw Exception('Proof for $verifMeth could not been verified');
+  });
+
+  if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
+  return true;
 }
 
 String buildJwsHeader(
@@ -393,14 +374,6 @@ String getHolderDidFromCredential(dynamic credential) {
     return credMap['id'];
 }
 
-util.ECDSASignature getSignatureFromJws(String jws) {
-  var splitJws = jws.split('.');
-  var sigArray = base64Decode(splitJws[2]);
-  if (sigArray.length != 65) throw Exception('wrong signature');
-  return new util.ECDSASignature(bytesToInt(sigArray.sublist(0, 32)),
-      bytesToInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
-}
-
 Map<String, dynamic> _credentialToMap(dynamic credential) {
   if (credential is String)
     return jsonDecode(credential);
@@ -408,4 +381,147 @@ Map<String, dynamic> _credentialToMap(dynamic credential) {
     return credential;
   else
     throw Exception('unknown type');
+}
+
+Map<String, dynamic> _hashStringOrNum(dynamic value) {
+  var uuid = Uuid();
+  Map<String, dynamic> hashed = new Map();
+  var salt = uuid.v4();
+  var hash = util.bufferToHex(util.keccak256(salt + value.toString()));
+  hashed.putIfAbsent('value', () => value);
+  hashed.putIfAbsent('salt', () => salt);
+  hashed.putIfAbsent('hash', () => hash);
+  return hashed;
+}
+
+String _collectHashes(dynamic credential, {String id}) {
+  var credMap = _credentialToMap(credential);
+  Map<String, dynamic> hashCred = new Map();
+  if (id != null) hashCred['id'] = id;
+  credMap.forEach((key, value) {
+    if (key != '@context') {
+      if (key == 'type' || key == '@type')
+        hashCred[key] = value;
+      else if (value is List) {
+        var hashList = new List<String>();
+        value.forEach((element) {
+          if (element is Map<String, dynamic> &&
+              JsonSchema.createSchema(hashedAttributeSchema)
+                  .validate(element)) {
+            hashList.add(element['hash']);
+          } else {
+            throw Exception('unknown type  with key $key');
+          }
+          hashCred[key] = hashList;
+        });
+      } else if (value is Map<String, dynamic> &&
+          JsonSchema.createSchema(hashedAttributeSchema).validate(value)) {
+        hashCred[key] = value['hash'];
+      } else if (value is Map<String, dynamic> &&
+          JsonSchema.createSchema(mapOfHashedAttributesSchema)
+              .validate(value)) {
+        hashCred[key] = jsonDecode(_collectHashes(value));
+      } else {
+        throw Exception('unknown type  with key $key');
+      }
+    }
+  });
+  return jsonEncode(hashCred);
+}
+
+bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
+  plainHash.forEach((key, value) {
+    if (!(key == '@context' || key == 'type' || key == '@type')) {
+      if (value is String) {
+        if (w3c[key] != value) throw Exception('hashes do not match at $key');
+      } else if (value is Map<String, dynamic>) {
+        if (!_checkHashes(w3c[key], value))
+          throw Exception('hashes do not match at $key');
+      } else if (value is List) {
+        List<String> fromW3c = w3c[key];
+        if (fromW3c.length != value.length)
+          throw Exception('List length at $key do not match');
+        for (int i = 0; i < value.length; i++) {
+          if (value[i] != fromW3c[i])
+            throw Exception('Hashes in List at $key at index $i do not match');
+        }
+      } else
+        throw Exception('unknown datatype with key $key');
+    }
+  });
+  return true;
+}
+
+Map<String, dynamic> _buildProof(
+    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
+    {String proofOptions}) {
+  String pOptions;
+  if (proofOptions == null) {
+    pOptions = _buildProofOptions(verificationMethod: didToSignWith);
+  } else {
+    pOptions = proofOptions;
+  }
+
+  var pOptionsHash = util.sha256(pOptions);
+  var hash = util.sha256(pOptionsHash + hashToSign);
+  var privKeyHex = wallet.getPrivateKeyToDid(didToSignWith);
+  var key = EthPrivateKey.fromHex(privKeyHex);
+  MsgSignature signature = sign(hash, key.privateKey);
+  var sigArray = intToBytes(signature.r) +
+      intToBytes(signature.s) +
+      util.intToBuffer(signature.v - 27);
+
+  Map<String, dynamic> optionsMap = jsonDecode(pOptions);
+
+  var critical = new Map<String, dynamic>();
+  critical.putIfAbsent('b64', () => false);
+  optionsMap.putIfAbsent(
+      'jws',
+      () => '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
+          '.${base64Encode(sigArray)}');
+
+  return optionsMap;
+}
+
+bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
+  var signature = _getSignatureFromJws(proof['jws']);
+
+  proof.remove('jws');
+
+  var proofHash = util.sha256(jsonEncode(proof));
+  var hashToSign = util.sha256(proofHash + hash);
+
+  var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
+  var recoverdDid =
+      'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55.substring(2)}';
+
+  return recoverdDid == did;
+}
+
+String _buildProofOptions(
+    {@required String verificationMethod, String domain, String challenge}) {
+  Map<String, dynamic> jsonObject = new Map();
+  jsonObject.putIfAbsent('type', () => 'EcdsaSecp256k1RecoverySignature2020');
+  jsonObject.putIfAbsent('proofPurpose', () => 'assertionMethod');
+  jsonObject.putIfAbsent('verificationMethod', () => verificationMethod);
+  jsonObject.putIfAbsent(
+      'created', () => DateTime.now().toUtc().toIso8601String());
+
+  if (domain != null) {
+    jsonObject.putIfAbsent('domain', () => domain);
+  }
+
+  if (challenge != null) {
+    jsonObject.putIfAbsent('challenge', () => challenge);
+  }
+
+  return json.encode(jsonObject);
+}
+
+util.ECDSASignature _getSignatureFromJws(String jws) {
+  var splitJws = jws.split('.');
+  var sigArray = base64Decode(splitJws[2]);
+  if (sigArray.length != 65) throw Exception('wrong signature');
+  return new util.ECDSASignature(bytesToInt(sigArray.sublist(0, 32)),
+      bytesToInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
 }
