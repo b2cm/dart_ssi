@@ -10,11 +10,19 @@ import 'package:web3dart/credentials.dart';
 
 import 'hive_model.dart';
 
+/// A wallet storing credentials and keys permanently using Hive.
+///
+/// Keys are stored and generated according to BIP32 standard.
+/// Per default the path m/456/0/index is used for keys and dids to prove and identify the credentials someone hold.
+/// If a wallet is also used to issue credentials the keypair found at path m/456/1/0  is the default one.
 class WalletStore {
   Box _keyBox;
   Box<Credential> _credentialBox;
+
+  ///The Path used to derive keys
   final String standardPath = 'm/456/0/';
 
+  /// Constructs a wallet at file-system path [path]
   WalletStore(String path) {
     Hive.init(path);
     try {
@@ -22,6 +30,7 @@ class WalletStore {
     } catch (HiveError) {}
   }
 
+  /// Opens storage containers encrypted with [password]
   Future<void> openBoxes(String password) async {
     //password to AES-Key
     var generator = new PBKDF2(hash: sha256);
@@ -32,11 +41,15 @@ class WalletStore {
         await Hive.openBox<Credential>('credentialBox', encryptionKey: aesKey);
   }
 
+  /// Closes Storage Containers
   Future<void> closeBoxes() async {
     await _keyBox.close();
     await _credentialBox.close();
   }
 
+  /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
+  ///
+  /// Returns the used mnemonic.
   String initialize([String mnemonic]) {
     var mne = mnemonic;
     if (mnemonic == null) {
@@ -50,6 +63,7 @@ class WalletStore {
     return mne;
   }
 
+  /// Generates and returns DID for the issuer.
   Future<String> initializeIssuer() async {
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath('m/456/1/0');
@@ -59,23 +73,33 @@ class WalletStore {
     return issuerDid;
   }
 
+  /// Returns the DID for issuing credentials.
   String getStandardIssuerDid() {
     return _keyBox.get('issuerDid');
   }
 
+  /// Returns the private key for issuing credentials.
   String getStandardIssuerPrivateKey() {
     return getPrivateKeyToDid(getStandardIssuerDid());
   }
 
+  /// Lists all Credentials.
   Map<dynamic, Credential> getAllCredentials() {
     var credMap = _credentialBox.toMap();
     return credMap;
   }
 
+  /// Returns the credential associated with [did].
   Credential getCredential(String did) {
     return this._credentialBox.get(did);
   }
 
+  /// Stores a credential permanently.
+  ///
+  /// What should be stored consists of three parts
+  /// - a signed credential [w3cCred] containing hashes of all attribute-values
+  /// - a json structure [plaintextCred] containing hashes, salts and values per credential attribute
+  /// - the [hdPath] to derive the key for the did the credential is issued for
   Future<void> storeCredential(
       String w3cCred, String plaintextCred, String hdPath) async {
     var did = await getDid(hdPath);
@@ -83,10 +107,12 @@ class WalletStore {
     await this._credentialBox.put(did, tmp);
   }
 
+  /// Returns the last value of the next HD-path.
   int getLastIndex() {
     return _keyBox.get('lastIndex');
   }
 
+  /// Returns a new DID.
   Future<String> getNextDID() async {
     //generate new keypair
     var master = BIP32.fromSeed(_keyBox.get('seed'));
@@ -106,28 +132,28 @@ class WalletStore {
     return did;
   }
 
-  String getTmpStoredPath(String did) {
-    return _keyBox.get(did);
-  }
-
+  /// Returns the DID associated with [hdPath].
   Future<String> getDid(String hdPath) async {
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(hdPath);
     return await _bip32KeyToDid(key);
   }
 
+  /// Returns the private key as hex-String associated with [hdPath].
   String getPrivateKey(String hdPath) {
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(hdPath);
     return HEX.encode(key.privateKey);
   }
 
+  /// Returns the public key as hex-String associated with [hdPath].
   String getPublicKey(String hdPath) {
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(hdPath);
     return HEX.encode(key.publicKey);
   }
 
+  /// Returns the private key as hex-String associated with [did].
   String getPrivateKeyToDid(String did) {
     var cred = getCredential(did);
     var master = BIP32.fromSeed(_keyBox.get('seed'));
