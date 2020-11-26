@@ -78,6 +78,10 @@ String buildCredentialHash(dynamic credential) {
               JsonSchema.createSchema(hashedAttributeSchema)
                   .validate(element)) {
             listHash += (element['hash'] as String..substring(2));
+          } else if (element is Map<String, dynamic> &&
+              JsonSchema.createSchema(mapOfHashedAttributesSchema)
+                  .validate(element)) {
+            listHash += buildCredentialHash(element);
           } else {
             throw Exception('unknown type  with key $key');
           }
@@ -380,7 +384,7 @@ Map<String, dynamic> _credentialToMap(dynamic credential) {
   else if (credential is Map<String, dynamic>)
     return credential;
   else
-    throw Exception('unknown type');
+    throw Exception('unknown type for $credential');
 }
 
 Map<String, dynamic> _hashStringOrNum(dynamic value) {
@@ -403,12 +407,16 @@ String _collectHashes(dynamic credential, {String id}) {
       if (key == 'type' || key == '@type')
         hashCred[key] = value;
       else if (value is List) {
-        var hashList = new List<String>();
+        var hashList = new List<dynamic>();
         value.forEach((element) {
           if (element is Map<String, dynamic> &&
               JsonSchema.createSchema(hashedAttributeSchema)
                   .validate(element)) {
             hashList.add(element['hash']);
+          } else if (element is Map<String, dynamic> &&
+              JsonSchema.createSchema(mapOfHashedAttributesSchema)
+                  .validate(element)) {
+            hashList.add(jsonDecode(_collectHashes(element)));
           } else {
             throw Exception('unknown type  with key $key');
           }

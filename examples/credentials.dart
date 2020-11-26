@@ -9,18 +9,18 @@ void main() async {
   //init issuer
   var issuer = new WalletStore('issuer1');
   await issuer.openBoxes('iss1passsowrd');
-  issuer.initialize(); //comment this line if trying a second time
-  await issuer.initializeIssuer(); //comment this line if trying a second time
+  //issuer.initialize(); //comment this line if trying a second time
+  //await issuer.initializeIssuer(); //comment this line if trying a second time
 
   //init Holder
   var holder = new WalletStore('holder');
   await holder.openBoxes('holderPW');
-  holder.initialize(); //comment this line if trying a second time
+  //holder.initialize(); //comment this line if trying a second time
 
   // init Verifier
   var verifier = new WalletStore('verifier');
   await verifier.openBoxes('verifierPassword');
-  verifier.initialize(); //comment this line if trying a second time
+  //verifier.initialize(); //comment this line if trying a second time
 
   //*******************************************
   //** Holder gets a Credential from Issuer **
@@ -61,16 +61,28 @@ void main() async {
         'streetAddress': 'Technikumplatz 17'
       }
     },
-    'immatrikulation': {
-      'type': 'Immatrikulation',
-      'courseOfStudies': 'Cybercrime/Cybersecurity',
-      'title': 'M.Sc.',
-      'group': 'CY20wC-M',
-      'studyType': 'Vollzeitstudium',
-      'duration': '4 Semester',
-      'currentSemester': 1,
-      'holidaySemester': 0
-    }
+    'immatrikulation': [
+      {
+        'type': 'Immatrikulation',
+        'courseOfStudies': 'Angewandte Informatik - IT-Sicherheit',
+        'title': 'B.Sc.',
+        'group': 'IF17wI-B',
+        'studyType': 'Vollzeitstudium',
+        'duration': '6 Semester',
+        'currentSemester': 7,
+        'holidaySemester': 0
+      },
+      {
+        'type': 'Immatrikulation',
+        'courseOfStudies': 'Cybercrime/Cybersecurity',
+        'title': 'M.Sc.',
+        'group': 'CY20wC-M',
+        'studyType': 'Vollzeitstudium',
+        'duration': '4 Semester',
+        'currentSemester': 1,
+        'holidaySemester': 0
+      }
+    ]
   };
   //Holder hashes all values an sends this to issuer
   var plaintextCred = buildPlaintextCredential(immatrikulation);
@@ -130,8 +142,12 @@ void main() async {
   var studentHash = buildCredentialHash(student);
   plaintextDis['student'] = {'hash': studentHash};
   var imma = plaintextDis['immatrikulation'];
-  var immaHash = buildCredentialHash(imma);
-  plaintextDis['immatrikulation'] = {'hash': immaHash};
+  var immaHash0 = buildCredentialHash(imma[0]);
+  var immaHash1 = buildCredentialHash(imma[1]);
+  plaintextDis['immatrikulation'] = [
+    {'hash': immaHash0},
+    {'hash': immaHash1}
+  ];
 
   await new File('disclosedImma.json').writeAsString(jsonEncode(plaintextDis));
   //or
@@ -157,4 +173,8 @@ void main() async {
   Map<String, dynamic> presMapV2 = jsonDecode(presentationV2);
   var credSubject = presMapV2['verifiableCredential'][0]['credentialSubject'];
   print(compareW3cCredentialAndPlaintext(credSubject, disImmaV2));
+
+  await issuer.closeBoxes();
+  await holder.closeBoxes();
+  await verifier.closeBoxes();
 }
