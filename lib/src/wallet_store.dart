@@ -164,6 +164,6 @@ class WalletStore {
   Future<String> _bip32KeyToDid(BIP32 key) async {
     var private = EthPrivateKey.fromHex(HEX.encode(key.privateKey));
     var addr = await private.extractAddress();
-    return 'did:ethr:${addr.hexEip55.substring(2)}';
+    return 'did:ethr:${addr.hexEip55}';
   }
 }

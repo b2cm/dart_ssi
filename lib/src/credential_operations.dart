@@ -501,8 +501,7 @@ bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
 
   var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
   var recoverdDid =
-      'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55.substring(2)}';
-
+      'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   return recoverdDid == did;
 }
 

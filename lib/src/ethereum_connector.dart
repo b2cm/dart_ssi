@@ -367,10 +367,10 @@ class Erc1056 {
 
   EthereumAddress _didToAddress(String did) {
     var splitted = did.split(':');
-    return EthereumAddress.fromHex('0x${splitted[2]}');
+    return EthereumAddress.fromHex(splitted[2]);
   }
 
   String _addressToDid(EthereumAddress address) {
-    return 'did:ethr:${address.hexEip55.substring(2)}';
+    return 'did:ethr:${address.hexEip55}';
   }
 }
