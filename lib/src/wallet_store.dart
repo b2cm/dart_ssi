@@ -36,9 +36,10 @@ class WalletStore {
     var generator = new PBKDF2(hash: sha256);
     var aesKey = generator.generateKey(password, "salt", 1000, 32);
     //only values are encrypted, keys are stored in plaintext
-    this._keyBox = await Hive.openBox('keyBox', encryptionKey: aesKey);
-    this._credentialBox =
-        await Hive.openBox<Credential>('credentialBox', encryptionKey: aesKey);
+    this._keyBox =
+        await Hive.openBox('keyBox', encryptionCipher: HiveAesCipher(aesKey));
+    this._credentialBox = await Hive.openBox<Credential>('credentialBox',
+        encryptionCipher: HiveAesCipher(aesKey));
   }
 
   /// Closes Storage Containers
