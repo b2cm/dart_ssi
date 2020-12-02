@@ -90,12 +90,15 @@ class Erc1056 {
   DeployedContract erc1056contract;
   Web3Client web3Client;
   EthereumAddress contractAddress;
+  Utf8Codec utf8;
 
   Erc1056(String rpcUrl,
       {String websocketUrl,
       String contractName: 'EthereumDIDRegistry',
       String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'}) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
+
+    utf8 = Utf8Codec(allowMalformed: true);
 
     erc1056contract = DeployedContract(
         ContractAbi.fromJson(abi, contractName), this.contractAddress);
@@ -108,14 +111,13 @@ class Erc1056 {
       });
   }
 
-  /// Requst the current owner (Ethereum Address) for identity [did].
+  /// Request the current owner (Ethereum Address) for identity [did].
   Future<String> identityOwner(String did) async {
     var identityOwnerFunction = erc1056contract.function('identityOwner');
     var owner = await web3Client.call(
         contract: erc1056contract,
         function: identityOwnerFunction,
         params: [_didToAddress(did)]);
-    print(owner);
     var ownerAddress = owner.first as EthereumAddress;
     return ownerAddress.hexEip55;
   }
@@ -137,13 +139,13 @@ class Erc1056 {
       {int validity: 86400}) async {
     if (validity <= 0) throw Exception('negative validity');
     var setAttributeFunction = erc1056contract.function('setAttribute');
-    var valueList = Uint8List.fromList(ascii.encode(value));
+    var valueList = Uint8List.fromList(utf8.encode(value));
     Transaction tx = Transaction.callContract(
         contract: erc1056contract,
         function: setAttributeFunction,
         parameters: [
           _didToAddress(identityDid),
-          _to32ByteAscii(name),
+          _to32ByteUtf8(name),
           valueList,
           BigInt.from(validity)
         ]);
@@ -154,8 +156,8 @@ class Erc1056 {
   Future<void> revokeAttribute(String privateKeyFrom, String identityDid,
       String name, String value) async {
     var revokeAttributeFunction = erc1056contract.function('revokeAttribute');
-    var nameList = _to32ByteAscii(name);
-    var valueList = Uint8List.fromList(ascii.encode(value));
+    var nameList = _to32ByteUtf8(name);
+    var valueList = Uint8List.fromList(utf8.encode(value));
 
     Transaction tx = Transaction.callContract(
         contract: erc1056contract,
@@ -175,7 +177,7 @@ class Erc1056 {
         function: addDelegateFunction,
         parameters: [
           _didToAddress(identityDid),
-          _to32ByteAscii(delegateType),
+          _to32ByteUtf8(delegateType),
           _didToAddress(delegateDid),
           BigInt.from(validity)
         ]);
@@ -191,7 +193,7 @@ class Erc1056 {
         function: revokeDelegateFunction,
         parameters: [
           _didToAddress(identityDid),
-          _to32ByteAscii(delegateType),
+          _to32ByteUtf8(delegateType),
           _didToAddress(delegateDid)
         ]);
 
@@ -206,7 +208,7 @@ class Erc1056 {
         function: validDelegateFunction,
         params: [
           _didToAddress(identityDid),
-          _to32ByteAscii(delegateType),
+          _to32ByteUtf8(delegateType),
           _didToAddress(delegateDid)
         ]);
 
@@ -278,7 +280,7 @@ class Erc1056 {
           var validTo = decodedEvent[3] as BigInt;
           var previousChange = decodedEvent[4] as BigInt;
           var nameStr = _bytes32ToString(name);
-          var valueStr = ascii.decode(value);
+          var valueStr = utf8.decode(value);
 
           listOfPreviousChanges.add(previousChange);
 
@@ -347,12 +349,12 @@ class Erc1056 {
     return eventData;
   }
 
-  Uint8List _to32ByteAscii(String name) {
-    var nameAscii = ascii.encode(name);
-    if (nameAscii.length > 32) throw Exception('name is too long');
+  Uint8List _to32ByteUtf8(String name) {
+    var nameUtf8 = utf8.encode(name);
+    if (nameUtf8.length > 32) throw Exception('name is too long');
     var nameList = Uint8List(32);
-    for (int i = 0; i < nameAscii.length; i++) {
-      nameList[i] = nameAscii[i];
+    for (int i = 0; i < nameUtf8.length; i++) {
+      nameList[i] = nameUtf8[i];
     }
     return nameList;
   }
@@ -362,7 +364,7 @@ class Erc1056 {
     for (int i = 0; i < value.length; i++) {
       if (value[i] != 0) nameUnpadded.add(value[i]);
     }
-    return ascii.decode(nameUnpadded);
+    return utf8.decode(nameUnpadded);
   }
 
   EthereumAddress _didToAddress(String did) {

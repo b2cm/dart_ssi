@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ethereum_util/ethereum_util.dart' as util;
+import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:json_schema/json_schema.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
@@ -10,7 +11,7 @@ import 'package:web3dart/crypto.dart';
 
 import 'wallet_store.dart';
 
-final hashedAttributeSchema = {
+final _hashedAttributeSchema = {
   "type": "object",
   "required": ["hash"],
   "properties": {
@@ -23,11 +24,39 @@ final hashedAttributeSchema = {
   "additionalProperties": false
 };
 
-final mapOfHashedAttributesSchema = {
+final _mapOfHashedAttributesSchema = {
   'type': 'object',
-  'properties': {r'^.*$': hashedAttributeSchema}
+  'properties': {r'^.*$': _hashedAttributeSchema}
 };
 
+/// Builds a json-Object where every Attribute gets a value, salt and hash from json-Object [credential].
+///
+/// E.g.
+/// ```
+/// {
+///   "name" : "Max",
+///   "age" : 20
+/// }
+/// ```
+/// becomes to
+///```
+///{
+/// "name":
+/// {
+///   "value":"Max",
+///   "salt":"dc0931a0-60c6-4bc8-a27d-b3fd13e62c63",
+///   "hash":"0xd8925653ed000200d2b491bcabe2ea69f378abb91f056993a6d3e3b28ad4ccc4"
+///  },
+///  "age":
+///   {
+///   "value":20,
+///   "salt":"3e9bacd3-aa74-42c1-9895-e490e3931a73",
+///   "hash":"0x43bde6fcd11015c6a996206dadd25e149d131c69a7249280bae723c6bad53888"
+///  }
+/// }
+/// ```
+/// where salt is a Version 4 UUID and hash is the keccak256-hash of salt + value (concatenation).
+/// [credential] could be a string or Map<String, dynamic> representing a valid json-Object.
 String buildPlaintextCredential(dynamic credential) {
   Map<String, dynamic> credMap = _credentialToMap(credential);
   Map<String, dynamic> finalCred = new Map();
@@ -66,6 +95,9 @@ String buildPlaintextCredential(dynamic credential) {
   return jsonEncode(finalCred);
 }
 
+///
+/// Collects all hashes from a Plaintext-Credential, concatenates them and re-hash them with keccak256.
+///
 String buildCredentialHash(dynamic credential) {
   var credMap = _credentialToMap(credential);
   String hashes = '';
@@ -75,11 +107,11 @@ String buildCredentialHash(dynamic credential) {
         String listHash = '';
         value.forEach((element) {
           if (element is Map<String, dynamic> &&
-              JsonSchema.createSchema(hashedAttributeSchema)
+              JsonSchema.createSchema(_hashedAttributeSchema)
                   .validate(element)) {
             listHash += (element['hash'] as String..substring(2));
           } else if (element is Map<String, dynamic> &&
-              JsonSchema.createSchema(mapOfHashedAttributesSchema)
+              JsonSchema.createSchema(_mapOfHashedAttributesSchema)
                   .validate(element)) {
             listHash += buildCredentialHash(element);
           } else {
@@ -88,10 +120,10 @@ String buildCredentialHash(dynamic credential) {
           hashes += util.bufferToHex(util.keccak256(hashes)).substring(2);
         });
       } else if (value is Map<String, dynamic> &&
-          JsonSchema.createSchema(hashedAttributeSchema).validate(value)) {
+          JsonSchema.createSchema(_hashedAttributeSchema).validate(value)) {
         hashes += (value['hash'] as String..substring(2));
       } else if (value is Map<String, dynamic> &&
-          JsonSchema.createSchema(mapOfHashedAttributesSchema)
+          JsonSchema.createSchema(_mapOfHashedAttributesSchema)
               .validate(value)) {
         hashes += buildCredentialHash(value);
       } else {
@@ -103,6 +135,8 @@ String buildCredentialHash(dynamic credential) {
   return util.bufferToHex(util.keccak256(hashes));
 }
 
+/// Builds a Credential conform to W3C-Specification containing a single hash
+/// for plaintext-Credential [credential].
 String buildW3cCredentialSingleHash(
     dynamic credential, String holderDid, String issuerDid,
     {dynamic type, dynamic context}) {
@@ -148,6 +182,8 @@ String buildW3cCredentialSingleHash(
   return jsonEncode(w3cCred);
 }
 
+/// Builds a credential conform to W3C-Standard, which includes all hashes a
+/// plaintext-credential [credential] contains.
 String buildW3cCredentialwithHashes(
     dynamic credential, String holderDid, String issuerDid,
     {dynamic type, dynamic context}) {
@@ -203,6 +239,7 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
   return _checkHashes(w3cMap, plainHash);
 }
 
+/// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential..
 String signCredential(WalletStore wallet, String credential,
     {String proofOptions}) {
   String issuerDid = getIssuerDidFromCredential(credential);
@@ -224,6 +261,7 @@ String signCredential(WalletStore wallet, String credential,
   return jsonEncode(credMap);
 }
 
+/// Verifies the signature for the given [credential].
 bool verifyCredential(dynamic credential) {
   Map<String, dynamic> credMap = _credentialToMap(credential);
   if (!credMap.containsKey('proof')) {
@@ -237,6 +275,7 @@ bool verifyCredential(dynamic credential) {
   return _verifyProof(proof, credHash, issuerDid);
 }
 
+/// Builds a presentation for [credentials].
 String buildPresentation(
     List<dynamic> credentials, WalletStore wallet, String challenge) {
   var credMapList = new List<Map<String, dynamic>>();
@@ -266,7 +305,11 @@ String buildPresentation(
   return jsonEncode(presentation);
 }
 
-bool verifyPresentation(dynamic presentation, String challenge) {
+/// Verifies the [presentation].
+///
+/// It uses erc1056 to look up the current owner of the dids a proof is given in [presentation].
+Future<bool> verifyPresentation(
+    dynamic presentation, Erc1056 erc1056, String challenge) async {
   var presentationMap = _credentialToMap(presentation);
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
@@ -274,11 +317,14 @@ bool verifyPresentation(dynamic presentation, String challenge) {
 
   var credentials = presentationMap['verifiableCredential'] as List;
   var holderDids = new List<String>();
-  credentials.forEach((element) {
+  await Future.forEach(credentials, (element) async {
     if (!verifyCredential(element))
       throw Exception('Credential $element cold not been verified');
-    else
-      holderDids.add(getHolderDidFromCredential(element));
+    else {
+      var did = getHolderDidFromCredential(element);
+      var currentAddress = await erc1056.identityOwner(did);
+      holderDids.add('did:ethr:$currentAddress');
+    }
   });
 
   proofs.forEach((element) {
@@ -351,6 +397,7 @@ String buildJwsHeader(
   return base64Encode(utf8.encode(jsonString));
 }
 
+/// Collects the did of the issuer of a [credential].
 String getIssuerDidFromCredential(dynamic credential) {
   var credentialMap = _credentialToMap(credential);
 
@@ -370,6 +417,7 @@ String getIssuerDidFromCredential(dynamic credential) {
   }
 }
 
+/// Collects the did of the Holder of [credential].
 String getHolderDidFromCredential(dynamic credential) {
   var credMap = _credentialToMap(credential);
   if (credMap.containsKey('credentialSubject'))
@@ -410,11 +458,11 @@ String _collectHashes(dynamic credential, {String id}) {
         var hashList = new List<dynamic>();
         value.forEach((element) {
           if (element is Map<String, dynamic> &&
-              JsonSchema.createSchema(hashedAttributeSchema)
+              JsonSchema.createSchema(_hashedAttributeSchema)
                   .validate(element)) {
             hashList.add(element['hash']);
           } else if (element is Map<String, dynamic> &&
-              JsonSchema.createSchema(mapOfHashedAttributesSchema)
+              JsonSchema.createSchema(_mapOfHashedAttributesSchema)
                   .validate(element)) {
             hashList.add(jsonDecode(_collectHashes(element)));
           } else {
@@ -423,10 +471,10 @@ String _collectHashes(dynamic credential, {String id}) {
           hashCred[key] = hashList;
         });
       } else if (value is Map<String, dynamic> &&
-          JsonSchema.createSchema(hashedAttributeSchema).validate(value)) {
+          JsonSchema.createSchema(_hashedAttributeSchema).validate(value)) {
         hashCred[key] = value['hash'];
       } else if (value is Map<String, dynamic> &&
-          JsonSchema.createSchema(mapOfHashedAttributesSchema)
+          JsonSchema.createSchema(_mapOfHashedAttributesSchema)
               .validate(value)) {
         hashCred[key] = jsonDecode(_collectHashes(value));
       } else {

@@ -22,6 +22,11 @@ void main() async {
   await verifier.openBoxes('verifierPassword');
   //verifier.initialize(); //comment this line if trying a second time
 
+  const String rpcUrl = 'http://127.0.0.1:7545';
+
+  var erc1056 = Erc1056(rpcUrl,
+      contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+
   //*******************************************
   //** Holder gets a Credential from Issuer **
   //*******************************************
@@ -157,8 +162,8 @@ void main() async {
   await new File('disclosedImmaV2.json').writeAsString(jsonEncode(disImmaV2));
   //Holder sends both to verifier
   //Verifier looks, if presentation is correct
-  print(verifyPresentation(presentation, challenge));
-  print(verifyPresentation(presentationV2, challenge));
+  print(await verifyPresentation(presentation, erc1056, challenge));
+  print(await verifyPresentation(presentationV2, erc1056, challenge));
   //Verifier checks, if plaintext Credential belongs to the Credential
   // in the presentation
   var disclosedHash = buildCredentialHash(plaintextDis);
