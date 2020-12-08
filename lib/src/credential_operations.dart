@@ -262,7 +262,7 @@ String signCredential(WalletStore wallet, String credential,
 }
 
 /// Verifies the signature for the given [credential].
-bool verifyCredential(dynamic credential) {
+Future<bool> verifyCredential(dynamic credential, Erc1056 erc1056) async {
   Map<String, dynamic> credMap = _credentialToMap(credential);
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
@@ -272,7 +272,8 @@ bool verifyCredential(dynamic credential) {
   credMap.remove('proof');
   var credHash = util.sha256(jsonEncode(credMap));
   var issuerDid = getIssuerDidFromCredential(credential);
-  return _verifyProof(proof, credHash, issuerDid);
+  var owner = await erc1056.identityOwner(issuerDid);
+  return _verifyProof(proof, credHash, owner);
 }
 
 /// Builds a presentation for [credentials].
@@ -318,12 +319,12 @@ Future<bool> verifyPresentation(
   var credentials = presentationMap['verifiableCredential'] as List;
   var holderDids = new List<String>();
   await Future.forEach(credentials, (element) async {
-    if (!verifyCredential(element))
+    if (!(await verifyCredential(element, erc1056)))
       throw Exception('Credential $element cold not been verified');
     else {
       var did = getHolderDidFromCredential(element);
       var currentAddress = await erc1056.identityOwner(did);
-      holderDids.add('did:ethr:$currentAddress');
+      holderDids.add(currentAddress);
     }
   });
 

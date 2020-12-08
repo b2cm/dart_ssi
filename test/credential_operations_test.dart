@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -20,5 +22,15 @@ void main() {
     var header = buildJwsHeader(alg: 'ES256K-R', extra: critical);
     expect(
         header, 'eyJhbGciOiJFUzI1NkstUiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19');
+  });
+
+  test('build Plaintext Credential', () {
+    var plaintext = {'name': 'Max', 'age': 20};
+
+    var cred = buildPlaintextCredential(plaintext);
+    var credObject = jsonDecode(cred);
+    print(cred);
+
+    expect(credObject['name']['value'], 'Max');
   });
 }

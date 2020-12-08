@@ -110,8 +110,8 @@ void main() async {
   await new File('signedImmaV2.json').writeAsString(signedImmaV2);
 
   //Holder checks signature
-  print(verifyCredential(signedImma));
-  print(verifyCredential(signedImmaV2));
+  print(await verifyCredential(signedImma, erc1056));
+  print(await verifyCredential(signedImmaV2, erc1056));
   //Holder stores Credential in wallet
   await holder.storeCredential(
       signedImma, plaintextCred, holder.getCredential(immaDid).hdPath);
