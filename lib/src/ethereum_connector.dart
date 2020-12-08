@@ -112,7 +112,7 @@ class Erc1056 {
       });
   }
 
-  /// Request the current owner (Ethereum Address) for identity [did].
+  /// Request the current owner (its did) for identity [did].
   Future<String> identityOwner(String did) async {
     var identityOwnerFunction = erc1056contract.function('identityOwner');
     var owner = await web3Client.call(
@@ -120,7 +120,7 @@ class Erc1056 {
         function: identityOwnerFunction,
         params: [_didToAddress(did)]);
     var ownerAddress = owner.first as EthereumAddress;
-    return ownerAddress.hexEip55;
+    return _addressToDid(ownerAddress);
   }
 
   Future<void> changeOwner(
