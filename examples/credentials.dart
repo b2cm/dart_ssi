@@ -110,8 +110,8 @@ void main() async {
   await new File('signedImmaV2.json').writeAsString(signedImmaV2);
 
   //Holder checks signature
-  print(await verifyCredential(signedImma, erc1056));
-  print(await verifyCredential(signedImmaV2, erc1056));
+  print(await verifyCredential(signedImma, erc1056, rpcUrl));
+  print(await verifyCredential(signedImmaV2, erc1056, rpcUrl));
   //Holder stores Credential in wallet
   await holder.storeCredential(
       signedImma, plaintextCred, holder.getCredential(immaDid).hdPath);
@@ -162,8 +162,8 @@ void main() async {
   await new File('disclosedImmaV2.json').writeAsString(jsonEncode(disImmaV2));
   //Holder sends both to verifier
   //Verifier looks, if presentation is correct
-  print(await verifyPresentation(presentation, erc1056, challenge));
-  print(await verifyPresentation(presentationV2, erc1056, challenge));
+  print(await verifyPresentation(presentation, erc1056, challenge, rpcUrl));
+  print(await verifyPresentation(presentationV2, erc1056, challenge, rpcUrl));
   //Verifier checks, if plaintext Credential belongs to the Credential
   // in the presentation
   var disclosedHash = buildCredentialHash(plaintextDis);

@@ -186,7 +186,7 @@ String buildW3cCredentialSingleHash(
 /// plaintext-credential [credential] contains.
 String buildW3cCredentialwithHashes(
     dynamic credential, String holderDid, String issuerDid,
-    {dynamic type, dynamic context}) {
+    {dynamic type, dynamic context, String revocationRegistryAddress}) {
   var hashCred = _collectHashes(credential, id: holderDid);
 
   var credTypes = new List<String>();
@@ -225,9 +225,18 @@ String buildW3cCredentialwithHashes(
     'issuanceDate': DateTime.now().toUtc().toIso8601String()
   };
 
+  if (revocationRegistryAddress != null) {
+    var credStatus = {
+      'id': revocationRegistryAddress,
+      'type': 'EthereumRevocationList'
+    };
+    w3cCred['credentialStatus'] = credStatus;
+  }
+
   return jsonEncode(w3cCred);
 }
 
+/// Checks weather a W3C-Credential containing all attribute hashes belongs to a Plaintext Credential or not.
 bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
   var w3cMap = _credentialToMap(w3cCred);
   var plainMap = _credentialToMap(plaintext);
@@ -239,7 +248,7 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
   return _checkHashes(w3cMap, plainHash);
 }
 
-/// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential..
+/// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
 String signCredential(WalletStore wallet, String credential,
     {String proofOptions}) {
   String issuerDid = getIssuerDidFromCredential(credential);
@@ -262,10 +271,22 @@ String signCredential(WalletStore wallet, String credential,
 }
 
 /// Verifies the signature for the given [credential].
-Future<bool> verifyCredential(dynamic credential, Erc1056 erc1056) async {
+Future<bool> verifyCredential(
+    dynamic credential, Erc1056 erc1056, String rpcUrl) async {
   Map<String, dynamic> credMap = _credentialToMap(credential);
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
+  }
+
+  if (credMap.containsKey('credentialStatus')) {
+    var credStatus = credMap['credentialStatus'];
+    if (credStatus['type'] != 'EthereumRevocationList')
+      throw Exception('Unknown Status-method : ${credStatus['type']}');
+    var revRegistry =
+        RevocationRegistry(rpcUrl, contractAddress: credStatus['id']);
+    var revoked =
+        await revRegistry.isRevoked(getHolderDidFromCredential(credMap));
+    if (revoked) throw Exception('Credential was revoked');
   }
 
   Map<String, dynamic> proof = credMap['proof'];
@@ -309,8 +330,8 @@ String buildPresentation(
 /// Verifies the [presentation].
 ///
 /// It uses erc1056 to look up the current owner of the dids a proof is given in [presentation].
-Future<bool> verifyPresentation(
-    dynamic presentation, Erc1056 erc1056, String challenge) async {
+Future<bool> verifyPresentation(dynamic presentation, Erc1056 erc1056,
+    String challenge, String rpcUrl) async {
   var presentationMap = _credentialToMap(presentation);
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
@@ -319,7 +340,7 @@ Future<bool> verifyPresentation(
   var credentials = presentationMap['verifiableCredential'] as List;
   var holderDids = new List<String>();
   await Future.forEach(credentials, (element) async {
-    if (!(await verifyCredential(element, erc1056)))
+    if (!(await verifyCredential(element, erc1056, rpcUrl)))
       throw Exception('Credential $element cold not been verified');
     else {
       var did = getHolderDidFromCredential(element);

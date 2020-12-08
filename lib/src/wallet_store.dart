@@ -18,6 +18,8 @@ import 'hive_model.dart';
 class WalletStore {
   Box _keyBox;
   Box<Credential> _credentialBox;
+  Box _configBox;
+  Box<Credential> _issuingHistory;
 
   ///The Path used to derive keys
   final String standardPath = 'm/456/0/';
@@ -40,12 +42,17 @@ class WalletStore {
         await Hive.openBox('keyBox', encryptionCipher: HiveAesCipher(aesKey));
     this._credentialBox = await Hive.openBox<Credential>('credentialBox',
         encryptionCipher: HiveAesCipher(aesKey));
+    this._configBox = await Hive.openBox<Credential>('credentialBox',
+        encryptionCipher: HiveAesCipher(aesKey));
+    this._issuingHistory = await Hive.openBox<Credential>('credentialBox',
+        encryptionCipher: HiveAesCipher(aesKey));
   }
 
   /// Closes Storage Containers
   Future<void> closeBoxes() async {
     await _keyBox.close();
     await _credentialBox.close();
+    await _configBox.close();
   }
 
   /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
@@ -108,6 +115,23 @@ class WalletStore {
     await this._credentialBox.put(did, tmp);
   }
 
+  /// Stores a credential one issued to [holderDid].
+  void toIssuingHistory(
+      String holderDid, String plaintextCredential, String w3cCredential) {
+    var tmp = new Credential('', w3cCredential, plaintextCredential);
+    _issuingHistory.put(holderDid, tmp);
+  }
+
+  /// Returns a credential one issued to [holderDid].
+  Credential getIssuedCredential(String holderDid) {
+    return _issuingHistory.get(holderDid);
+  }
+
+  /// Returns all credentials one issued over time.
+  Map<dynamic, Credential> getAllIssuedCredentials() {
+    return _issuingHistory.toMap();
+  }
+
   /// Returns the last value of the next HD-path.
   int getLastIndex() {
     return _keyBox.get('lastIndex');
@@ -160,6 +184,16 @@ class WalletStore {
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(cred.hdPath);
     return HEX.encode(key.privateKey);
+  }
+
+  /// Stores a configuration Entry.
+  void storeConfigEntry(String key, String value) {
+    _configBox.put(key, value);
+  }
+
+  /// Returns the configuration Entry for [key].
+  String getConfigEntry(String key) {
+    return _configBox.get(key);
   }
 
   Future<String> _bip32KeyToDid(BIP32 key) async {
