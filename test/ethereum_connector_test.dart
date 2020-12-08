@@ -171,10 +171,11 @@ void main() async {
       await erc1056.setAttribute(
           ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
-          'serviceEndpoint',
-          'http://identity.service.de');
+          'serviceEndpoint2',
+          'http://service±.de');
 
       var eventData = await erc1056.collectEventData(ganacheDid8);
+      print(eventData);
       Map<String, List<String>> attributes = eventData['attributes'];
       expect(attributes.keys.length, 1);
       expect(attributes.containsKey('serviceEndpoint'), true);
@@ -211,8 +212,8 @@ void main() async {
 
     test('attribute with long value', () async {
       var value = 'longlonglong';
-      value.padLeft(100, 'lo');
-      value.padRight(100, 'KO');
+      value = value.padLeft(100, 'lo');
+      value = value.padRight(200, 'KO');
 
       await erc1056.setAttribute(
           ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
@@ -229,8 +230,8 @@ void main() async {
 
     test('two attributes with different names', () async {
       var value = 'longlonglong';
-      value.padLeft(100, 'lo');
-      value.padRight(100, 'KO');
+      value = value.padLeft(100, 'lo');
+      value = value.padRight(200, 'KO');
 
       await erc1056.setAttribute(
           ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
@@ -285,6 +286,35 @@ void main() async {
       expect(
           attributes['serviceEndpoint'].contains('http://identity.service.de'),
           true);
+    });
+  });
+
+  group('Revocation Contract', () {
+    var rev = RevocationRegistry(rpcUrl);
+    test('revoke something', () async {
+      var address = await rev
+          .deploy(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'));
+
+      var isRevoked = await rev
+          .isRevoked('did:ethr:0x3B974dC1107e45cDDf1174B810960A7212562Ae4');
+      expect(isRevoked, false);
+
+      await rev.revoke(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+          'did:ethr:0x3B974dC1107e45cDDf1174B810960A7212562Ae4');
+
+      isRevoked = await rev
+          .isRevoked('did:ethr:0x3B974dC1107e45cDDf1174B810960A7212562Ae4');
+      expect(isRevoked, true);
+    });
+
+    test('change Owner', () async {
+      await rev.changeOwner(
+          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'), ganacheDid8);
+
+      expect(
+          () async => await rev.revoke('m/44\'/60\'/0\'/0/6',
+              'did:ethr:0x6d32738382c6389eF0D79045a76411C42Fff3a5e'),
+          throwsException);
     });
   });
 }
