@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:json_schema/json_schema.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
@@ -40,14 +41,1009 @@ void main() async {
         header, 'eyJhbGciOiJFUzI1NkstUiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19');
   });
 
-  test('build Plaintext Credential', () {
-    var plaintext = {'name': 'Max', 'age': 20};
+  group('build Plaintext Credential', () {
+    var hashedAttributeSchema = {
+      "type": "object",
+      "required": ["hash", 'salt', 'value'],
+      "properties": {
+        "value": {
+          "type": ["number", "string", "boolean"]
+        },
+        "salt": {"type": "string", 'minLenght': 36, 'maxLenght': 36},
+        "hash": {
+          "type": "string",
+          'minLenght': 66,
+          'maxLenght': 66,
+          'pattern': '0x[0-9A-Fa-f]{64}'
+        }
+      },
+      "additionalProperties": false
+    };
 
-    var cred = buildPlaintextCredential(plaintext);
-    var credObject = jsonDecode(cred);
-    print(cred);
+    var jScheme = JsonSchema.createSchema(hashedAttributeSchema);
+    test('normal key-value-pairs (given as Map)', () {
+      var plaintext = {'name': 'Max'};
 
-    expect(credObject['name']['value'], 'Max');
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+      var schema = {
+        'type': 'object',
+        'required': ['name'],
+        'properties': {'name': hashedAttributeSchema}
+      };
+      var jSchema = JsonSchema.createSchema(schema);
+      expect(credObject['name']['value'], 'Max');
+      expect(jSchema.validate(credObject), true);
+    });
+
+    test('normal key-value-pairs (given as String)', () {
+      var plaintext = '{"name": "Max"}';
+
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+      var schema = {
+        'type': 'object',
+        'required': ['name'],
+        'properties': {'name': hashedAttributeSchema}
+      };
+      var jSchema = JsonSchema.createSchema(schema);
+      expect(credObject['name']['value'], 'Max');
+      expect(jSchema.validate(credObject), true);
+    });
+
+    test('array with string, num, boolean (given as map)', () {
+      var plaintext = {
+        'hobbies': ['lesen', true, 20, 30.8]
+      };
+
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+
+      expect(plaintext['hobbies'].length, credObject['hobbies'].length);
+
+      for (int i = 0; i < plaintext['hobbies'].length; i++) {
+        expect(plaintext['hobbies'][i], credObject['hobbies'][i]['value']);
+        expect(jScheme.validate(credObject['hobbies'][i]), true);
+      }
+    });
+
+    test('array with string, num, boolean (given as String)', () {
+      var plaintext = '{"hobbies": ["lesen", true, 20, 30.8]}';
+
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+
+      expect(credObject['hobbies'].length, 4);
+
+      for (int i = 0; i < credObject['hobbies'].length; i++) {
+        expect(jScheme.validate(credObject['hobbies'][i]), true);
+      }
+    });
+
+    test('array with objects (given as map)', () {
+      var plaintext = {
+        'hobbies': [
+          {'name': 'schwimmen', 'duration': 3},
+          {'name': 'reiten', 'duration': 7}
+        ]
+      };
+
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+
+      expect(credObject['hobbies'].length, plaintext['hobbies'].length);
+      for (int i = 1; i < credObject['hobbies'].length; i++) {
+        expect(jScheme.validate(credObject['hobbies'][i]['name']), true);
+        expect(jScheme.validate(credObject['hobbies'][i]['duration']), true);
+      }
+    });
+
+    test('array with objects (given as string)', () {
+      var plaintext =
+          '{"hobbies": [{"name": "schwimmen", "duration": 3},{"name": "reiten", "duration": 7}]}';
+
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+
+      expect(credObject['hobbies'].length, 2);
+      for (int i = 1; i < credObject['hobbies'].length; i++) {
+        expect(jScheme.validate(credObject['hobbies'][i]['name']), true);
+        expect(jScheme.validate(credObject['hobbies'][i]['duration']), true);
+      }
+    });
+
+    test('array with array', () {
+      var plaintext = {
+        'grades': [
+          [1, 2],
+          [5, 4]
+        ]
+      };
+
+      expect(() => buildPlaintextCredential(plaintext), throwsException);
+    });
+
+    test('objects (given as Map)', () {
+      var plaintext = {
+        'mother': {'name': 'Mustermann', 'surname': 'Erika'}
+      };
+
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+
+      expect(jScheme.validate(credObject['mother']['name']), true);
+      expect(jScheme.validate(credObject['mother']['surname']), true);
+      expect(credObject['mother']['name']['value'], 'Mustermann');
+      expect(credObject['mother']['surname']['value'], 'Erika');
+      expect(credObject['mother'].length, plaintext['mother'].length);
+    });
+
+    test('objects (given as string)', () {
+      var plaintext = '{"mother": {"name": "Mustermann", "surname": "Erika"}}';
+
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+
+      expect(jScheme.validate(credObject['mother']['name']), true);
+      expect(jScheme.validate(credObject['mother']['surname']), true);
+      expect(credObject['mother']['name']['value'], 'Mustermann');
+      expect(credObject['mother']['surname']['value'], 'Erika');
+      expect(credObject['mother'].length, 2);
+    });
+
+    test('ignore @context (as List)', () {
+      var plaintext = {
+        '@context': ['https://hs-mittweida.de']
+      };
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+      expect(credObject['@context'].length, 1);
+      expect(credObject['@context'][0], 'https://hs-mittweida.de');
+      expect(credObject.keys.length, 1);
+      expect(jScheme.validate(credObject['@context']), false);
+    });
+
+    test('ignore @context (as String)', () {
+      var plaintext = {'@context': 'https://hs-mittweida.de'};
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+      expect(credObject['@context'], 'https://hs-mittweida.de');
+      expect(jScheme.validate(credObject['@context']), false);
+    });
+
+    test('ignore type and @type', () {
+      var plaintext = {
+        'type': 'VerifiableCredential',
+        '@type': ['VerifiableCredential', 'ImmaCredential']
+      };
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+      expect(credObject.keys.length, 2);
+      expect(credObject['type'], 'VerifiableCredential');
+      expect(credObject['@type'].length, 2);
+      expect(credObject['@type'] is List, true);
+      expect(jScheme.validate(credObject['type']), false);
+      expect(jScheme.validate(credObject['@type'][0]), false);
+      expect(jScheme.validate(credObject['@type'][1]), false);
+    });
+
+    test('maleformed json-String', () {
+      var plaintext = '{"key" : value';
+      expect(() => buildPlaintextCredential(plaintext), throwsException);
+    });
+
+    test('not a Map or String', () {
+      var plaintext = ['value1', 'value2'];
+      expect(() => buildPlaintextCredential(plaintext), throwsException);
+    });
+
+    test('long value', () {
+      var value = 'value';
+      value = value.padLeft(500, 'abcd');
+      var plaintext = {'key': value};
+      var cred = buildPlaintextCredential(plaintext);
+      var credObject = jsonDecode(cred);
+
+      expect(credObject['key']['value'], value);
+      expect(jScheme.validate(credObject['key']), true);
+    });
+  });
+
+  group('build W3C Credential with Hashes', () {
+    var credSchema = {
+      'type': 'object',
+      'required': [
+        '@context',
+        'type',
+        'credentialSubject',
+        'issuer',
+        'issuanceDate'
+      ],
+      'properties': {
+        '@context': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'minItems': 1,
+          'uniqueItems': true
+        },
+        'type': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'minItems': 1,
+          'uniqueItems': true
+        },
+        'credentialSubject': {
+          'type': 'object',
+          'required': ['id'],
+          'properties': {
+            'id': {'type': 'string'},
+            'type': {'type': 'string'},
+            r'^.*$': {
+              'type': ['string', 'array', 'object'],
+            }
+          },
+          'issuer': {'type': 'string'},
+          'issuanceDate': {'type': 'string'}
+        },
+        'additionalProperties': false
+      }
+    };
+
+    var w3cCredSchema = JsonSchema.createSchema(credSchema);
+
+    test('plaintext has normal key-value Object', () {
+      var plaintext =
+          '{"givenName":{"value":"Max","salt":"d51e87c4-6ab5-4cf0-b932-28f6962c384e","hash":"0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"}}';
+      var w3c = buildW3cCredentialwithHashes(
+          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3cObj = jsonDecode(w3c);
+
+      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cObj['credentialSubject']['givenName'],
+          '0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4');
+    });
+
+    test('plaintext has array', () {
+      var plaintext = {
+        "courseOfStudies": [
+          {
+            "value": "Cybercrime/Cybersecurity",
+            "salt": "5ccf63ee-78fa-437c-a302-6c3cd3549fec",
+            "hash":
+                "0x12915d6160b6c9359dc4a0382388012786b8e3cd2351ccfff485683ae0e2fa10"
+          },
+          {
+            "value": "Angewandte Informatik - IT-Sicherheit",
+            "salt": "6040c2d6-3931-4851-960a-93972e53483d",
+            "hash":
+                "0x6994dbf74e9418b87a8c2a5645239a340d6203b8d3792a28fdfaab3d905c27b7"
+          }
+        ]
+      };
+
+      var w3c = buildW3cCredentialwithHashes(
+          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3cObj = jsonDecode(w3c);
+
+      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cObj['credentialSubject']['courseOfStudies'].length, 2);
+      expect(w3cObj['credentialSubject']['courseOfStudies'][0],
+          '0x12915d6160b6c9359dc4a0382388012786b8e3cd2351ccfff485683ae0e2fa10');
+      expect(w3cObj['credentialSubject']['courseOfStudies'][1],
+          '0x6994dbf74e9418b87a8c2a5645239a340d6203b8d3792a28fdfaab3d905c27b7');
+    });
+
+    test('plaintext has object', () {
+      var plaintext = {
+        "address": {
+          "addressLocality": {
+            "value": "Mittweida",
+            "salt": "e0d91fc0-ffda-4784-b0bc-077bed54c5c7",
+            "hash":
+                "0xd555aeaa1f0bc42adc3210240c9eeb2e35640cec110aeddd8f77d1762ba6bce1"
+          },
+          "postalCode": {
+            "value": "09648",
+            "salt": "6977dcb5-f0e7-4158-a8f8-08cdac88d5b4",
+            "hash":
+                "0x68c9b55a1fb3cc542942d2c27978ab34433e171ecd91bf91ba882dfd4e0b08f6"
+          }
+        }
+      };
+
+      var w3c = buildW3cCredentialwithHashes(
+          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3cObj = jsonDecode(w3c);
+
+      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cObj['credentialSubject']['address']['postalCode'],
+          '0x68c9b55a1fb3cc542942d2c27978ab34433e171ecd91bf91ba882dfd4e0b08f6');
+      expect(w3cObj['credentialSubject']['address']['addressLocality'],
+          '0xd555aeaa1f0bc42adc3210240c9eeb2e35640cec110aeddd8f77d1762ba6bce1');
+    });
+
+    test('plaintext has object in a object', () {
+      var value = {
+        'friend': {
+          'address': {
+            'postcode': '09648',
+            'streetAddress': {'street': 'Main Street', 'number': 78}
+          }
+        }
+      };
+
+      var plaintext = buildPlaintextCredential(value);
+      var w3c = buildW3cCredentialwithHashes(
+          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3cObj = jsonDecode(w3c);
+      expect(w3cCredSchema.validate(w3cObj), true);
+    });
+
+    test('ignore type', () {
+      var plaintext = {
+        "type": "Person",
+        "givenName": {
+          "value": "Max",
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+          "hash":
+              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+        }
+      };
+      var w3c = buildW3cCredentialwithHashes(
+          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3cObj = jsonDecode(w3c);
+
+      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cObj['credentialSubject']['givenName'],
+          '0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4');
+      expect(w3cObj['credentialSubject']['type'], 'Person');
+    });
+
+    test('ignore @type', () {
+      var plaintext = {
+        "@type": "Person",
+        "givenName": {
+          "value": "Max",
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+          "hash":
+              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+        }
+      };
+      var w3c = buildW3cCredentialwithHashes(
+          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3cObj = jsonDecode(w3c);
+
+      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cObj['credentialSubject']['givenName'],
+          '0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4');
+      expect(w3cObj['credentialSubject']['@type'], 'Person');
+    });
+
+    test('missing hash', () {
+      var plaintext = {
+        "givenName": {
+          "value": "Max",
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+        }
+      };
+      expect(
+          () => buildW3cCredentialwithHashes(
+              plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678'),
+          throwsException);
+    });
+
+    group('parameter type', () {
+      test('value VerifiableCredential schould not be added (given as String)',
+          () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            type: 'VerifiableCredential');
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['type'].length, 1);
+      });
+
+      test('value VerifiableCredential schould not be added (given as List)',
+          () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            type: ['VerifiableCredential']);
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['type'].length, 1);
+      });
+
+      test('add one value', () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            type: 'ImmaCredential');
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['type'].length, 2);
+        expect(w3cObj['type'].contains('VerifiableCredential'), true);
+        expect(w3cObj['type'].contains('ImmaCredential'), true);
+      });
+
+      test('add a List of values', () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            type: ['ImmaCredential', 'Immatrikulation']);
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['type'].length, 3);
+        expect(w3cObj['type'].contains('VerifiableCredential'), true);
+        expect(w3cObj['type'].contains('ImmaCredential'), true);
+        expect(w3cObj['type'].contains('Immatrikulation'), true);
+      });
+
+      test('add a List of values without adding VerifiableCredential', () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678', type: [
+          'ImmaCredential',
+          'Immatrikulation',
+          'VerifiableCredential'
+        ]);
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['type'].length, 3);
+        expect(w3cObj['type'].contains('VerifiableCredential'), true);
+        expect(w3cObj['type'].contains('ImmaCredential'), true);
+        expect(w3cObj['type'].contains('Immatrikulation'), true);
+      });
+
+      test('wrong datatypes', () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        expect(
+            () => buildW3cCredentialwithHashes(
+                plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+                type: 20),
+            throwsException);
+        expect(
+            () => buildW3cCredentialwithHashes(
+                plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+                type: true),
+            throwsException);
+        expect(
+            () => buildW3cCredentialwithHashes(
+                plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+                type: {'key': 'value'}),
+            throwsException);
+      });
+    });
+
+    group('parameter context / handling of @context in credential', () {
+      test(
+          'do not add https://www.w3.org/2018/credentials/v1 (given as string)',
+          () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            context: 'https://www.w3.org/2018/credentials/v1');
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['@context'].length, 1);
+        expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
+      });
+
+      test('do not add https://www.w3.org/2018/credentials/v1 (given as list)',
+          () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            context: ['https://www.w3.org/2018/credentials/v1']);
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['@context'].length, 1);
+        expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
+      });
+
+      test('add one value as String', () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            context: 'https://hs-mittweida.de/creds');
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['@context'].length, 2);
+        expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
+        expect(
+            w3cObj['@context'].contains('https://hs-mittweida.de/creds'), true);
+      });
+
+      test('add one value as List', () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            context: ['https://hs-mittweida.de/creds']);
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['@context'].length, 2);
+        expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
+        expect(
+            w3cObj['@context'].contains('https://hs-mittweida.de/creds'), true);
+      });
+
+      test('add a List of values', () {
+        var plaintext = {
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            context: ['https://hs-mittweida.de/creds', 'https://schema.org']);
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['@context'].length, 3);
+        expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
+        expect(
+            w3cObj['@context'].contains('https://hs-mittweida.de/creds'), true);
+        expect(w3cObj['@context'].contains('https://schema.org'), true);
+      });
+
+      test('give credential with context as List', () {
+        var plaintext = {
+          '@context': ['https://schema.org'],
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['@context'].length, 2);
+        expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
+        expect(w3cObj['@context'].contains('https://schema.org'), true);
+      });
+
+      test('give credential with context as String', () {
+        var plaintext = {
+          '@context': 'https://schema.org',
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['@context'].length, 2);
+        expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
+        expect(w3cObj['@context'].contains('https://schema.org'), true);
+      });
+
+      test('give credential with context as unsupported type', () {
+        var plaintext = {
+          '@context': 23,
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        expect(
+            () => buildW3cCredentialwithHashes(
+                plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678'),
+            throwsException);
+
+        var plaintext2 = {
+          '@context': true,
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        expect(
+            () => buildW3cCredentialwithHashes(
+                plaintext2, 'did:ethr:0x123456', 'did:ethr:0x12345678'),
+            throwsException);
+
+        var plaintext3 = {
+          '@context': {'key': 'value'},
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        expect(
+            () => buildW3cCredentialwithHashes(
+                plaintext3, 'did:ethr:0x123456', 'did:ethr:0x12345678'),
+            throwsException);
+      });
+
+      test('do not add a second time', () {
+        var plaintext = {
+          '@context': [
+            'https://schema.org',
+            'https://www.w3.org/2018/credentials/v1'
+          ],
+          "givenName": {
+            "value": "Max",
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+            "hash":
+                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          }
+        };
+
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            context: 'https://schema.org');
+        var w3cObj = jsonDecode(w3c);
+        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cObj['@context'].length, 2);
+        expect(
+            w3cObj['@context']
+                .contains('https://www.w3.org/2018/credentials/v1'),
+            true);
+        expect(w3cObj['@context'].contains('https://schema.org'), true);
+      });
+    });
+
+    test('add credential Status', () {
+      var plaintext = {
+        "givenName": {
+          "value": "Max",
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+          "hash":
+              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+        }
+      };
+
+      var w3c = buildW3cCredentialwithHashes(
+          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+          revocationRegistryAddress: '0x456127387');
+      var w3cObj = jsonDecode(w3c);
+      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cObj.containsKey('credentialStatus'), true);
+      expect(w3cObj['credentialStatus']['type'], 'EthereumRevocationList');
+      expect(w3cObj['credentialStatus']['id'], '0x456127387');
+    });
+  });
+
+  group('compare w3c credential and Plaintext', () {
+    group('show everything', () {
+      test('string num bool values with no change', () {
+        var values = {
+          'name': 'Max',
+          'age': 20,
+          'height': 1.78,
+          'student': true
+        };
+        var plaintext = buildPlaintextCredential(values);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
+      });
+
+      test('string num bool values with change in a value', () {
+        var values = {
+          'name': 'Max',
+          'age': 20,
+          'height': 1.78,
+          'student': true
+        };
+        var plaintext = buildPlaintextCredential(values);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext);
+        plaintextMap['name']['value'] = 'Lilly';
+        expect(
+            () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
+            throwsA(predicate((e) =>
+                e.message ==
+                'Given hash and calculated hash do ot match at name')));
+      });
+
+      test('objects are given', () {
+        var value = {
+          'mother': {'name': 'Erika', 'age': 34},
+          'father': {'name': 'Thorsten', 'age': 40}
+        };
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
+      });
+
+      test('objects are given and one value was manipulated', () {
+        var value = {
+          'mother': {'name': 'Erika', 'age': 34},
+          'father': {'name': 'Thorsten', 'age': 40}
+        };
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plainMap = jsonDecode(plaintext);
+        plainMap['mother']['age']['value'] = 35;
+        expect(
+            () => compareW3cCredentialAndPlaintext(w3c, plainMap),
+            throwsA(predicate((e) =>
+                e.message ==
+                'Given hash and calculated hash do ot match at age')));
+      });
+      test('plaintext has object in a object', () {
+        var value = {
+          'friend': {
+            'address': {
+              'postcode': '09648',
+              'streetAddress': {'street': 'Main Street', 'number': 78}
+            }
+          }
+        };
+
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
+      });
+
+      test('plaintext Object has List with string, num , boolean', () {
+        var value = {
+          'list': ['schwimmen', true, 34, 78.9]
+        };
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
+      });
+
+      test(
+          'plaintext Object has List with string, num , boolean and a manipulated value',
+          () {
+        var value = {
+          'list': ['schwimmen', true, 34, 78.9]
+        };
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext);
+        plaintextMap['list'][1]['value'] = false;
+        expect(
+            () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
+            throwsA(predicate((e) =>
+                e.message ==
+                'Calculated and given Hash in List at list do not match at index 1')));
+      });
+
+      test('plaintext object has List of Objects', () {
+        var value = {
+          'friends': [
+            {'name': 'Max', 'age': 13},
+            {'name': 'Tom', 'age': 14}
+          ]
+        };
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
+      });
+
+      test('plaintext object has List of Objects and a wrong value', () {
+        var value = {
+          'friends': [
+            {'name': 'Max', 'age': 13},
+            {'name': 'Tom', 'age': 14}
+          ]
+        };
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext);
+        plaintextMap['friends'][1]['name']['value'] = 'Sebastian';
+        expect(
+            () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
+            throwsA(predicate((e) =>
+                e.message ==
+                'Given hash and calculated hash do ot match at name')));
+      });
+
+      test('missing salt', () {
+        var values = {
+          'name': 'Max',
+          'age': 20,
+          'height': 1.78,
+          'student': true
+        };
+        var plaintext = buildPlaintextCredential(values);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext) as Map<String, dynamic>;
+        plaintextMap['name'].remove('salt');
+        expect(
+            () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
+            throwsA(predicate(
+                (e) => e.message == 'maleformed object with key name')));
+      });
+
+      test('missing value', () {
+        var values = {
+          'name': 'Max',
+          'age': 20,
+          'height': 1.78,
+          'student': true
+        };
+        var plaintext = buildPlaintextCredential(values);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext) as Map<String, dynamic>;
+        plaintextMap['name'].remove('value');
+        expect(
+            () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
+            throwsA(predicate(
+                (e) => e.message == 'malformed object with key name')));
+      });
+    });
+    group('only show some values (or nothing)', () {
+      test(
+          'key value pairs with no change (show nothing and give hash in object)',
+          () {
+        var values = {
+          'name': 'Max',
+        };
+        var plaintext = buildPlaintextCredential(values);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext);
+        plaintextMap['name'].remove('salt');
+        plaintextMap['name'].remove('value');
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
+      });
+
+      test(
+          'key value pairs with no change (show nothing and give hash as string)',
+          () {
+        var values = {
+          'name': 'Max',
+        };
+        var plaintext = buildPlaintextCredential(values);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext);
+        plaintextMap['name'] = plaintextMap['name']['hash'];
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
+      });
+
+      test('show one out of two', () {
+        var values = {'name': 'Max', 'age': 20};
+        var plaintext = buildPlaintextCredential(values);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext);
+        plaintextMap['name'].remove('salt');
+        plaintextMap['name'].remove('value');
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
+      });
+
+      test('show one out of two list items (hash as string)', () {
+        var value = {
+          'list': ['schwimmen', 78.9]
+        };
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext);
+        plaintextMap['list'][0] = plaintextMap['list'][0]['hash'];
+        print(plaintextMap);
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
+      });
+
+      test('show one out of two list items (hash as object)', () {
+        var value = {
+          'list': ['schwimmen', 78.9]
+        };
+        var plaintext = buildPlaintextCredential(value);
+        var w3c = buildW3cCredentialwithHashes(
+            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintextMap = jsonDecode(plaintext);
+        plaintextMap['list'][0].remove('value');
+        plaintextMap['list'][0].remove('salt');
+        print(plaintextMap);
+        expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
+      });
+    });
   });
 
   test('credential revocation', () async {
