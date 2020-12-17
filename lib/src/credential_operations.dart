@@ -275,25 +275,18 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 }
 
 /// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
-String signCredential(WalletStore wallet, String credential,
-    {String proofOptions}) {
+String signCredential(WalletStore wallet, dynamic credential) {
+  credential = _credentialToMap(credential);
   String issuerDid = getIssuerDidFromCredential(credential);
   if (issuerDid == null) {
-    // TODO search for better Exception-Type
     throw new Exception('Could not examine IssuerDID');
   }
 
-  var credHash = util.sha256(credential);
-  var proof;
-  if (proofOptions == null) {
-    proof = _buildProof(credHash, issuerDid, wallet);
-  } else {
-    proof =
-        _buildProof(credHash, issuerDid, wallet, proofOptions: proofOptions);
-  }
-  Map<String, dynamic> credMap = jsonDecode(credential);
-  credMap.putIfAbsent('proof', () => proof);
-  return jsonEncode(credMap);
+  var credHash = util.sha256(jsonEncode(credential));
+  var proof = _buildProof(credHash, issuerDid, wallet);
+
+  credential['proof'] = proof;
+  return jsonEncode(credential);
 }
 
 /// Verifies the signature for the given [credential].
@@ -468,10 +461,15 @@ String getIssuerDidFromCredential(dynamic credential) {
 /// Collects the did of the Holder of [credential].
 String getHolderDidFromCredential(dynamic credential) {
   var credMap = _credentialToMap(credential);
-  if (credMap.containsKey('credentialSubject'))
-    return credMap['credentialSubject']['id'];
-  else
+  if (credMap.containsKey('credentialSubject')) {
+    if (credMap['credentialSubject'].containsKey('id'))
+      return credMap['credentialSubject']['id'];
+    else
+      return null;
+  } else if (credMap.containsKey('id'))
     return credMap['id'];
+  else
+    return null;
 }
 
 Map<String, dynamic> _credentialToMap(dynamic credential) {
@@ -593,12 +591,17 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
 
 Map<String, dynamic> _buildProof(
     Uint8List hashToSign, String didToSignWith, WalletStore wallet,
-    {String proofOptions}) {
+    {dynamic proofOptions}) {
   String pOptions;
   if (proofOptions == null) {
     pOptions = _buildProofOptions(verificationMethod: didToSignWith);
   } else {
-    pOptions = proofOptions;
+    if (!(proofOptions is String) || !(proofOptions is Map<String, dynamic>))
+      throw Exception('Proof options have unsupported datatype');
+    if (proofOptions is String)
+      pOptions = proofOptions;
+    else
+      pOptions = jsonEncode(proofOptions);
   }
 
   var pOptionsHash = util.sha256(pOptions);
@@ -613,11 +616,9 @@ Map<String, dynamic> _buildProof(
   Map<String, dynamic> optionsMap = jsonDecode(pOptions);
 
   var critical = new Map<String, dynamic>();
-  critical.putIfAbsent('b64', () => false);
-  optionsMap.putIfAbsent(
-      'jws',
-      () => '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
-          '.${base64Encode(sigArray)}');
+  critical['b64'] = false;
+  optionsMap['jws'] = '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
+      '.${base64Encode(sigArray)}';
 
   return optionsMap;
 }

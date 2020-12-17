@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart';
 import 'package:json_schema/json_schema.dart';
+import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
@@ -1046,23 +1048,237 @@ void main() async {
     });
   });
 
-  test('credential revocation', () async {
-    var plaintext = {'name': 'Max', 'age': 20};
-    var rev = RevocationRegistry(rpcUrl);
-    var revAddress =
-        await rev.deploy(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'));
-    var cred = buildPlaintextCredential(plaintext);
-    var w3cCred = buildW3cCredentialwithHashes(cred, ganacheDid6, ganacheDid9,
-        revocationRegistryAddress: revAddress);
-    var signed = signCredential(ganacheAccounts, w3cCred);
-    await new File('withRevocationRegistry.json').writeAsString(signed);
-    var verified = await verifyCredential(signed, erc1056, rpcUrl);
-    expect(verified, true);
+  group('getIssuerDidFromCredential', () {
+    test('no issuer given', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'credentialSubject': {'id': 'did:ethr:0x68797'}
+      };
+      expect(getIssuerDidFromCredential(cred), null);
+    });
 
-    await rev.revoke(
-        ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'), ganacheDid6);
+    test('issuer given only with id', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': 'did:ethr:0x7648231',
+        'credentialSubject': {'id': 'did:ethr:0x68797'}
+      };
+      expect(getIssuerDidFromCredential(cred), 'did:ethr:0x7648231');
+    });
 
-    expect(() async => await verifyCredential(signed, erc1056, rpcUrl),
-        throwsException);
+    test('issuer given in Object', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': {'id': 'did:ethr:0x7648231', 'name': 'Hochschule Mittweida'},
+        'credentialSubject': {'id': 'did:ethr:0x68797'}
+      };
+      expect(getIssuerDidFromCredential(cred), 'did:ethr:0x7648231');
+    });
+
+    test('malformed issuer (array)', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': ['did:ethr:0x7648231', 'Hochschule Mittweida'],
+        'credentialSubject': {'id': 'did:ethr:0x68797'}
+      };
+      expect(getIssuerDidFromCredential(cred), null);
+    });
+
+    test('malformed issuer (num)', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': 123,
+        'credentialSubject': {'id': 'did:ethr:0x68797'}
+      };
+      expect(getIssuerDidFromCredential(cred), null);
+    });
+
+    test('malformed issuer (boolean)', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': true,
+        'credentialSubject': {'id': 'did:ethr:0x68797'}
+      };
+      expect(getIssuerDidFromCredential(cred), null);
+    });
+
+    test('issuer in other object embedded', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'key': {'issuer': true},
+        'credentialSubject': {'id': 'did:ethr:0x68797'}
+      };
+      expect(getIssuerDidFromCredential(cred), null);
+    });
+  });
+
+  group('getHolderDidFromCredential', () {
+    test('holder did in credential Subject', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': 'did:ethr:0x8759',
+        'credentialSubject': {'id': 'did:ethr:0x68797'}
+      };
+      expect(getHolderDidFromCredential((cred)), 'did:ethr:0x68797');
+    });
+
+    test('Holder did as id', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': 'did:ethr:0x8759',
+        'id': 'did:ethr:0x68797'
+      };
+      expect(getHolderDidFromCredential((cred)), 'did:ethr:0x68797');
+    });
+
+    test('no id in credentialSubject', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': 'did:ethr:0x8759',
+        'credentialSubject': {'age': 12}
+      };
+      expect(getHolderDidFromCredential((cred)), null);
+    });
+
+    test('no id in credential', () {
+      var cred = {
+        '@context': ['https://schema.org'],
+        'issuer': 'did:ethr:0x8759'
+      };
+      expect(getHolderDidFromCredential((cred)), null);
+    });
+  });
+
+  group('Sign and verify credential', () {
+    WalletStore wallet;
+    String w3c;
+
+    setUp(() async {
+      wallet = WalletStore('tests');
+      await wallet.openBoxes('password');
+      wallet.initialize();
+      await wallet.initializeIssuer();
+      var cred = {'name': 'Max', 'age': 20, 'height': 1.78, 'student': true};
+      var plaintext = buildPlaintextCredential(cred);
+      w3c = buildW3cCredentialwithHashes(
+          plaintext, 'did:ethr:0x123456', wallet.getStandardIssuerDid());
+    });
+
+    test('check signed credential; no proof Options given; no manipulation',
+        () async {
+      var signed = signCredential(wallet, w3c);
+      var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      expect(signedMap.containsKey('proof'), true);
+      expect(signedMap['proof']['verificationMethod'],
+          wallet.getStandardIssuerDid());
+      expect(signedMap['proof']['type'], 'EcdsaSecp256k1RecoverySignature2020');
+      expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
+      expect(signedMap['proof'].containsKey('created'), true);
+
+      expect(await verifyCredential(signedMap, erc1056, rpcUrl), true);
+    });
+
+    test(
+        'check signed credential; no proof Options given; with manipulation in data',
+        () async {
+      var signed = signCredential(wallet, w3c);
+      var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      signedMap['credentialSubject']['id'] = '0x567';
+      expect(signedMap.containsKey('proof'), true);
+      expect(signedMap['proof']['verificationMethod'],
+          wallet.getStandardIssuerDid());
+      expect(signedMap['proof']['type'], 'EcdsaSecp256k1RecoverySignature2020');
+      expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
+      expect(signedMap['proof'].containsKey('created'), true);
+
+      expect(await verifyCredential(signedMap, erc1056, rpcUrl), false);
+    });
+
+    test(
+        'check signed credential; no proof Options given; with manipulation in proof Options',
+        () async {
+      var signed = signCredential(wallet, w3c);
+      var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      expect(signedMap.containsKey('proof'), true);
+      expect(signedMap['proof']['verificationMethod'],
+          wallet.getStandardIssuerDid());
+      expect(signedMap['proof']['type'], 'EcdsaSecp256k1RecoverySignature2020');
+      expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
+      expect(signedMap['proof'].containsKey('created'), true);
+
+      signedMap['proof']['created'] = DateTime.now().toUtc().toIso8601String();
+
+      expect(await verifyCredential(signedMap, erc1056, rpcUrl), false);
+    });
+
+    test('call verify without proof', () {
+      expect(() async => await verifyCredential(w3c, erc1056, rpcUrl),
+          throwsA(predicate((e) => e.message == 'no proof section found')));
+    });
+
+    group('credential revocation', () {
+      test('credential was revoked', () async {
+        var plaintext = {'name': 'Max', 'age': 20};
+        var rev = RevocationRegistry(rpcUrl);
+        var revAddress = await rev
+            .deploy(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'));
+        var cred = buildPlaintextCredential(plaintext);
+        var w3cCred = buildW3cCredentialwithHashes(
+            cred, ganacheDid6, ganacheDid9,
+            revocationRegistryAddress: revAddress);
+        var signed = signCredential(ganacheAccounts, w3cCred);
+
+        //before revocation
+        var verified = await verifyCredential(signed, erc1056, rpcUrl);
+        expect(verified, true);
+
+        //revocation
+        await rev.revoke(
+            ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'), ganacheDid6);
+
+        //after revocation
+        expect(() async => await verifyCredential(signed, erc1056, rpcUrl),
+            throwsA(predicate((e) => e.message == 'Credential was revoked')));
+      });
+
+      test('unknown revocation method', () async {
+        var w3cMap = jsonDecode(w3c);
+        var rev = {'type': 'RevocationList2020', 'id': 'http://example.com'};
+        w3cMap['credentialStatus'] = rev;
+        var signed = signCredential(wallet, w3cMap);
+
+        expect(
+            () async => await verifyCredential(signed, erc1056, rpcUrl),
+            throwsA(predicate((e) =>
+                e.message == 'Unknown Status-method : RevocationList2020')));
+      });
+    });
+
+    test('with owner change', () async {
+      var web3 = Web3Client(rpcUrl, Client());
+
+      var signed = signCredential(wallet, w3c);
+      expect(await verifyCredential(signed, erc1056, rpcUrl), true);
+
+      var tx = Transaction(
+          from: EthereumAddress.fromHex(ganacheDid5.substring(9)),
+          to: EthereumAddress.fromHex(
+              wallet.getStandardIssuerDid().substring(9)),
+          value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1));
+
+      await web3.sendTransaction(
+          EthPrivateKey.fromHex(
+              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4')),
+          tx);
+
+      await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey(),
+          wallet.getStandardIssuerDid(), await wallet.getNextDID());
+
+      expect(await verifyCredential(signed, erc1056, rpcUrl), false);
+    });
+
+    tearDown(() {
+      new Directory('tests').delete(recursive: true);
+    });
   });
 }
