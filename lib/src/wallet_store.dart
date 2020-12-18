@@ -109,8 +109,13 @@ class WalletStore {
   /// - a json structure [plaintextCred] containing hashes, salts and values per credential attribute
   /// - the [hdPath] to derive the key for the did the credential is issued for
   Future<void> storeCredential(
-      String w3cCred, String plaintextCred, String hdPath) async {
-    var did = await getDid(hdPath);
+      String w3cCred, String plaintextCred, String hdPath,
+      {String credDid}) async {
+    var did;
+    if (credDid == null)
+      did = await getDid(hdPath);
+    else
+      did = credDid;
     var tmp = new Credential(hdPath, w3cCred, plaintextCred);
     await this._credentialBox.put(did, tmp);
   }

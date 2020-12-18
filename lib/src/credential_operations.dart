@@ -329,7 +329,6 @@ String buildPresentation(
   var presentation = {
     '@context': [
       'https://www.w3.org/2018/credentials/v1',
-      'https://identity.hs-mittweida.de/credentials/context'
     ],
     'type': ['VerifiablePresentation'],
     'verifiableCredential': credMapList
@@ -342,7 +341,7 @@ String buildPresentation(
             verificationMethod: element, challenge: challenge));
     proofList.add(proof);
   });
-  presentation.putIfAbsent('proof', () => proofList);
+  presentation['proof'] = proofList;
   return jsonEncode(presentation);
 }
 
@@ -360,7 +359,7 @@ Future<bool> verifyPresentation(dynamic presentation, Erc1056 erc1056,
   var holderDids = new List<String>();
   await Future.forEach(credentials, (element) async {
     if (!(await verifyCredential(element, erc1056, rpcUrl)))
-      throw Exception('Credential $element cold not been verified');
+      throw Exception('A credential could not been verified');
     else {
       var did = getHolderDidFromCredential(element);
       var currentAddress = await erc1056.identityOwner(did);
@@ -368,15 +367,16 @@ Future<bool> verifyPresentation(dynamic presentation, Erc1056 erc1056,
     }
   });
 
-  proofs.forEach((element) {
+  await Future.forEach(proofs, (element) async {
     var verifMeth = element['verificationMethod'];
     var includedNonce = element['challenge'];
     if (includedNonce != challenge) throw Exception('Challenge does not match');
-    if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
-    if (!_verifyProof(element, presentationHash, verifMeth))
+    var ownerToVerifMeth = await erc1056.identityOwner(verifMeth);
+    if (holderDids.contains(ownerToVerifMeth))
+      holderDids.remove(ownerToVerifMeth);
+    if (!_verifyProof(element, presentationHash, ownerToVerifMeth))
       throw Exception('Proof for $verifMeth could not been verified');
   });
-
   if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
   return true;
 }
@@ -596,8 +596,6 @@ Map<String, dynamic> _buildProof(
   if (proofOptions == null) {
     pOptions = _buildProofOptions(verificationMethod: didToSignWith);
   } else {
-    if (!(proofOptions is String) || !(proofOptions is Map<String, dynamic>))
-      throw Exception('Proof options have unsupported datatype');
     if (proofOptions is String)
       pOptions = proofOptions;
     else

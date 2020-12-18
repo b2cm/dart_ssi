@@ -5,6 +5,7 @@ import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 import 'package:json_schema/json_schema.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web3dart/web3dart.dart';
 
 void main() async {
@@ -957,7 +958,7 @@ void main() async {
         expect(
             () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
             throwsA(predicate(
-                (e) => e.message == 'maleformed object with key name')));
+                (e) => e.message == 'malformed object with key name')));
       });
 
       test('missing value', () {
@@ -1279,6 +1280,194 @@ void main() async {
 
     tearDown(() {
       new Directory('tests').delete(recursive: true);
+    });
+  });
+
+  group('sign and verify presentation', () {
+    WalletStore holder;
+    String didCred1, didCred2, didCred3;
+    String signed1, signed2, signed3;
+    setUp(() async {
+      var iss1 = WalletStore('testIss1');
+      await iss1.openBoxes('password1');
+      iss1.initialize();
+      await iss1.initializeIssuer();
+
+      var iss2 = WalletStore('testIss2');
+      await iss2.openBoxes('password2');
+      iss2.initialize();
+      await iss2.initializeIssuer();
+
+      var iss3 = WalletStore('testIss3');
+      await iss3.openBoxes('password3');
+      iss3.initialize();
+      await iss3.initializeIssuer();
+
+      holder = WalletStore('holder');
+      await holder.openBoxes('passwordH');
+      holder.initialize();
+
+      var cred1 = {
+        'name': 'Max Mustermann',
+        'address': {
+          'postalCode': '09648',
+          'streetAddress': 'Am Schwanenteich 8'
+        }
+      };
+      var cred2 = {
+        'grades': [
+          {'course': 'Mathematik', 'grade': 1.0},
+          {'course': 'Datenbanken', 'grade': 1.3}
+        ]
+      };
+      var cred3 = {'verein': 'Laufgruppe Döbeln', 'rolle': 'Mitglied'};
+
+      var plaintext1 = buildPlaintextCredential(cred1);
+      var plaintext2 = buildPlaintextCredential(cred2);
+      var plaintext3 = buildPlaintextCredential(cred3);
+
+      didCred1 = await holder.getNextDID();
+      didCred2 = await holder.getNextDID();
+      didCred3 = await holder.getNextDID();
+
+      var w3cCred1 = buildW3cCredentialwithHashes(
+          plaintext1, didCred1, iss1.getStandardIssuerDid());
+      var w3cCred2 = buildW3cCredentialwithHashes(
+          plaintext2, didCred2, iss2.getStandardIssuerDid());
+      var w3cCred3 = buildW3cCredentialwithHashes(
+          plaintext3, didCred3, iss3.getStandardIssuerDid());
+
+      signed1 = signCredential(iss1, w3cCred1);
+      signed2 = signCredential(iss2, w3cCred2);
+      signed3 = signCredential(iss3, w3cCred3);
+    });
+
+    test('build and verify presentation without manipulation', () async {
+      var challenge = Uuid().v4();
+      var presentation =
+          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presMap = jsonDecode(presentation) as Map;
+      expect(presMap.containsKey('proof'), true);
+      expect(presMap['proof'] is List, true);
+      expect(presMap['proof'].length, 3);
+
+      expect(presMap.containsKey('verifiableCredential'), true);
+      expect(presMap['verifiableCredential'] is List, true);
+      expect(presMap['verifiableCredential'].length, 3);
+
+      List<String> verificationMethods = List<String>();
+      presMap['proof'].forEach((elem) {
+        expect(elem.containsKey('challenge'), true);
+        expect(elem['challenge'], challenge);
+        verificationMethods.add(elem['verificationMethod']);
+      });
+
+      expect(verificationMethods.contains(didCred1), true);
+      expect(verificationMethods.contains(didCred2), true);
+      expect(verificationMethods.contains(didCred3), true);
+
+      expect(await verifyPresentation(presentation, erc1056, challenge, rpcUrl),
+          true);
+    });
+
+    test('one nonce/challenge is manipulated', () async {
+      var challenge = Uuid().v4();
+      var presentation =
+          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presMap = jsonDecode(presentation) as Map;
+
+      presMap['proof'][0]['challenge'] = Uuid().v4();
+
+      expect(
+          () async =>
+              await verifyPresentation(presMap, erc1056, challenge, rpcUrl),
+          throwsA(predicate((e) => e.message == 'Challenge does not match')));
+    });
+
+    test('manipulated proof', () async {
+      var challenge = Uuid().v4();
+      var presentation =
+          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presMap = jsonDecode(presentation) as Map;
+
+      presMap['proof'][0]['verificationMethod'] =
+          'did:ethr:0x8Dd4a3103C8eA18Cd530CecB4c15C67CF08b07d1';
+
+      expect(
+          () async =>
+              await verifyPresentation(presMap, erc1056, challenge, rpcUrl),
+          throwsA(predicate((e) =>
+              e.message ==
+              'Proof for did:ethr:0x8Dd4a3103C8eA18Cd530CecB4c15C67CF08b07d1 could not been verified')));
+    });
+
+    test('not enough proofs', () {
+      var challenge = Uuid().v4();
+      var presentation =
+          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presMap = jsonDecode(presentation) as Map;
+
+      presMap['proof'].removeAt(0);
+
+      expect(
+          () async =>
+              await verifyPresentation(presMap, erc1056, challenge, rpcUrl),
+          throwsA(
+              predicate((e) => e.message == 'There are dids without a proof')));
+    });
+
+    test('credential could not been verified (verifyCredential returns false)',
+        () async {
+      var challenge = Uuid().v4();
+      var presentation =
+          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presMap = jsonDecode(presentation) as Map;
+      presMap['verifiableCredential'][0]['issuer'] = await holder.getNextDID();
+
+      expect(
+          () async =>
+              await verifyPresentation(presMap, erc1056, challenge, rpcUrl),
+          throwsA(predicate(
+              (e) => e.message == 'A credential could not been verified')));
+    });
+
+    test('one holder did was changed', () async {
+      var challenge = Uuid().v4();
+      var presentation1 =
+          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      expect(
+          await verifyPresentation(presentation1, erc1056, challenge, rpcUrl),
+          true);
+
+      var web3 = Web3Client(rpcUrl, Client());
+
+      var tx = Transaction(
+          from: EthereumAddress.fromHex(ganacheDid5.substring(9)),
+          to: EthereumAddress.fromHex(didCred1.substring(9)),
+          value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1));
+
+      await web3.sendTransaction(
+          EthPrivateKey.fromHex(
+              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4')),
+          tx);
+      var newDid = await holder.getNextDID();
+      await erc1056.changeOwner(
+          holder.getPrivateKeyToDid(didCred1), didCred1, newDid);
+
+      var newPath = holder.getCredential(newDid).hdPath;
+      holder.storeCredential('', '', newPath, credDid: didCred1);
+      var presentation2 =
+          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      expect(
+          await verifyPresentation(presentation2, erc1056, challenge, rpcUrl),
+          true);
+    });
+
+    tearDown(() {
+      new Directory('holder').delete(recursive: true);
+      new Directory('testIss1').delete(recursive: true);
+      new Directory('testIss2').delete(recursive: true);
+      new Directory('testIss3').delete(recursive: true);
     });
   });
 }
