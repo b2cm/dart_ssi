@@ -42,9 +42,9 @@ class WalletStore {
         await Hive.openBox('keyBox', encryptionCipher: HiveAesCipher(aesKey));
     this._credentialBox = await Hive.openBox<Credential>('credentialBox',
         encryptionCipher: HiveAesCipher(aesKey));
-    this._configBox = await Hive.openBox<Credential>('credentialBox',
+    this._configBox = await Hive.openBox('configBox',
         encryptionCipher: HiveAesCipher(aesKey));
-    this._issuingHistory = await Hive.openBox<Credential>('credentialBox',
+    this._issuingHistory = await Hive.openBox<Credential>('issuingHistory',
         encryptionCipher: HiveAesCipher(aesKey));
   }
 
@@ -120,7 +120,7 @@ class WalletStore {
     await this._credentialBox.put(did, tmp);
   }
 
-  /// Stores a credential one issued to [holderDid].
+  /// Stores a credential issued to [holderDid].
   void toIssuingHistory(
       String holderDid, String plaintextCredential, String w3cCredential) {
     var tmp = new Credential('', w3cCredential, plaintextCredential);
