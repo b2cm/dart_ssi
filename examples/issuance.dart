@@ -99,7 +99,7 @@ void main() async {
   //Issuer signs the credential and sends it to the Holder
   var signedImma = signCredential(issuer, w3cImma);
   await new File('example/signedImma.json').writeAsString(signedImma);
-  //Optional: Issuer stores it in its own history
+  //Issuer stores it in its own history to be able to revoke it
   issuer.toIssuingHistory(immaDid, plaintextCred, signedImma);
 
   //Holder checks signature

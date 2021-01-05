@@ -4,7 +4,8 @@ import 'dart:io';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:uuid/uuid.dart';
 
-//This example shows how holder an verifier could interact
+//This example shows how holder an verifier could interact.
+//You should run the example issuance.dart before to make sure, the credential exists.
 
 main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
