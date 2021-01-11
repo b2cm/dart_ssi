@@ -23,3 +23,21 @@ class Credential {
   String toString() =>
       '$w3cCredential uses Path $hdPath an has this data: $plaintextCredential';
 }
+
+@HiveType(typeId: 1)
+class Communication {
+  @HiveField(0)
+  String hdPath;
+
+  @HiveField(1)
+  String otherDid;
+
+  @HiveField(2)
+  String name;
+
+  Communication(this.hdPath, this.otherDid, this.name);
+
+  @override
+  String toString() =>
+      'Communication with $otherDid uses Path $hdPath und (user)name $name.';
+}

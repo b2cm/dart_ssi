@@ -20,15 +20,18 @@ class WalletStore {
   Box<Credential> _credentialBox;
   Box _configBox;
   Box<Credential> _issuingHistory;
+  Box<Communication> _communication;
 
   ///The Path used to derive keys
   final String standardPath = 'm/456/0/';
+  final String standardCommunicationPath = 'm/456/1';
 
   /// Constructs a wallet at file-system path [path]
   WalletStore(String path) {
     Hive.init(path);
     try {
       Hive.registerAdapter(CredentialAdapter());
+      Hive.registerAdapter(CommunicationAdapter());
     } catch (HiveError) {}
   }
 
@@ -46,6 +49,8 @@ class WalletStore {
         encryptionCipher: HiveAesCipher(aesKey));
     this._issuingHistory = await Hive.openBox<Credential>('issuingHistory',
         encryptionCipher: HiveAesCipher(aesKey));
+    this._communication = await Hive.openBox<Communication>('communication',
+        encryptionCipher: HiveAesCipher(aesKey));
   }
 
   /// Closes Storage Containers
@@ -53,6 +58,7 @@ class WalletStore {
     await _keyBox.close();
     await _credentialBox.close();
     await _configBox.close();
+    await _communication.close();
   }
 
   /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
@@ -67,6 +73,7 @@ class WalletStore {
 
     this._keyBox.put('seed', seed);
     this._keyBox.put('lastIndex', 0);
+    this._keyBox.put('lastCommunicationIndex', 0);
 
     return mne;
   }
@@ -97,9 +104,20 @@ class WalletStore {
     return credMap;
   }
 
+  /// Lists all Communications.
+  Map<dynamic, Communication> getAllCommunications() {
+    var credMap = _communication.toMap();
+    return credMap;
+  }
+
   /// Returns the credential associated with [did].
   Credential getCredential(String did) {
     return this._credentialBox.get(did);
+  }
+
+  /// Returns the communication associated with [did].
+  Communication getCommunication(String did) {
+    return this._communication.get(did);
   }
 
   /// Stores a credential permanently.
@@ -118,6 +136,23 @@ class WalletStore {
       did = credDid;
     var tmp = new Credential(hdPath, w3cCred, plaintextCred);
     await this._credentialBox.put(did, tmp);
+  }
+
+  /// Stores a communication permanently.
+  ///
+  /// What should be stored consists of three parts
+  /// - the did of the communication partner [otherDid]
+  /// - the [name] of the communication
+  /// - the [hdPath] to derive the key for the did of the communication
+  Future<void> storeCommunication(String otherDid, String name, String hdPath,
+      {String comDid}) async {
+    var did;
+    if (comDid == null)
+      did = await getDid(hdPath);
+    else
+      did = comDid;
+    var tmp = new Communication(hdPath, otherDid, name);
+    await this._communication.put(did, tmp);
   }
 
   /// Stores a credential issued to [holderDid].
@@ -142,6 +177,11 @@ class WalletStore {
     return _keyBox.get('lastIndex');
   }
 
+  /// Returns the last value of the next HD-path for the communication keys.
+  int getLastCommunicationIndex() {
+    return _keyBox.get('lastCommunicationIndex');
+  }
+
   /// Returns a new DID.
   Future<String> getNextDID() async {
     //generate new keypair
@@ -158,6 +198,26 @@ class WalletStore {
 
     //store temporarily
     _credentialBox.put(did, new Credential(path, '', ''));
+
+    return did;
+  }
+
+  /// Returns a new communication-DID.
+  Future<String> getNextCommunicationDID() async {
+    //generate new keypair
+    var master = BIP32.fromSeed(_keyBox.get('seed'));
+    var lastIndex = _keyBox.get('lastCommunicationIndex');
+    var path = '$standardCommunicationPath${lastIndex.toString()}';
+    var key = master.derivePath(path);
+
+    //increment derivation index
+    lastIndex++;
+    await _keyBox.put('lastCommunicationIndex', lastIndex);
+
+    var did = await _bip32KeyToDid(key);
+
+    //store temporarily
+    _communication.put(did, new Communication(path, '', ''));
 
     return did;
   }
@@ -188,6 +248,14 @@ class WalletStore {
     var cred = getCredential(did);
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(cred.hdPath);
+    return HEX.encode(key.privateKey);
+  }
+
+  /// Returns the private key as hex-String associated with [did].
+  String getPrivateKeyToCommunicationDid(String did) {
+    var com = getCommunication(did);
+    var master = BIP32.fromSeed(_keyBox.get('seed'));
+    var key = master.derivePath(com.hdPath);
     return HEX.encode(key.privateKey);
   }
 
