@@ -473,9 +473,15 @@ String getHolderDidFromCredential(dynamic credential) {
 }
 
 //Signs the given String [toSign] with key-pair of [didToSignWith].
-String signString(WalletStore wallet, String didToSignWith, String toSign) {
+String signString(WalletStore wallet, String didToSignWith, String toSign,
+    {bool cred}) {
   var hash = util.sha256(toSign);
-  var privKeyHex = wallet.getPrivateKeyToDid(didToSignWith);
+  String privKeyHex;
+  if (cred != null && cred) {
+    privKeyHex = wallet.getPrivateKeyToDid(didToSignWith);
+  } else {
+    privKeyHex = wallet.getPrivateKeyToCommunicationDid(didToSignWith);
+  }
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash, key.privateKey);
   var sigArray = intToBytes(signature.r) +
