@@ -1470,4 +1470,22 @@ void main() async {
       new Directory('testIss3').delete(recursive: true);
     });
   });
+
+  group('sign random String', () {
+    test('sign without any manipulation or key rotation', () async {
+      String toSign = 'Its a String';
+      WalletStore w = WalletStore('tests');
+      await w.openBoxes('password');
+      w.initialize();
+      var did = await w.getNextDID();
+      var jws = signString(w, did, toSign);
+      print(jws);
+
+      var verified = await verifyStringSignature(toSign, jws, did, erc1056);
+
+      expect(verified, true);
+
+      new Directory('tests').delete(recursive: true);
+    });
+  });
 }

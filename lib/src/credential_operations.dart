@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ethereum_util/ethereum_util.dart' as util;
+import 'package:flutter/material.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:json_schema/json_schema.dart';
 import 'package:meta/meta.dart';
@@ -471,6 +472,38 @@ String getHolderDidFromCredential(dynamic credential) {
   else
     return null;
 }
+
+//Signs the given String [toSign] with key-pair of [didToSignWith].
+String signString(WalletStore wallet, String didToSignWith, String toSign) {
+  var hash = util.sha256(toSign);
+  var privKeyHex = wallet.getPrivateKeyToDid(didToSignWith);
+  var key = EthPrivateKey.fromHex(privKeyHex);
+  MsgSignature signature = sign(hash, key.privateKey);
+  var sigArray = intToBytes(signature.r) +
+      intToBytes(signature.s) +
+      util.intToBuffer(signature.v - 27);
+
+  var critical = new Map<String, dynamic>();
+  critical['b64'] = false;
+  return '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
+      '.${base64Encode(sigArray)}';
+}
+
+//Verifies the signature in [jws] for a string [toSign].
+Future<bool> verifyStringSignature(
+    String toSign, String jws, String expectedDid, Erc1056 erc1056) async {
+  var signature = _getSignatureFromJws(jws);
+  var hashToSign = util.sha256(toSign);
+  var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
+  var recoveredDid =
+      'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
+
+  expectedDid = await erc1056.identityOwner(expectedDid);
+
+  return recoveredDid == expectedDid;
+}
+
+//***********************Private Methods***************************************
 
 Map<String, dynamic> _credentialToMap(dynamic credential) {
   if (credential is String)
