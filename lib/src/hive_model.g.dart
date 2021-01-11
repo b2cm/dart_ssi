@@ -45,3 +45,43 @@ class CredentialAdapter extends TypeAdapter<Credential> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class CommunicationAdapter extends TypeAdapter<Communication> {
+  @override
+  final int typeId = 1;
+
+  @override
+  Communication read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Communication(
+      fields[0] as String,
+      fields[1] as String,
+      fields[2] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Communication obj) {
+    writer
+      ..writeByte(3)
+      ..writeByte(0)
+      ..write(obj.hdPath)
+      ..writeByte(1)
+      ..write(obj.otherDid)
+      ..writeByte(2)
+      ..write(obj.name);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CommunicationAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
