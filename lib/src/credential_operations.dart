@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ethereum_util/ethereum_util.dart' as util;
-import 'package:flutter/material.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:json_schema/json_schema.dart';
 import 'package:meta/meta.dart';
