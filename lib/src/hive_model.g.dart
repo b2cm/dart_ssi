@@ -46,17 +46,17 @@ class CredentialAdapter extends TypeAdapter<Credential> {
           typeId == other.typeId;
 }
 
-class CommunicationAdapter extends TypeAdapter<Communication> {
+class ConnectionAdapter extends TypeAdapter<Connection> {
   @override
   final int typeId = 1;
 
   @override
-  Communication read(BinaryReader reader) {
+  Connection read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Communication(
+    return Connection(
       fields[0] as String,
       fields[1] as String,
       fields[2] as String,
@@ -64,7 +64,7 @@ class CommunicationAdapter extends TypeAdapter<Communication> {
   }
 
   @override
-  void write(BinaryWriter writer, Communication obj) {
+  void write(BinaryWriter writer, Connection obj) {
     writer
       ..writeByte(3)
       ..writeByte(0)
@@ -81,7 +81,7 @@ class CommunicationAdapter extends TypeAdapter<Communication> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is CommunicationAdapter &&
+      other is ConnectionAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

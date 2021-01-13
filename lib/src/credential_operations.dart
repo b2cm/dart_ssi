@@ -478,9 +478,9 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
   var hash = util.sha256(toSign);
   String privKeyHex;
   if (cred != null && cred) {
-    privKeyHex = wallet.getPrivateKeyToDid(didToSignWith);
+    privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
   } else {
-    privKeyHex = wallet.getPrivateKeyToCommunicationDid(didToSignWith);
+    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
   }
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash, key.privateKey);
@@ -642,7 +642,7 @@ Map<String, dynamic> _buildProof(
 
   var pOptionsHash = util.sha256(pOptions);
   var hash = util.sha256(pOptionsHash + hashToSign);
-  var privKeyHex = wallet.getPrivateKeyToDid(didToSignWith);
+  var privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash, key.privateKey);
   var sigArray = intToBytes(signature.r) +

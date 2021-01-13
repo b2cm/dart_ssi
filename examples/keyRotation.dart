@@ -25,10 +25,11 @@ void main() async {
           value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1)));
 
   //get a new did
-  var newDid = await holder.getNextDID();
+  var newDid = await holder.getNextCredentialDID();
 
   //rotate it
-  await erc1056.changeOwner(holder.getPrivateKeyToDid(did), did, newDid);
+  await erc1056.changeOwner(
+      holder.getPrivateKeyToCredentialDid(did), did, newDid);
 
   //store
   var cred = holder.getCredential(did);

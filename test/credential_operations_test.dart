@@ -1273,7 +1273,7 @@ void main() async {
           tx);
 
       await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey(),
-          wallet.getStandardIssuerDid(), await wallet.getNextDID());
+          wallet.getStandardIssuerDid(), await wallet.getNextCredentialDID());
 
       expect(await verifyCredential(signed, erc1056, rpcUrl), false);
     });
@@ -1326,9 +1326,9 @@ void main() async {
       var plaintext2 = buildPlaintextCredential(cred2);
       var plaintext3 = buildPlaintextCredential(cred3);
 
-      didCred1 = await holder.getNextDID();
-      didCred2 = await holder.getNextDID();
-      didCred3 = await holder.getNextDID();
+      didCred1 = await holder.getNextCredentialDID();
+      didCred2 = await holder.getNextCredentialDID();
+      didCred3 = await holder.getNextCredentialDID();
 
       var w3cCred1 = buildW3cCredentialwithHashes(
           plaintext1, didCred1, iss1.getStandardIssuerDid());
@@ -1422,7 +1422,8 @@ void main() async {
       var presentation =
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       var presMap = jsonDecode(presentation) as Map;
-      presMap['verifiableCredential'][0]['issuer'] = await holder.getNextDID();
+      presMap['verifiableCredential'][0]['issuer'] =
+          await holder.getNextCredentialDID();
 
       expect(
           () async =>
@@ -1450,9 +1451,9 @@ void main() async {
           EthPrivateKey.fromHex(
               ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4')),
           tx);
-      var newDid = await holder.getNextDID();
+      var newDid = await holder.getNextCredentialDID();
       await erc1056.changeOwner(
-          holder.getPrivateKeyToDid(didCred1), didCred1, newDid);
+          holder.getPrivateKeyToCredentialDid(didCred1), didCred1, newDid);
 
       var newPath = holder.getCredential(newDid).hdPath;
       holder.storeCredential('', '', newPath, credDid: didCred1);
@@ -1477,7 +1478,7 @@ void main() async {
       WalletStore w = WalletStore('tests');
       await w.openBoxes('password');
       w.initialize();
-      var did = await w.getNextDID();
+      var did = await w.getNextCredentialDID();
       var jws = signString(w, did, toSign);
       print(jws);
 

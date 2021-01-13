@@ -15,7 +15,7 @@ void main() {
     var wallet = new WalletStore('testNew');
     await wallet.openBoxes('password');
     var indexBefore = wallet.getLastIndex();
-    var did = await wallet.getNextDID();
+    var did = await wallet.getNextCredentialDID();
     print(did);
     var indexAfter = wallet.getLastIndex();
 

@@ -15,19 +15,19 @@ void main() async {
   await holder.openBoxes('holderPW');
 
   // Holder generates its did for this connection
-  var did = await holder.getNextCommunicationDID();
+  var did = await holder.getNextConnectionDID();
 
   //issuer generates did for this connection
-  var didIss = await issuer.getNextCommunicationDID();
+  var didIss = await issuer.getNextConnectionDID();
 
   //They exchange their dids, e.g. during a registration process
 
   // now both can store them
-  var com = holder.getCommunication(did);
-  holder.storeCommunication(didIss, 'Issuer1', com.hdPath);
+  var com = holder.getConnection(did);
+  holder.storeConnection(didIss, 'Issuer1', com.hdPath);
 
-  var comIss = issuer.getCommunication(didIss);
-  issuer.storeCommunication(did, 'student1', comIss.hdPath);
+  var comIss = issuer.getConnection(didIss);
+  issuer.storeConnection(did, 'student1', comIss.hdPath);
 
   // meeting the next time they can authenticate each Other by e.g. signing a challenge.
   // Here it is only shown that the holder authenticate himself with the issuer.

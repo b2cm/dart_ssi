@@ -25,7 +25,7 @@ class Credential {
 }
 
 @HiveType(typeId: 1)
-class Communication {
+class Connection {
   @HiveField(0)
   String hdPath;
 
@@ -35,9 +35,9 @@ class Communication {
   @HiveField(2)
   String name;
 
-  Communication(this.hdPath, this.otherDid, this.name);
+  Connection(this.hdPath, this.otherDid, this.name);
 
   @override
   String toString() =>
-      'Communication with $otherDid uses Path $hdPath und (user)name $name.';
+      'Connection with $otherDid uses Path $hdPath und (user)name $name.';
 }

@@ -41,7 +41,7 @@ void main() async {
   //*******************************************
 
   //Holder generates a new DID for this credential
-  var immaDid = await holder.getNextDID();
+  var immaDid = await holder.getNextCredentialDID();
 
   //Holder fill in it's data in a template
   Map<String, dynamic> immatrikulation = {
