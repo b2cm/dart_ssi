@@ -55,5 +55,3 @@ and the corresponding signed verifiable credential like this:
         "jws":"ey..E="}
 }
 ```
-
-A full example for working with credentials could be found in examples/credentials.dart .

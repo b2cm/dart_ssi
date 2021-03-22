@@ -90,7 +90,7 @@ String buildPlaintextCredential(dynamic credential) {
     } else if (value is String || value is num || value is bool) {
       finalCred[key] = _hashStringOrNum(value);
     } else if (value is List) {
-      List<Map<String, dynamic>> newValue = new List();
+      List<Map<String, dynamic>> newValue = [];
       value.forEach((element) {
         if (element is String || element is num || element is bool)
           newValue.add(_hashStringOrNum(element));
@@ -110,90 +110,6 @@ String buildPlaintextCredential(dynamic credential) {
   return jsonEncode(finalCred);
 }
 
-///
-/// Collects all hashes from a Plaintext-Credential, concatenates them and re-hash them with keccak256.
-///
-String buildCredentialHash(dynamic credential) {
-  var credMap = _credentialToMap(credential);
-  String hashes = '';
-  credMap.forEach((key, value) {
-    if (!(key == '@context' || key == 'type' || key == '@type')) {
-      if (value is List) {
-        String listHash = '';
-        value.forEach((element) {
-          if (element is Map<String, dynamic> &&
-              _hashedAttributeSchema.validate(element)) {
-            listHash += (element['hash'] as String..substring(2));
-          } else if (element is Map<String, dynamic> &&
-              _mapOfHashedAttributesSchema.validate(element)) {
-            listHash += buildCredentialHash(element);
-          } else {
-            throw Exception('unknown type  with key $key');
-          }
-          hashes += util.bufferToHex(util.keccak256(hashes)).substring(2);
-        });
-      } else if (value is Map<String, dynamic> &&
-          _hashedAttributeSchema.validate(value)) {
-        hashes += (value['hash'] as String..substring(2));
-      } else if (value is Map<String, dynamic> &&
-          _mapOfHashedAttributesSchema.validate(value)) {
-        hashes += buildCredentialHash(value);
-      } else {
-        throw Exception('unknown type  with key $key');
-      }
-    }
-  });
-
-  return util.bufferToHex(util.keccak256(hashes));
-}
-
-/// Builds a Credential conform to W3C-Specification containing a single hash
-/// for plaintext-Credential [credential].
-String buildW3cCredentialSingleHash(
-    dynamic credential, String holderDid, String issuerDid,
-    {dynamic type, dynamic context}) {
-  var plaintextHash = buildCredentialHash(credential);
-
-  var credTypes = new List<String>();
-  credTypes.add('VerifiableCredential');
-  if (type != null) {
-    if (type is String && type != 'VerifiableCredential')
-      credTypes.add(type);
-    else if (type is List<String>) {
-      if (type.contains('VerifiableCredential')) {
-        type.remove('VerifiableCredential');
-      }
-      credTypes += type;
-    } else
-      throw Exception('type has unknown datatype');
-  }
-
-  var credContext = new List<String>();
-  credContext.add('https://www.w3.org/2018/credentials/v1');
-  if (context != null) {
-    if (context is String &&
-        context != 'https://www.w3.org/2018/credentials/v1')
-      credContext.add(context);
-    else if (context is List<String>) {
-      if (context.contains('https://www.w3.org/2018/credentials/v1')) {
-        context.remove('https://www.w3.org/2018/credentials/v1');
-      }
-      credContext += context;
-    } else
-      throw Exception('type has unknown datatype');
-  }
-
-  var w3cCred = {
-    '@context': credContext,
-    'type': credTypes,
-    'credentialSubject': {'id': holderDid, 'claimHash': plaintextHash},
-    'issuer': issuerDid,
-    'issuanceDate': DateTime.now().toUtc().toIso8601String()
-  };
-
-  return jsonEncode(w3cCred);
-}
-
 /// Builds a credential conform to W3C-Standard, which includes all hashes a
 /// plaintext-credential [credential] contains.
 String buildW3cCredentialwithHashes(
@@ -201,7 +117,7 @@ String buildW3cCredentialwithHashes(
     {dynamic type, dynamic context, String revocationRegistryAddress}) {
   var hashCred = _collectHashes(credential, id: holderDid);
 
-  var credTypes = new List<String>();
+  List<String> credTypes = [];
   credTypes.add('VerifiableCredential');
   if (type != null) {
     if (type is String) {
@@ -215,7 +131,7 @@ String buildW3cCredentialwithHashes(
       throw Exception('type has unknown datatype');
   }
 
-  var credContext = new List<String>();
+  List<String> credContext = [];
   credContext.add('https://www.w3.org/2018/credentials/v1');
   if (context != null) {
     if (context is String) {
@@ -319,8 +235,8 @@ Future<bool> verifyCredential(
 /// Builds a presentation for [credentials].
 String buildPresentation(
     List<dynamic> credentials, WalletStore wallet, String challenge) {
-  var credMapList = new List<Map<String, dynamic>>();
-  var holderDids = new List<String>();
+  List<Map<String, dynamic>> credMapList = [];
+  List<String> holderDids = [];
   credentials.forEach((element) {
     var credMap = _credentialToMap(element);
     credMapList.add(credMap);
@@ -334,7 +250,7 @@ String buildPresentation(
     'verifiableCredential': credMapList
   };
   var presentationHash = util.sha256(jsonEncode(presentation));
-  var proofList = new List<Map<String, dynamic>>();
+  List<Map<String, dynamic>> proofList = [];
   holderDids.forEach((element) {
     var proof = _buildProof(presentationHash, element, wallet,
         proofOptions: _buildProofOptions(
@@ -356,7 +272,7 @@ Future<bool> verifyPresentation(dynamic presentation, Erc1056 erc1056,
   var presentationHash = util.sha256(jsonEncode(presentationMap));
 
   var credentials = presentationMap['verifiableCredential'] as List;
-  var holderDids = new List<String>();
+  List<String> holderDids = [];
   await Future.forEach(credentials, (element) async {
     if (!(await verifyCredential(element, erc1056, rpcUrl)))
       throw Exception('A credential could not been verified');
@@ -539,7 +455,7 @@ String _collectHashes(dynamic credential, {String id}) {
       if (key == 'type' || key == '@type')
         hashCred[key] = value;
       else if (value is List) {
-        var hashList = new List<dynamic>();
+        List<dynamic> hashList = [];
         value.forEach((element) {
           if (element is Map<String, dynamic> &&
               _hashedAttributeSchema.validate(element)) {
