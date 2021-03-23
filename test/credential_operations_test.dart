@@ -1176,7 +1176,9 @@ void main() async {
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);
 
-      expect(await verifyCredential(signedMap, erc1056, rpcUrl), true);
+      expect(
+          await verifyCredential(signedMap, erc1056: erc1056, rpcUrl: rpcUrl),
+          true);
     });
 
     test(
@@ -1192,7 +1194,9 @@ void main() async {
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);
 
-      expect(await verifyCredential(signedMap, erc1056, rpcUrl), false);
+      expect(
+          await verifyCredential(signedMap, erc1056: erc1056, rpcUrl: rpcUrl),
+          false);
     });
 
     test(
@@ -1209,11 +1213,15 @@ void main() async {
 
       signedMap['proof']['created'] = DateTime.now().toUtc().toIso8601String();
 
-      expect(await verifyCredential(signedMap, erc1056, rpcUrl), false);
+      expect(
+          await verifyCredential(signedMap, erc1056: erc1056, rpcUrl: rpcUrl),
+          false);
     });
 
     test('call verify without proof', () {
-      expect(() async => await verifyCredential(w3c, erc1056, rpcUrl),
+      expect(
+          () async =>
+              await verifyCredential(w3c, erc1056: erc1056, rpcUrl: rpcUrl),
           throwsA(predicate((e) => e.message == 'no proof section found')));
     });
 
@@ -1230,7 +1238,8 @@ void main() async {
         var signed = signCredential(ganacheAccounts, w3cCred);
 
         //before revocation
-        var verified = await verifyCredential(signed, erc1056, rpcUrl);
+        var verified =
+            await verifyCredential(signed, erc1056: erc1056, rpcUrl: rpcUrl);
         expect(verified, true);
 
         //revocation
@@ -1238,7 +1247,9 @@ void main() async {
             ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'), ganacheDid6);
 
         //after revocation
-        expect(() async => await verifyCredential(signed, erc1056, rpcUrl),
+        expect(
+            () async => await verifyCredential(signed,
+                erc1056: erc1056, rpcUrl: rpcUrl),
             throwsA(predicate((e) => e.message == 'Credential was revoked')));
       });
 
@@ -1249,7 +1260,8 @@ void main() async {
         var signed = signCredential(wallet, w3cMap);
 
         expect(
-            () async => await verifyCredential(signed, erc1056, rpcUrl),
+            () async => await verifyCredential(signed,
+                erc1056: erc1056, rpcUrl: rpcUrl),
             throwsA(predicate((e) =>
                 e.message == 'Unknown Status-method : RevocationList2020')));
       });
@@ -1259,7 +1271,8 @@ void main() async {
       var web3 = Web3Client(rpcUrl, Client());
 
       var signed = signCredential(wallet, w3c);
-      expect(await verifyCredential(signed, erc1056, rpcUrl), true);
+      expect(await verifyCredential(signed, erc1056: erc1056, rpcUrl: rpcUrl),
+          true);
 
       var tx = Transaction(
           from: EthereumAddress.fromHex(ganacheDid5.substring(9)),
@@ -1275,7 +1288,8 @@ void main() async {
       await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey(),
           wallet.getStandardIssuerDid(), await wallet.getNextCredentialDID());
 
-      expect(await verifyCredential(signed, erc1056, rpcUrl), false);
+      expect(await verifyCredential(signed, erc1056: erc1056, rpcUrl: rpcUrl),
+          false);
     });
 
     tearDown(() {
@@ -1366,7 +1380,9 @@ void main() async {
       expect(verificationMethods.contains(didCred2), true);
       expect(verificationMethods.contains(didCred3), true);
 
-      expect(await verifyPresentation(presentation, erc1056, challenge, rpcUrl),
+      expect(
+          await verifyPresentation(presentation, challenge,
+              erc1056: erc1056, rpcUrl: rpcUrl),
           true);
     });
 
@@ -1379,8 +1395,8 @@ void main() async {
       presMap['proof'][0]['challenge'] = Uuid().v4();
 
       expect(
-          () async =>
-              await verifyPresentation(presMap, erc1056, challenge, rpcUrl),
+          () async => await verifyPresentation(presMap, challenge,
+              erc1056: erc1056, rpcUrl: rpcUrl),
           throwsA(predicate((e) => e.message == 'Challenge does not match')));
     });
 
@@ -1394,8 +1410,8 @@ void main() async {
           'did:ethr:0x8Dd4a3103C8eA18Cd530CecB4c15C67CF08b07d1';
 
       expect(
-          () async =>
-              await verifyPresentation(presMap, erc1056, challenge, rpcUrl),
+          () async => await verifyPresentation(presMap, challenge,
+              erc1056: erc1056, rpcUrl: rpcUrl),
           throwsA(predicate((e) =>
               e.message ==
               'Proof for did:ethr:0x8Dd4a3103C8eA18Cd530CecB4c15C67CF08b07d1 could not been verified')));
@@ -1410,8 +1426,8 @@ void main() async {
       presMap['proof'].removeAt(0);
 
       expect(
-          () async =>
-              await verifyPresentation(presMap, erc1056, challenge, rpcUrl),
+          () async => await verifyPresentation(presMap, challenge,
+              erc1056: erc1056, rpcUrl: rpcUrl),
           throwsA(
               predicate((e) => e.message == 'There are dids without a proof')));
     });
@@ -1426,8 +1442,8 @@ void main() async {
           await holder.getNextCredentialDID();
 
       expect(
-          () async =>
-              await verifyPresentation(presMap, erc1056, challenge, rpcUrl),
+          () async => await verifyPresentation(presMap, challenge,
+              erc1056: erc1056, rpcUrl: rpcUrl),
           throwsA(predicate(
               (e) => e.message == 'A credential could not been verified')));
     });
@@ -1437,7 +1453,8 @@ void main() async {
       var presentation1 =
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       expect(
-          await verifyPresentation(presentation1, erc1056, challenge, rpcUrl),
+          await verifyPresentation(presentation1, challenge,
+              erc1056: erc1056, rpcUrl: rpcUrl),
           true);
 
       var web3 = Web3Client(rpcUrl, Client());
@@ -1460,7 +1477,8 @@ void main() async {
       var presentation2 =
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       expect(
-          await verifyPresentation(presentation2, erc1056, challenge, rpcUrl),
+          await verifyPresentation(presentation2, challenge,
+              erc1056: erc1056, rpcUrl: rpcUrl),
           true);
     });
 
@@ -1487,6 +1505,235 @@ void main() async {
       expect(verified, true);
 
       new Directory('tests').delete(recursive: true);
+    });
+  });
+
+  group('disclose Credential', () {
+    test('disclose one single value ', () {
+      var cred = {'givenName': 'Max', 'familyName': 'Mustermann'};
+      var plaintext = buildPlaintextCredential(cred);
+      Map<String, dynamic> disclosed =
+          jsonDecode(discloseValues(plaintext, ['familyName']));
+      expect(disclosed.length, cred.length);
+      Map<String, dynamic> givenName =
+          disclosed['givenName'] as Map<String, dynamic>;
+      expect(givenName.keys, ['value', 'salt', 'hash']);
+      Map<String, dynamic> familyname =
+          disclosed['familyName'] as Map<String, dynamic>;
+      expect(familyname.keys, ['hash']);
+    });
+    test('disclose value in Object', () {
+      var cred = {
+        'address': {'street': 'Main Street', 'city': 'London'}
+      };
+
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(discloseValues(plaintext, ['address.street']));
+
+      Map<String, dynamic> street = disclosed['address']['street'];
+      Map<String, dynamic> city = disclosed['address']['city'];
+
+      expect(street.keys, ['hash']);
+      expect(city.keys, ['value', 'salt', 'hash']);
+    });
+
+    test('disclose all values in Object (short notation)', () {
+      var cred = {
+        'address': {'street': 'Main Street', 'city': 'London'}
+      };
+
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(discloseValues(plaintext, ['address']));
+
+      Map<String, dynamic> street = disclosed['address']['street'];
+      Map<String, dynamic> city = disclosed['address']['city'];
+
+      expect(street.keys, ['hash']);
+      expect(city.keys, ['hash']);
+    });
+
+    test('disclose all values in Object ', () {
+      var cred = {
+        'address': {'street': 'Main Street', 'city': 'London'}
+      };
+
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(
+          discloseValues(plaintext, ['address.street', 'address.city']));
+
+      Map<String, dynamic> street = disclosed['address']['street'];
+      Map<String, dynamic> city = disclosed['address']['city'];
+
+      expect(street.keys, ['hash']);
+      expect(city.keys, ['hash']);
+    });
+
+    test('disclose value in simple List', () {
+      var cred = {
+        'hobby': ['reiten', 'schwimmen', 'lesen']
+      };
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed =
+          jsonDecode(discloseValues(plaintext, ['hobby.0', 'hobby.2']));
+
+      Map<String, dynamic> reiten = disclosed['hobby'][0];
+      Map<String, dynamic> schwimmen = disclosed['hobby'][1];
+      Map<String, dynamic> lesen = disclosed['hobby'][2];
+
+      expect(reiten.keys, ['hash']);
+      expect(lesen.keys, ['hash']);
+      expect(schwimmen.keys, ['value', 'salt', 'hash']);
+    });
+
+    test('disclose all values in simple List', () {
+      var cred = {
+        'hobby': ['reiten', 'schwimmen', 'lesen']
+      };
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(discloseValues(plaintext, ['hobby']));
+
+      Map<String, dynamic> reiten = disclosed['hobby'][0];
+      Map<String, dynamic> schwimmen = disclosed['hobby'][1];
+      Map<String, dynamic> lesen = disclosed['hobby'][2];
+
+      expect(reiten.keys, ['hash']);
+      expect(lesen.keys, ['hash']);
+      expect(schwimmen.keys, ['hash']);
+    });
+
+    test('disclose values in List with Objects from different Objects', () {
+      var cred = {
+        'friends': [
+          {'givenName': 'Timo', 'familyName': 'Schulz'},
+          {'givenName': 'Jan', 'familyName': 'Bauer'},
+          {'givenName': 'Max', 'familyName': 'Mustermann'}
+        ]
+      };
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(discloseValues(
+          plaintext, ['friends.0.givenName', 'friends.1.familyName']));
+
+      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
+      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
+      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
+      Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
+
+      expect(f0GivenName.keys, ['hash']);
+      expect(f0familyName.keys, ['value', 'salt', 'hash']);
+      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
+      expect(f1familyName.keys, ['hash']);
+      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
+      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+    });
+
+    test('disclose values in List with Objects from same Objects', () {
+      var cred = {
+        'friends': [
+          {'givenName': 'Timo', 'familyName': 'Schulz'},
+          {'givenName': 'Jan', 'familyName': 'Bauer'},
+          {'givenName': 'Max', 'familyName': 'Mustermann'}
+        ]
+      };
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(discloseValues(
+          plaintext, ['friends.0.givenName', 'friends.0.familyName']));
+
+      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
+      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
+      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
+      Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
+
+      expect(f0GivenName.keys, ['hash']);
+      expect(f0familyName.keys, ['hash']);
+      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
+      expect(f1familyName.keys, ['value', 'salt', 'hash']);
+      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
+      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+    });
+    test(
+        'disclose values in List with Objects from same Object (short notation)',
+        () {
+      var cred = {
+        'friends': [
+          {'givenName': 'Timo', 'familyName': 'Schulz'},
+          {'givenName': 'Jan', 'familyName': 'Bauer'},
+          {'givenName': 'Max', 'familyName': 'Mustermann'}
+        ]
+      };
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(discloseValues(plaintext, ['friends.0']));
+
+      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
+      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
+      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
+      Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
+
+      expect(f0GivenName.keys, ['hash']);
+      expect(f0familyName.keys, ['hash']);
+      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
+      expect(f1familyName.keys, ['value', 'salt', 'hash']);
+      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
+      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+    });
+
+    test('disclose all values from one Object in List and one from another',
+        () {
+      var cred = {
+        'friends': [
+          {'givenName': 'Timo', 'familyName': 'Schulz'},
+          {'givenName': 'Jan', 'familyName': 'Bauer'},
+          {'givenName': 'Max', 'familyName': 'Mustermann'}
+        ]
+      };
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(
+          discloseValues(plaintext, ['friends.0', 'friends.1.familyName']));
+
+      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
+      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
+      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
+      Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
+
+      expect(f0GivenName.keys, ['hash']);
+      expect(f0familyName.keys, ['hash']);
+      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
+      expect(f1familyName.keys, ['hash']);
+      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
+      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+    });
+
+    test('disclose all values in List with Objects', () {
+      var cred = {
+        'friends': [
+          {'givenName': 'Timo', 'familyName': 'Schulz'},
+          {'givenName': 'Jan', 'familyName': 'Bauer'},
+          {'givenName': 'Max', 'familyName': 'Mustermann'}
+        ]
+      };
+      var plaintext = buildPlaintextCredential(cred);
+      var disclosed = jsonDecode(discloseValues(plaintext, ['friends']));
+
+      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
+      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
+      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
+      Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
+
+      expect(f0GivenName.keys, ['hash']);
+      expect(f0familyName.keys, ['hash']);
+      expect(f1GivenName.keys, ['hash']);
+      expect(f1familyName.keys, ['hash']);
+      expect(f2GivenName.keys, ['hash']);
+      expect(f2familyName.keys, ['hash']);
     });
   });
 }

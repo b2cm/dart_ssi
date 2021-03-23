@@ -206,30 +206,31 @@ String signCredential(WalletStore wallet, dynamic credential) {
 }
 
 /// Verifies the signature for the given [credential].
-Future<bool> verifyCredential(
-    dynamic credential, Erc1056 erc1056, String rpcUrl) async {
+Future<bool> verifyCredential(dynamic credential,
+    {Erc1056 erc1056, String rpcUrl}) async {
   Map<String, dynamic> credMap = _credentialToMap(credential);
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
   }
-
-  if (credMap.containsKey('credentialStatus')) {
-    var credStatus = credMap['credentialStatus'];
-    if (credStatus['type'] != 'EthereumRevocationList')
-      throw Exception('Unknown Status-method : ${credStatus['type']}');
-    var revRegistry =
-        RevocationRegistry(rpcUrl, contractAddress: credStatus['id']);
-    var revoked =
-        await revRegistry.isRevoked(getHolderDidFromCredential(credMap));
-    if (revoked) throw Exception('Credential was revoked');
+  if (rpcUrl != null) {
+    if (credMap.containsKey('credentialStatus')) {
+      var credStatus = credMap['credentialStatus'];
+      if (credStatus['type'] != 'EthereumRevocationList')
+        throw Exception('Unknown Status-method : ${credStatus['type']}');
+      var revRegistry =
+          RevocationRegistry(rpcUrl, contractAddress: credStatus['id']);
+      var revoked =
+          await revRegistry.isRevoked(getHolderDidFromCredential(credMap));
+      if (revoked) throw Exception('Credential was revoked');
+    }
   }
 
   Map<String, dynamic> proof = credMap['proof'];
   credMap.remove('proof');
   var credHash = util.sha256(jsonEncode(credMap));
   var issuerDid = getIssuerDidFromCredential(credential);
-  var owner = await erc1056.identityOwner(issuerDid);
-  return _verifyProof(proof, credHash, owner);
+  if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
+  return _verifyProof(proof, credHash, issuerDid);
 }
 
 /// Builds a presentation for [credentials].
@@ -264,8 +265,8 @@ String buildPresentation(
 /// Verifies the [presentation].
 ///
 /// It uses erc1056 to look up the current owner of the dids a proof is given in [presentation].
-Future<bool> verifyPresentation(dynamic presentation, Erc1056 erc1056,
-    String challenge, String rpcUrl) async {
+Future<bool> verifyPresentation(dynamic presentation, String challenge,
+    {Erc1056 erc1056, String rpcUrl}) async {
   var presentationMap = _credentialToMap(presentation);
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
@@ -274,12 +275,12 @@ Future<bool> verifyPresentation(dynamic presentation, Erc1056 erc1056,
   var credentials = presentationMap['verifiableCredential'] as List;
   List<String> holderDids = [];
   await Future.forEach(credentials, (element) async {
-    if (!(await verifyCredential(element, erc1056, rpcUrl)))
+    if (!(await verifyCredential(element, erc1056: erc1056, rpcUrl: rpcUrl)))
       throw Exception('A credential could not been verified');
     else {
       var did = getHolderDidFromCredential(element);
-      var currentAddress = await erc1056.identityOwner(did);
-      holderDids.add(currentAddress);
+      if (erc1056 != null) did = await erc1056.identityOwner(did);
+      holderDids.add(did);
     }
   });
 
@@ -287,14 +288,160 @@ Future<bool> verifyPresentation(dynamic presentation, Erc1056 erc1056,
     var verifMeth = element['verificationMethod'];
     var includedNonce = element['challenge'];
     if (includedNonce != challenge) throw Exception('Challenge does not match');
-    var ownerToVerifMeth = await erc1056.identityOwner(verifMeth);
-    if (holderDids.contains(ownerToVerifMeth))
-      holderDids.remove(ownerToVerifMeth);
-    if (!_verifyProof(element, presentationHash, ownerToVerifMeth))
+    if (erc1056 != null) verifMeth = await erc1056.identityOwner(verifMeth);
+    if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
+    if (!_verifyProof(element, presentationHash, verifMeth))
       throw Exception('Proof for $verifMeth could not been verified');
   });
   if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
   return true;
+}
+
+///Discloses all values in [valuesToDisclose] of [plaintextCredential].
+///
+/// [valuesToDisclose] contains the keys of the attributes, that should be disclosed.
+/// Keys in nested object should be separeted with . (point) from the parent-key, like here:
+/// Imagine your plaintext Credential look like this:
+/// ```
+/// {
+///   "@context": [
+///     "https://bccm-ssi.hs-mittweida.de/credentials"
+///   ],
+///   "type": "ImmatrikulationCredential",
+///   "issuanceDate": {
+///     "value": "2021-03-09",
+///     "salt": "0830fac0-ae9e-4097-85b0-03ddb3557eb6",
+///     "hash": "0x9e51f7c66036d0eb2fcc3c1c5d9da18f96ae880681a676dcc92a3be22e4d7523"
+///   },
+///   "student": {
+///     "type": "Student",
+///     "givenName": {
+///       "value": "Max",
+///       "salt": "b36a876c-2029-417a-93fb-b4daf75ed959",
+///       "hash": "0x30aa2b081c358aafdbbeb9436a167ee9e5bb003a8bd892ef33d50ba78ce1834e"
+///     },
+///     "familyName": {
+///       "value": "Mustermann",
+///       "salt": "2f55f35d-72a9-4986-8986-93d4e4d6f3bf",
+///       "hash": "0x6be6118a83dd2b1c5a050da46ea301fe5512245d9cfb9966b88219b1ee54e8ba"
+///     },
+///     "address": {
+///       "type": "PostalAddress",
+///       "addressLocality": {
+///         "value": "Mittweida",
+///         "salt": "40f1403a-984f-41ed-8821-b987fe556a36",
+///         "hash": "0x97144b9ff02df331935d394cd790a1ab76bf9c6a5b0747c3f03db931103cdf56"
+///       },
+///       "postalCode": {
+///         "value": "09648",
+///         "salt": "83cd01c2-0a30-4907-b8cd-0bd5808a217e",
+///         "hash": "0x254cfac1490b2f8330925374de8a40b8c6d5efe41b3f80e0fe67c3c8cf783b8f"
+///       },
+///       "streetAddress": {
+///         "value": "Am Schwanenteich 8",
+///         "salt": "6fd7baf8-f798-4fde-86e2-d19203d9caf6",
+///         "hash": "0x4b2e396e631e5a391cf6415bd3110fa420fc7167509ef15407ee48b6f827be9c"
+///       }
+///     }
+///   }
+///}
+///```
+///and you only want to show your familyName and the postalCode of your living place,
+/// a working call of this function would be :
+/// ```discloseValues(plaintextCredential, [issuanceDate, student.givenName, student.address.addressLocality, student.address.streetAddress])
+/// ```
+/// If there is an array in the plaintext-Credential the array elements that should be disclosed,
+/// could be given as follows: arrayKey.arrayIndex e.g. friends.1. ArrayIndex starts with 0.
+String discloseValues(
+    dynamic plaintextCredential, List<String> valuesToDisclose) {
+  Map<String, dynamic> plaintextMap = _credentialToMap(plaintextCredential);
+  plaintextMap.forEach((key, value) {
+    if (!(key == '@context' || key == 'type' || key == '@type')) {
+      // if key is in map it should be a single string
+      if (_hashedAttributeSchemaStrict.validate(value)) {
+        // check if key should be disclosed
+        if (valuesToDisclose.contains(key)) {
+          value as Map<String, dynamic>..remove('value')..remove('salt');
+        }
+      }
+      // new Object found
+      else if (_mapOfHashedAttributesSchema.validate(value)) {
+        List<String> valuesSeen = [];
+        List<String> valuesToDiscloseNew = [];
+        //search in valuesToDisclose if sth. starts with key
+        valuesToDisclose.forEach((element) {
+          if (valuesSeen.contains(element)) {
+          }
+          //key of Object is in List
+          else if (element == key) {
+            Map<String, dynamic> valueMap = value as Map<String, dynamic>;
+            valuesToDiscloseNew = valueMap.keys.toList();
+          }
+          // subkeys of Object are in List
+          else if (element.split('.').first == key) {
+            valuesToDiscloseNew.add(element.substring(key.length + 1));
+            valuesSeen.add(element);
+          }
+        });
+        value = jsonDecode(discloseValues(value, valuesToDiscloseNew));
+        plaintextMap[key] = value;
+      }
+      // array found
+      else if (value is List) {
+        List<String> valuesSeen = [];
+        valuesToDisclose.forEach((element) {
+          if (valuesSeen.contains(element)) {
+          }
+          //whole Array should be disclosed
+          else if (element == key) {
+            List<String> valuesToDiscloseNew = [];
+            for (var i = 0; i < value.length; i++) {
+              valuesToDiscloseNew.add('$key.$i');
+            }
+            value = jsonDecode(
+                discloseValues({key: value}, valuesToDiscloseNew))[key];
+          }
+          //elementwise disclosing
+          else if (element.split('.').first == key) {
+            int arrayIndex = int.parse(element.split('.')[1]);
+            if (_hashedAttributeSchemaStrict.validate(value[arrayIndex])) {
+              value[arrayIndex] = value[arrayIndex] as Map<String, dynamic>
+                ..remove('value')
+                ..remove('salt');
+            }
+            //Object in Array
+            else if (_mapOfHashedAttributesSchema.validate(value[arrayIndex])) {
+              //search in given keys, if sth. else should be disclosed
+              List<String> valuesToDiscloseNew = [];
+              valuesToDisclose.forEach((element) {
+                if (element.split('.')[0] == key &&
+                    int.parse(element.split('.')[1]) == arrayIndex) {
+                  if (element.split('.').length > 2) {
+                    valuesSeen.add(element);
+                    valuesToDiscloseNew.add(element.substring(
+                        key.length + 1 + arrayIndex.toString().length + 1));
+                  } else {
+                    valuesToDiscloseNew =
+                        (value[arrayIndex] as Map<String, dynamic>)
+                            .keys
+                            .toList();
+                  }
+                }
+              });
+              value[arrayIndex] = jsonDecode(
+                  discloseValues(value[arrayIndex], valuesToDiscloseNew));
+            } else {
+              throw Exception(
+                  'Malformed array element in array with key $key at index $arrayIndex');
+            }
+          }
+        });
+      } else {
+        throw Exception('Unknown data type at key $key');
+      }
+    }
+  });
+  return jsonEncode(plaintextMap);
 }
 
 String buildJwsHeader(

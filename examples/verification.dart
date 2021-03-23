@@ -28,45 +28,24 @@ main() async {
   await new File('example/presentation.json').writeAsString(presentation);
 
   //Holder hides all values he wouldn't show
-  Map<String, dynamic> plaintextDis = jsonDecode(c.plaintextCredential);
-  plaintextDis['issuanceDate'] as Map<String, dynamic>
-    ..remove('value')
-    ..remove('salt');
-  var student = plaintextDis['student'];
-  var keyListStudent = ['givenName', 'familyName', 'birthDate', 'birthPlace'];
-  for (String key in keyListStudent) {
-    student[key] as Map<String, dynamic>..remove('value')..remove('salt');
-  }
-  var address = student['address'] as Map<String, dynamic>;
-  var keyListAddress = ['addressLocality', 'postalCode', 'streetAddress'];
-  for (String key in keyListAddress) {
-    address[key] as Map<String, dynamic>..remove('value')..remove('salt');
-  }
-  student['address'] = address;
-  plaintextDis['student'] = student;
-  var imma = plaintextDis['immatrikulation'];
-  var keyListImma = [
-    'courseOfStudies',
-    'degreeOfCompletion',
-    'group',
-    'studyType',
-    'collegeSemester',
-    'duration',
-    'currentSemester',
-    'holidaySemester'
-  ];
-  for (String key in keyListImma) {
-    imma[key] as Map<String, dynamic>..remove('value')..remove('salt');
-  }
-  plaintextDis['immatrikulation'] = imma;
-  await new File('example/disclosedImma.json')
-      .writeAsString(jsonEncode(plaintextDis));
+  Map<String, dynamic> plaintext = jsonDecode(c.plaintextCredential);
+  print(plaintext.containsKey('student'));
+  var plaintextDis = discloseValues(c.plaintextCredential, [
+    'issuanceDate',
+    'student.givenName',
+    'student.address',
+    'student.familyName',
+    'student.birthPlace',
+    'student.birthDate',
+    'immatrikulation'
+  ]);
+  await new File('example/disclosedImma.json').writeAsString(plaintextDis);
 
   //Holder sends both to verifier
 
   //Verifier looks, if presentation is correct
   print(
-      'Presentation correct?: ${await verifyPresentation(presentation, erc1056, challenge, rpcUrl)}');
+      'Presentation correct?: ${await verifyPresentation(presentation, challenge, erc1056: erc1056, rpcUrl: rpcUrl)}');
 
   //Verifier checks, if plaintext Credential belongs to the Credential
   // in the presentation

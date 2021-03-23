@@ -104,7 +104,7 @@ void main() async {
 
   //Holder checks signature
   print(
-      'Is my credential correct? : ${await verifyCredential(signedImma, erc1056, rpcUrl)}');
+      'Is my credential correct? : ${await verifyCredential(signedImma, erc1056: erc1056, rpcUrl: rpcUrl)}');
   //Holder stores Credential in wallet
   await holder.storeCredential(
       signedImma, plaintextCred, holder.getCredential(immaDid).hdPath);
