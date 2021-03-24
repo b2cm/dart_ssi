@@ -5,7 +5,6 @@ import 'package:ethereum_util/ethereum_util.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/web3dart.dart';
-import 'package:web_socket_channel/io.dart';
 
 /// Dart representation of Ethereums ERC-1056 SmartContract.
 class Erc1056 {
@@ -94,8 +93,7 @@ class Erc1056 {
   Utf8Codec utf8;
 
   Erc1056(String rpcUrl,
-      {String websocketUrl,
-      String contractName: 'EthereumDIDRegistry',
+      {String contractName: 'EthereumDIDRegistry',
       String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'}) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
@@ -104,12 +102,7 @@ class Erc1056 {
     erc1056contract = DeployedContract(
         ContractAbi.fromJson(abi, contractName), this.contractAddress);
 
-    if (websocketUrl == null)
-      web3Client = Web3Client(rpcUrl, Client());
-    else
-      web3Client = Web3Client(rpcUrl, Client(), socketConnector: () {
-        return IOWebSocketChannel.connect(websocketUrl).cast<String>();
-      });
+    web3Client = Web3Client(rpcUrl, Client());
   }
 
   /// Request the current owner (its did) for identity [did].

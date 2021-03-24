@@ -87,13 +87,13 @@ void main() async {
   };
 
   //Holder hashes all values an sends this to issuer
-  var plaintextCred = buildPlaintextCredential(immatrikulation);
+  var plaintextCred = buildPlaintextCredential(immatrikulation, immaDid);
   await new File('example/immaPlaintext.json').writeAsString(plaintextCred);
 
   //Issuer checks the values and builds a W3C Verifiable credential over
   //a hashes of each attribute value
   var w3cImma = buildW3cCredentialwithHashes(
-      plaintextCred, immaDid, issuer.getStandardIssuerDid(),
+      plaintextCred, issuer.getStandardIssuerDid(),
       revocationRegistryAddress: revAddress);
 
   //Issuer signs the credential and sends it to the Holder

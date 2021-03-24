@@ -67,12 +67,15 @@ void main() async {
     test('normal key-value-pairs (given as Map)', () {
       var plaintext = {'name': 'Max'};
 
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
       var schema = {
         'type': 'object',
-        'required': ['name'],
-        'properties': {'name': hashedAttributeSchema}
+        'required': ['id', 'name'],
+        'properties': {
+          'name': hashedAttributeSchema,
+          'id': {'type': 'string'}
+        }
       };
       var jSchema = JsonSchema.createSchema(schema);
       expect(credObject['name']['value'], 'Max');
@@ -82,12 +85,15 @@ void main() async {
     test('normal key-value-pairs (given as String)', () {
       var plaintext = '{"name": "Max"}';
 
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
       var schema = {
         'type': 'object',
-        'required': ['name'],
-        'properties': {'name': hashedAttributeSchema}
+        'required': ['id', 'name'],
+        'properties': {
+          'name': hashedAttributeSchema,
+          'id': {'type': 'string'}
+        }
       };
       var jSchema = JsonSchema.createSchema(schema);
       expect(credObject['name']['value'], 'Max');
@@ -99,7 +105,7 @@ void main() async {
         'hobbies': ['lesen', true, 20, 30.8]
       };
 
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
       expect(plaintext['hobbies'].length, credObject['hobbies'].length);
@@ -113,7 +119,7 @@ void main() async {
     test('array with string, num, boolean (given as String)', () {
       var plaintext = '{"hobbies": ["lesen", true, 20, 30.8]}';
 
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
       expect(credObject['hobbies'].length, 4);
@@ -131,7 +137,7 @@ void main() async {
         ]
       };
 
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
       expect(credObject['hobbies'].length, plaintext['hobbies'].length);
@@ -145,7 +151,7 @@ void main() async {
       var plaintext =
           '{"hobbies": [{"name": "schwimmen", "duration": 3},{"name": "reiten", "duration": 7}]}';
 
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
       expect(credObject['hobbies'].length, 2);
@@ -163,7 +169,8 @@ void main() async {
         ]
       };
 
-      expect(() => buildPlaintextCredential(plaintext), throwsException);
+      expect(() => buildPlaintextCredential(plaintext, 'did:ethr:0x123'),
+          throwsException);
     });
 
     test('objects (given as Map)', () {
@@ -171,7 +178,7 @@ void main() async {
         'mother': {'name': 'Mustermann', 'surname': 'Erika'}
       };
 
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
       expect(jScheme.validate(credObject['mother']['name']), true);
@@ -184,7 +191,7 @@ void main() async {
     test('objects (given as string)', () {
       var plaintext = '{"mother": {"name": "Mustermann", "surname": "Erika"}}';
 
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
       expect(jScheme.validate(credObject['mother']['name']), true);
@@ -198,17 +205,17 @@ void main() async {
       var plaintext = {
         '@context': ['https://hs-mittweida.de']
       };
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
       expect(credObject['@context'].length, 1);
       expect(credObject['@context'][0], 'https://hs-mittweida.de');
-      expect(credObject.keys.length, 1);
+      expect(credObject.keys.length, 2);
       expect(jScheme.validate(credObject['@context']), false);
     });
 
     test('ignore @context (as String)', () {
       var plaintext = {'@context': 'https://hs-mittweida.de'};
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
       expect(credObject['@context'], 'https://hs-mittweida.de');
       expect(jScheme.validate(credObject['@context']), false);
@@ -219,9 +226,9 @@ void main() async {
         'type': 'VerifiableCredential',
         '@type': ['VerifiableCredential', 'ImmaCredential']
       };
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
-      expect(credObject.keys.length, 2);
+      expect(credObject.keys.length, 3);
       expect(credObject['type'], 'VerifiableCredential');
       expect(credObject['@type'].length, 2);
       expect(credObject['@type'] is List, true);
@@ -232,19 +239,21 @@ void main() async {
 
     test('maleformed json-String', () {
       var plaintext = '{"key" : value';
-      expect(() => buildPlaintextCredential(plaintext), throwsException);
+      expect(() => buildPlaintextCredential(plaintext, 'did:ethr:0x123'),
+          throwsException);
     });
 
     test('not a Map or String', () {
       var plaintext = ['value1', 'value2'];
-      expect(() => buildPlaintextCredential(plaintext), throwsException);
+      expect(() => buildPlaintextCredential(plaintext, 'did:ethr:0x123'),
+          throwsException);
     });
 
     test('long value', () {
       var value = 'value';
       value = value.padLeft(500, 'abcd');
       var plaintext = {'key': value};
-      var cred = buildPlaintextCredential(plaintext);
+      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
       expect(credObject['key']['value'], value);
@@ -296,9 +305,8 @@ void main() async {
 
     test('plaintext has normal key-value Object', () {
       var plaintext =
-          '{"givenName":{"value":"Max","salt":"d51e87c4-6ab5-4cf0-b932-28f6962c384e","hash":"0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"}}';
-      var w3c = buildW3cCredentialwithHashes(
-          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+          '{"id": "did:ethr:0x1234","givenName":{"value":"Max","salt":"d51e87c4-6ab5-4cf0-b932-28f6962c384e","hash":"0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"}}';
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
       expect(w3cCredSchema.validate(w3cObj), true);
@@ -308,6 +316,7 @@ void main() async {
 
     test('plaintext has array', () {
       var plaintext = {
+        "id": "did:ethr:0x12234",
         "courseOfStudies": [
           {
             "value": "Cybercrime/Cybersecurity",
@@ -324,8 +333,7 @@ void main() async {
         ]
       };
 
-      var w3c = buildW3cCredentialwithHashes(
-          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
       expect(w3cCredSchema.validate(w3cObj), true);
@@ -338,6 +346,7 @@ void main() async {
 
     test('plaintext has object', () {
       var plaintext = {
+        "id": "did:ethr:0x12234",
         "address": {
           "addressLocality": {
             "value": "Mittweida",
@@ -354,8 +363,7 @@ void main() async {
         }
       };
 
-      var w3c = buildW3cCredentialwithHashes(
-          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
       expect(w3cCredSchema.validate(w3cObj), true);
@@ -375,15 +383,15 @@ void main() async {
         }
       };
 
-      var plaintext = buildPlaintextCredential(value);
-      var w3c = buildW3cCredentialwithHashes(
-          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
       expect(w3cCredSchema.validate(w3cObj), true);
     });
 
     test('ignore type', () {
       var plaintext = {
+        "id": "did:ethr:0x12234",
         "type": "Person",
         "givenName": {
           "value": "Max",
@@ -392,8 +400,7 @@ void main() async {
               "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
         }
       };
-      var w3c = buildW3cCredentialwithHashes(
-          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
       expect(w3cCredSchema.validate(w3cObj), true);
@@ -404,6 +411,7 @@ void main() async {
 
     test('ignore @type', () {
       var plaintext = {
+        "id": "did:ethr:0x12234",
         "@type": "Person",
         "givenName": {
           "value": "Max",
@@ -412,8 +420,7 @@ void main() async {
               "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
         }
       };
-      var w3c = buildW3cCredentialwithHashes(
-          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
       expect(w3cCredSchema.validate(w3cObj), true);
@@ -424,14 +431,14 @@ void main() async {
 
     test('missing hash', () {
       var plaintext = {
+        "id": "did:ethr:0x12234",
         "givenName": {
           "value": "Max",
           "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
         }
       };
       expect(
-          () => buildW3cCredentialwithHashes(
-              plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678'),
+          () => buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678'),
           throwsException);
     });
 
@@ -439,6 +446,7 @@ void main() async {
       test('value VerifiableCredential schould not be added (given as String)',
           () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -446,8 +454,7 @@ void main() async {
                 "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
           }
         };
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             type: 'VerifiableCredential');
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -457,6 +464,7 @@ void main() async {
       test('value VerifiableCredential schould not be added (given as List)',
           () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -464,8 +472,7 @@ void main() async {
                 "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
           }
         };
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             type: ['VerifiableCredential']);
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -474,6 +481,7 @@ void main() async {
 
       test('add one value', () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -481,8 +489,7 @@ void main() async {
                 "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
           }
         };
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             type: 'ImmaCredential');
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -493,6 +500,7 @@ void main() async {
 
       test('add a List of values', () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -500,8 +508,7 @@ void main() async {
                 "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
           }
         };
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             type: ['ImmaCredential', 'Immatrikulation']);
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -513,6 +520,7 @@ void main() async {
 
       test('add a List of values without adding VerifiableCredential', () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -520,12 +528,12 @@ void main() async {
                 "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
           }
         };
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678', type: [
-          'ImmaCredential',
-          'Immatrikulation',
-          'VerifiableCredential'
-        ]);
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
+            type: [
+              'ImmaCredential',
+              'Immatrikulation',
+              'VerifiableCredential'
+            ]);
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
         expect(w3cObj['type'].length, 3);
@@ -545,18 +553,15 @@ void main() async {
         };
 
         expect(
-            () => buildW3cCredentialwithHashes(
-                plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            () => buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
                 type: 20),
             throwsException);
         expect(
-            () => buildW3cCredentialwithHashes(
-                plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            () => buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
                 type: true),
             throwsException);
         expect(
-            () => buildW3cCredentialwithHashes(
-                plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+            () => buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
                 type: {'key': 'value'}),
             throwsException);
       });
@@ -567,6 +572,7 @@ void main() async {
           'do not add https://www.w3.org/2018/credentials/v1 (given as string)',
           () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -575,8 +581,7 @@ void main() async {
           }
         };
 
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: 'https://www.w3.org/2018/credentials/v1');
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -587,6 +592,7 @@ void main() async {
       test('do not add https://www.w3.org/2018/credentials/v1 (given as list)',
           () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -595,8 +601,7 @@ void main() async {
           }
         };
 
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: ['https://www.w3.org/2018/credentials/v1']);
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -606,6 +611,7 @@ void main() async {
 
       test('add one value as String', () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -614,8 +620,7 @@ void main() async {
           }
         };
 
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: 'https://hs-mittweida.de/creds');
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -627,6 +632,7 @@ void main() async {
 
       test('add one value as List', () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -635,8 +641,7 @@ void main() async {
           }
         };
 
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: ['https://hs-mittweida.de/creds']);
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -648,6 +653,7 @@ void main() async {
 
       test('add a List of values', () {
         var plaintext = {
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -656,8 +662,7 @@ void main() async {
           }
         };
 
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: ['https://hs-mittweida.de/creds', 'https://schema.org']);
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -671,6 +676,7 @@ void main() async {
       test('give credential with context as List', () {
         var plaintext = {
           '@context': ['https://schema.org'],
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -679,8 +685,8 @@ void main() async {
           }
         };
 
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
         expect(w3cObj['@context'].length, 2);
@@ -691,6 +697,7 @@ void main() async {
       test('give credential with context as String', () {
         var plaintext = {
           '@context': 'https://schema.org',
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -699,8 +706,8 @@ void main() async {
           }
         };
 
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
         expect(w3cObj['@context'].length, 2);
@@ -720,8 +727,8 @@ void main() async {
         };
 
         expect(
-            () => buildW3cCredentialwithHashes(
-                plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678'),
+            () =>
+                buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678'),
             throwsException);
 
         var plaintext2 = {
@@ -735,8 +742,8 @@ void main() async {
         };
 
         expect(
-            () => buildW3cCredentialwithHashes(
-                plaintext2, 'did:ethr:0x123456', 'did:ethr:0x12345678'),
+            () =>
+                buildW3cCredentialwithHashes(plaintext2, 'did:ethr:0x12345678'),
             throwsException);
 
         var plaintext3 = {
@@ -750,8 +757,8 @@ void main() async {
         };
 
         expect(
-            () => buildW3cCredentialwithHashes(
-                plaintext3, 'did:ethr:0x123456', 'did:ethr:0x12345678'),
+            () =>
+                buildW3cCredentialwithHashes(plaintext3, 'did:ethr:0x12345678'),
             throwsException);
       });
 
@@ -761,6 +768,7 @@ void main() async {
             'https://schema.org',
             'https://www.w3.org/2018/credentials/v1'
           ],
+          "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
             "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -769,8 +777,7 @@ void main() async {
           }
         };
 
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+        var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: 'https://schema.org');
         var w3cObj = jsonDecode(w3c);
         expect(w3cCredSchema.validate(w3cObj), true);
@@ -785,6 +792,7 @@ void main() async {
 
     test('add credential Status', () {
       var plaintext = {
+        "id": "did:ethr:0x12234",
         "givenName": {
           "value": "Max",
           "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
@@ -793,8 +801,7 @@ void main() async {
         }
       };
 
-      var w3c = buildW3cCredentialwithHashes(
-          plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678',
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
           revocationRegistryAddress: '0x456127387');
       var w3cObj = jsonDecode(w3c);
       expect(w3cCredSchema.validate(w3cObj), true);
@@ -813,9 +820,9 @@ void main() async {
           'height': 1.78,
           'student': true
         };
-        var plaintext = buildPlaintextCredential(values);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
 
         expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
       });
@@ -827,9 +834,9 @@ void main() async {
           'height': 1.78,
           'student': true
         };
-        var plaintext = buildPlaintextCredential(values);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['name']['value'] = 'Lilly';
         expect(
@@ -844,9 +851,9 @@ void main() async {
           'mother': {'name': 'Erika', 'age': 34},
           'father': {'name': 'Thorsten', 'age': 40}
         };
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
 
         expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
       });
@@ -856,9 +863,9 @@ void main() async {
           'mother': {'name': 'Erika', 'age': 34},
           'father': {'name': 'Thorsten', 'age': 40}
         };
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plainMap = jsonDecode(plaintext);
         plainMap['mother']['age']['value'] = 35;
         expect(
@@ -877,9 +884,9 @@ void main() async {
           }
         };
 
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
       });
 
@@ -887,9 +894,9 @@ void main() async {
         var value = {
           'list': ['schwimmen', true, 34, 78.9]
         };
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
       });
 
@@ -899,9 +906,9 @@ void main() async {
         var value = {
           'list': ['schwimmen', true, 34, 78.9]
         };
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['list'][1]['value'] = false;
         expect(
@@ -918,9 +925,9 @@ void main() async {
             {'name': 'Tom', 'age': 14}
           ]
         };
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         expect(compareW3cCredentialAndPlaintext(w3c, plaintext), true);
       });
 
@@ -931,9 +938,9 @@ void main() async {
             {'name': 'Tom', 'age': 14}
           ]
         };
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['friends'][1]['name']['value'] = 'Sebastian';
         expect(
@@ -950,9 +957,9 @@ void main() async {
           'height': 1.78,
           'student': true
         };
-        var plaintext = buildPlaintextCredential(values);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext) as Map<String, dynamic>;
         plaintextMap['name'].remove('salt');
         expect(
@@ -968,9 +975,9 @@ void main() async {
           'height': 1.78,
           'student': true
         };
-        var plaintext = buildPlaintextCredential(values);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext) as Map<String, dynamic>;
         plaintextMap['name'].remove('value');
         expect(
@@ -986,9 +993,9 @@ void main() async {
         var values = {
           'name': 'Max',
         };
-        var plaintext = buildPlaintextCredential(values);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['name'].remove('salt');
         plaintextMap['name'].remove('value');
@@ -1001,9 +1008,9 @@ void main() async {
         var values = {
           'name': 'Max',
         };
-        var plaintext = buildPlaintextCredential(values);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['name'] = plaintextMap['name']['hash'];
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
@@ -1011,9 +1018,9 @@ void main() async {
 
       test('show one out of two', () {
         var values = {'name': 'Max', 'age': 20};
-        var plaintext = buildPlaintextCredential(values);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['name'].remove('salt');
         plaintextMap['name'].remove('value');
@@ -1024,9 +1031,9 @@ void main() async {
         var value = {
           'list': ['schwimmen', 78.9]
         };
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['list'][0] = plaintextMap['list'][0]['hash'];
         print(plaintextMap);
@@ -1037,9 +1044,9 @@ void main() async {
         var value = {
           'list': ['schwimmen', 78.9]
         };
-        var plaintext = buildPlaintextCredential(value);
-        var w3c = buildW3cCredentialwithHashes(
-            plaintext, 'did:ethr:0x123456', 'did:ethr:0x12345678');
+        var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
+        var w3c =
+            buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['list'][0].remove('value');
         plaintextMap['list'][0].remove('salt');
@@ -1160,9 +1167,9 @@ void main() async {
       wallet.initialize();
       await wallet.initializeIssuer();
       var cred = {'name': 'Max', 'age': 20, 'height': 1.78, 'student': true};
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       w3c = buildW3cCredentialwithHashes(
-          plaintext, 'did:ethr:0x123456', wallet.getStandardIssuerDid());
+          plaintext, wallet.getStandardIssuerDid());
     });
 
     test('check signed credential; no proof Options given; no manipulation',
@@ -1231,9 +1238,8 @@ void main() async {
         var rev = RevocationRegistry(rpcUrl);
         var revAddress = await rev
             .deploy(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'));
-        var cred = buildPlaintextCredential(plaintext);
-        var w3cCred = buildW3cCredentialwithHashes(
-            cred, ganacheDid6, ganacheDid9,
+        var cred = buildPlaintextCredential(plaintext, ganacheDid6);
+        var w3cCred = buildW3cCredentialwithHashes(cred, ganacheDid9,
             revocationRegistryAddress: revAddress);
         var signed = signCredential(ganacheAccounts, w3cCred);
 
@@ -1336,20 +1342,20 @@ void main() async {
       };
       var cred3 = {'verein': 'Laufgruppe Döbeln', 'rolle': 'Mitglied'};
 
-      var plaintext1 = buildPlaintextCredential(cred1);
-      var plaintext2 = buildPlaintextCredential(cred2);
-      var plaintext3 = buildPlaintextCredential(cred3);
+      var plaintext1 = buildPlaintextCredential(cred1, didCred1);
+      var plaintext2 = buildPlaintextCredential(cred2, didCred2);
+      var plaintext3 = buildPlaintextCredential(cred3, didCred3);
 
       didCred1 = await holder.getNextCredentialDID();
       didCred2 = await holder.getNextCredentialDID();
       didCred3 = await holder.getNextCredentialDID();
 
-      var w3cCred1 = buildW3cCredentialwithHashes(
-          plaintext1, didCred1, iss1.getStandardIssuerDid());
-      var w3cCred2 = buildW3cCredentialwithHashes(
-          plaintext2, didCred2, iss2.getStandardIssuerDid());
-      var w3cCred3 = buildW3cCredentialwithHashes(
-          plaintext3, didCred3, iss3.getStandardIssuerDid());
+      var w3cCred1 =
+          buildW3cCredentialwithHashes(plaintext1, iss1.getStandardIssuerDid());
+      var w3cCred2 =
+          buildW3cCredentialwithHashes(plaintext2, iss2.getStandardIssuerDid());
+      var w3cCred3 =
+          buildW3cCredentialwithHashes(plaintext3, iss3.getStandardIssuerDid());
 
       signed1 = signCredential(iss1, w3cCred1);
       signed2 = signCredential(iss2, w3cCred2);
@@ -1369,7 +1375,7 @@ void main() async {
       expect(presMap['verifiableCredential'] is List, true);
       expect(presMap['verifiableCredential'].length, 3);
 
-      List<String> verificationMethods = List<String>();
+      List<String> verificationMethods = [];
       presMap['proof'].forEach((elem) {
         expect(elem.containsKey('challenge'), true);
         expect(elem['challenge'], challenge);
@@ -1511,10 +1517,10 @@ void main() async {
   group('disclose Credential', () {
     test('disclose one single value ', () {
       var cred = {'givenName': 'Max', 'familyName': 'Mustermann'};
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       Map<String, dynamic> disclosed =
           jsonDecode(discloseValues(plaintext, ['familyName']));
-      expect(disclosed.length, cred.length);
+      expect(disclosed.length, jsonDecode(plaintext).length);
       Map<String, dynamic> givenName =
           disclosed['givenName'] as Map<String, dynamic>;
       expect(givenName.keys, ['value', 'salt', 'hash']);
@@ -1527,7 +1533,7 @@ void main() async {
         'address': {'street': 'Main Street', 'city': 'London'}
       };
 
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['address.street']));
 
       Map<String, dynamic> street = disclosed['address']['street'];
@@ -1542,7 +1548,7 @@ void main() async {
         'address': {'street': 'Main Street', 'city': 'London'}
       };
 
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['address']));
 
       Map<String, dynamic> street = disclosed['address']['street'];
@@ -1557,7 +1563,7 @@ void main() async {
         'address': {'street': 'Main Street', 'city': 'London'}
       };
 
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(
           discloseValues(plaintext, ['address.street', 'address.city']));
 
@@ -1572,7 +1578,7 @@ void main() async {
       var cred = {
         'hobby': ['reiten', 'schwimmen', 'lesen']
       };
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed =
           jsonDecode(discloseValues(plaintext, ['hobby.0', 'hobby.2']));
 
@@ -1589,7 +1595,7 @@ void main() async {
       var cred = {
         'hobby': ['reiten', 'schwimmen', 'lesen']
       };
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['hobby']));
 
       Map<String, dynamic> reiten = disclosed['hobby'][0];
@@ -1609,7 +1615,7 @@ void main() async {
           {'givenName': 'Max', 'familyName': 'Mustermann'}
         ]
       };
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(
           plaintext, ['friends.0.givenName', 'friends.1.familyName']));
 
@@ -1636,7 +1642,7 @@ void main() async {
           {'givenName': 'Max', 'familyName': 'Mustermann'}
         ]
       };
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(
           plaintext, ['friends.0.givenName', 'friends.0.familyName']));
 
@@ -1664,7 +1670,7 @@ void main() async {
           {'givenName': 'Max', 'familyName': 'Mustermann'}
         ]
       };
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['friends.0']));
 
       Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
@@ -1691,7 +1697,7 @@ void main() async {
           {'givenName': 'Max', 'familyName': 'Mustermann'}
         ]
       };
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(
           discloseValues(plaintext, ['friends.0', 'friends.1.familyName']));
 
@@ -1718,7 +1724,7 @@ void main() async {
           {'givenName': 'Max', 'familyName': 'Mustermann'}
         ]
       };
-      var plaintext = buildPlaintextCredential(cred);
+      var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['friends']));
 
       Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];

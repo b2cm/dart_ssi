@@ -72,8 +72,8 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
 /// ```
 /// where salt is a Version 4 UUID and hash is the keccak256-hash of salt + value (concatenation).
 /// [credential] could be a string or Map<String, dynamic> representing a valid json-Object.
-String buildPlaintextCredential(dynamic credential) {
-  Map<String, dynamic> credMap = _credentialToMap(credential);
+String buildPlaintextCredential(dynamic credential, String holderDid) {
+  Map<String, dynamic> credMap = credentialToMap(credential);
   Map<String, dynamic> finalCred = new Map();
 
   if (credMap.containsKey('credentialSubject')) {
@@ -82,6 +82,10 @@ String buildPlaintextCredential(dynamic credential) {
   if (credMap.containsKey('@context')) {
     finalCred['@context'] = credMap['@context'];
     credMap.remove('@context');
+  }
+
+  if (holderDid != '') {
+    finalCred['id'] = holderDid;
   }
 
   credMap.forEach((key, value) {
@@ -95,13 +99,13 @@ String buildPlaintextCredential(dynamic credential) {
         if (element is String || element is num || element is bool)
           newValue.add(_hashStringOrNum(element));
         else if (element is Map<String, dynamic>) {
-          newValue.add(jsonDecode(buildPlaintextCredential(element)));
+          newValue.add(jsonDecode(buildPlaintextCredential(element, '')));
         } else
           throw Exception('unknown type with key $key');
       });
       finalCred[key] = newValue;
     } else if (value is Map<String, dynamic>) {
-      finalCred[key] = jsonDecode(buildPlaintextCredential(value));
+      finalCred[key] = jsonDecode(buildPlaintextCredential(value, ''));
     } else {
       throw Exception('unknown datatype  with key $key');
     }
@@ -112,10 +116,10 @@ String buildPlaintextCredential(dynamic credential) {
 
 /// Builds a credential conform to W3C-Standard, which includes all hashes a
 /// plaintext-credential [credential] contains.
-String buildW3cCredentialwithHashes(
-    dynamic credential, String holderDid, String issuerDid,
+String buildW3cCredentialwithHashes(dynamic credential, String issuerDid,
     {dynamic type, dynamic context, String revocationRegistryAddress}) {
-  var hashCred = _collectHashes(credential, id: holderDid);
+  var plaintectMap = credentialToMap(credential);
+  var hashCred = _collectHashes(credential, id: plaintectMap['id']);
 
   List<String> credTypes = [];
   credTypes.add('VerifiableCredential');
@@ -146,7 +150,7 @@ String buildW3cCredentialwithHashes(
       throw Exception('type has unknown datatype');
   }
   // adding context of Plaintext-credential
-  var plaintextCredMap = _credentialToMap(credential);
+  var plaintextCredMap = credentialToMap(credential);
   if (plaintextCredMap.containsKey('@context')) {
     var context = plaintextCredMap['@context'];
     if (context is List) {
@@ -182,17 +186,18 @@ String buildW3cCredentialwithHashes(
 
 /// Checks weather a W3C-Credential containing all attribute hashes belongs to a Plaintext Credential or not.
 bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
-  var w3cMap = _credentialToMap(w3cCred);
-  var plainMap = _credentialToMap(plaintext);
+  var w3cMap = credentialToMap(w3cCred);
+  var plainMap = credentialToMap(plaintext);
   if (w3cMap.containsKey('credentialSubject'))
     w3cMap = w3cMap['credentialSubject'];
-
+  if (plainMap['id'] != w3cMap['id'])
+    throw Exception('Ids of given credentials do not match');
   return _checkHashes(w3cMap, plainMap);
 }
 
 /// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
 String signCredential(WalletStore wallet, dynamic credential) {
-  credential = _credentialToMap(credential);
+  credential = credentialToMap(credential);
   String issuerDid = getIssuerDidFromCredential(credential);
   if (issuerDid == null) {
     throw new Exception('Could not examine IssuerDID');
@@ -208,7 +213,7 @@ String signCredential(WalletStore wallet, dynamic credential) {
 /// Verifies the signature for the given [credential].
 Future<bool> verifyCredential(dynamic credential,
     {Erc1056 erc1056, String rpcUrl}) async {
-  Map<String, dynamic> credMap = _credentialToMap(credential);
+  Map<String, dynamic> credMap = credentialToMap(credential);
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
   }
@@ -239,7 +244,7 @@ String buildPresentation(
   List<Map<String, dynamic>> credMapList = [];
   List<String> holderDids = [];
   credentials.forEach((element) {
-    var credMap = _credentialToMap(element);
+    var credMap = credentialToMap(element);
     credMapList.add(credMap);
     holderDids.add(getHolderDidFromCredential(credMap));
   });
@@ -267,7 +272,7 @@ String buildPresentation(
 /// It uses erc1056 to look up the current owner of the dids a proof is given in [presentation].
 Future<bool> verifyPresentation(dynamic presentation, String challenge,
     {Erc1056 erc1056, String rpcUrl}) async {
-  var presentationMap = _credentialToMap(presentation);
+  var presentationMap = credentialToMap(presentation);
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
   var presentationHash = util.sha256(jsonEncode(presentationMap));
@@ -354,9 +359,12 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
 /// could be given as follows: arrayKey.arrayIndex e.g. friends.1. ArrayIndex starts with 0.
 String discloseValues(
     dynamic plaintextCredential, List<String> valuesToDisclose) {
-  Map<String, dynamic> plaintextMap = _credentialToMap(plaintextCredential);
+  Map<String, dynamic> plaintextMap = credentialToMap(plaintextCredential);
   plaintextMap.forEach((key, value) {
-    if (!(key == '@context' || key == 'type' || key == '@type')) {
+    if (!(key == '@context' ||
+        key == 'type' ||
+        key == '@type' ||
+        key == 'id')) {
       // if key is in map it should be a single string
       if (_hashedAttributeSchemaStrict.validate(value)) {
         // check if key should be disclosed
@@ -503,7 +511,7 @@ String buildJwsHeader(
 
 /// Collects the did of the issuer of a [credential].
 String getIssuerDidFromCredential(dynamic credential) {
-  var credentialMap = _credentialToMap(credential);
+  var credentialMap = credentialToMap(credential);
 
   if (!credentialMap.containsKey('issuer'))
     return null;
@@ -523,7 +531,7 @@ String getIssuerDidFromCredential(dynamic credential) {
 
 /// Collects the did of the Holder of [credential].
 String getHolderDidFromCredential(dynamic credential) {
-  var credMap = _credentialToMap(credential);
+  var credMap = credentialToMap(credential);
   if (credMap.containsKey('credentialSubject')) {
     if (credMap['credentialSubject'].containsKey('id'))
       return credMap['credentialSubject']['id'];
@@ -571,9 +579,8 @@ Future<bool> verifyStringSignature(
   return recoveredDid == expectedDid;
 }
 
-//***********************Private Methods***************************************
-
-Map<String, dynamic> _credentialToMap(dynamic credential) {
+/// Converts json-String [credential] to dart Map.
+Map<String, dynamic> credentialToMap(dynamic credential) {
   if (credential is String)
     return jsonDecode(credential);
   else if (credential is Map<String, dynamic>)
@@ -581,6 +588,8 @@ Map<String, dynamic> _credentialToMap(dynamic credential) {
   else
     throw Exception('unknown type for $credential');
 }
+
+//***********************Private Methods***************************************
 
 Map<String, dynamic> _hashStringOrNum(dynamic value) {
   var uuid = Uuid();
@@ -594,12 +603,12 @@ Map<String, dynamic> _hashStringOrNum(dynamic value) {
 }
 
 String _collectHashes(dynamic credential, {String id}) {
-  var credMap = _credentialToMap(credential);
+  var credMap = credentialToMap(credential);
   Map<String, dynamic> hashCred = new Map();
   if (id != null) hashCred['id'] = id;
   credMap.forEach((key, value) {
     if (key != '@context') {
-      if (key == 'type' || key == '@type')
+      if (key == 'type' || key == '@type' || key == 'id')
         hashCred[key] = value;
       else if (value is List) {
         List<dynamic> hashList = [];
@@ -631,7 +640,10 @@ String _collectHashes(dynamic credential, {String id}) {
 
 bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
   plainHash.forEach((key, value) {
-    if (!(key == '@context' || key == 'type' || key == '@type')) {
+    if (!(key == '@context' ||
+        key == 'type' ||
+        key == '@type' ||
+        key == 'id')) {
       if (value is String) {
         //Nothing was disclosed -> only compare hash
         if (w3c[key] != value) throw Exception('hashes do not match at $key');
