@@ -1506,7 +1506,8 @@ void main() async {
       var jws = signString(w, did, toSign);
       print(jws);
 
-      var verified = await verifyStringSignature(toSign, jws, did, erc1056);
+      var verified =
+          await verifyStringSignature(toSign, jws, did, erc1056: erc1056);
 
       expect(verified, true);
 

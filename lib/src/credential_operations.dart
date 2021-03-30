@@ -567,14 +567,14 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
 
 //Verifies the signature in [jws] for a string [toSign].
 Future<bool> verifyStringSignature(
-    String toSign, String jws, String expectedDid, Erc1056 erc1056) async {
+    String toSign, String jws, String expectedDid,
+    {Erc1056 erc1056}) async {
   var signature = _getSignatureFromJws(jws);
   var hashToSign = util.sha256(toSign);
   var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
   var recoveredDid =
       'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
-
-  expectedDid = await erc1056.identityOwner(expectedDid);
+  if (erc1056 != null) expectedDid = await erc1056.identityOwner(expectedDid);
 
   return recoveredDid == expectedDid;
 }
