@@ -246,6 +246,7 @@ class WalletStore {
   /// Returns the private key as hex-String associated with [did].
   String getPrivateKeyToCredentialDid(String did) {
     var cred = getCredential(did);
+    if (cred == null) return null;
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(cred.hdPath);
     return HEX.encode(key.privateKey);
@@ -254,6 +255,7 @@ class WalletStore {
   /// Returns the private key as hex-String associated with [did].
   String getPrivateKeyToConnectionDid(String did) {
     var com = getConnection(did);
+    if (com == null) return null;
     var master = BIP32.fromSeed(_keyBox.get('seed'));
     var key = master.derivePath(com.hdPath);
     return HEX.encode(key.privateKey);
