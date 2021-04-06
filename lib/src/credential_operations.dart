@@ -506,7 +506,7 @@ String buildJwsHeader(
   }
 
   var jsonString = jsonEncode(jsonObject);
-  return base64Encode(utf8.encode(jsonString));
+  return base64UrlEncode(utf8.encode(jsonString));
 }
 
 /// Collects the did of the issuer of a [credential].
@@ -562,7 +562,7 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
   var critical = new Map<String, dynamic>();
   critical['b64'] = false;
   return '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
-      '.${base64Encode(sigArray)}';
+      '.${base64UrlEncode(sigArray)}';
 }
 
 //Verifies the signature in [jws] for a string [toSign].
@@ -729,7 +729,7 @@ Map<String, dynamic> _buildProof(
   var critical = new Map<String, dynamic>();
   critical['b64'] = false;
   optionsMap['jws'] = '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
-      '.${base64Encode(sigArray)}';
+      '.${base64UrlEncode(sigArray)}';
 
   return optionsMap;
 }
