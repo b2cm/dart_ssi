@@ -80,6 +80,7 @@ example possible to rotate a key if it is lost/corrupted. An example for that co
 
 The identifier could not only be used to bind credentials on it. They could also be used as an replacement for an 'normal' username. These are referred to as ConnectionDIDs in this package.
 A usage example for this could be found in [registration.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/registration.dart). Therefor a
-registration process for a new user wthin an online-service could include the following steps:
-    1. User generates new Connection DID and submits this to service. That's enough to authenticate an user technically, when he/she returns (using digital signatures).
-    2. To identify an user (Who is the person behind the identifier?) credentials are needed and submitted.
+registration process for a new user wthin an online-service could include the following steps:   
+
+1. User generates new Connection DID and submits this to service. That's enough to authenticate an user technically, when he/she returns (using digital signatures).
+2. To identify an user (Who is the person behind the identifier?) credentials are needed and submitted.
