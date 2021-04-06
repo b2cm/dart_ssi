@@ -56,6 +56,8 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
 /// becomes to
 ///```
 ///{
+/// "id": "did:ethr:0x82734",
+/// "hashAlg" : "keccak-256",
 /// "name":
 /// {
 ///   "value":"Max",
@@ -87,6 +89,8 @@ String buildPlaintextCredential(dynamic credential, String holderDid) {
   if (holderDid != '') {
     finalCred['id'] = holderDid;
   }
+
+  finalCred['hashAlg'] = 'keccak-256';
 
   credMap.forEach((key, value) {
     if (key == 'type' || key == '@type') {
@@ -364,7 +368,8 @@ String discloseValues(
     if (!(key == '@context' ||
         key == 'type' ||
         key == '@type' ||
-        key == 'id')) {
+        key == 'id' ||
+        key == 'hashAlg')) {
       // if key is in map it should be a single string
       if (_hashedAttributeSchemaStrict.validate(value)) {
         // check if key should be disclosed
@@ -610,7 +615,8 @@ String _collectHashes(dynamic credential, {String id}) {
     if (key != '@context') {
       if (key == 'type' || key == '@type' || key == 'id')
         hashCred[key] = value;
-      else if (value is List) {
+      else if (key == 'hashAlg') {
+      } else if (value is List) {
         List<dynamic> hashList = [];
         value.forEach((element) {
           if (element is Map<String, dynamic> &&
@@ -639,11 +645,15 @@ String _collectHashes(dynamic credential, {String id}) {
 }
 
 bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
+  if (plainHash['hashAlg'] != 'keccak-256')
+    throw Exception(
+        'hashing Algorithm ${plainHash['hashAlg']} is not supported');
   plainHash.forEach((key, value) {
     if (!(key == '@context' ||
         key == 'type' ||
         key == '@type' ||
-        key == 'id')) {
+        key == 'id' ||
+        key == 'hashAlg')) {
       if (value is String) {
         //Nothing was disclosed -> only compare hash
         if (w3c[key] != value) throw Exception('hashes do not match at $key');
