@@ -1342,13 +1342,13 @@ void main() async {
       };
       var cred3 = {'verein': 'Laufgruppe Döbeln', 'rolle': 'Mitglied'};
 
-      var plaintext1 = buildPlaintextCredential(cred1, didCred1);
-      var plaintext2 = buildPlaintextCredential(cred2, didCred2);
-      var plaintext3 = buildPlaintextCredential(cred3, didCred3);
-
       didCred1 = await holder.getNextCredentialDID();
       didCred2 = await holder.getNextCredentialDID();
       didCred3 = await holder.getNextCredentialDID();
+
+      var plaintext1 = buildPlaintextCredential(cred1, didCred1);
+      var plaintext2 = buildPlaintextCredential(cred2, didCred2);
+      var plaintext3 = buildPlaintextCredential(cred3, didCred3);
 
       var w3cCred1 =
           buildW3cCredentialwithHashes(plaintext1, iss1.getStandardIssuerDid());
@@ -1413,14 +1413,14 @@ void main() async {
       var presMap = jsonDecode(presentation) as Map;
 
       presMap['proof'][0]['verificationMethod'] =
-          'did:ethr:0x8Dd4a3103C8eA18Cd530CecB4c15C67CF08b07d1';
+          'did:ethr:0xC3d188C872e25c0370Ff3D2aA7268e2e13D11fe9';
 
       expect(
           () async => await verifyPresentation(presMap, challenge,
               erc1056: erc1056, rpcUrl: rpcUrl),
           throwsA(predicate((e) =>
               e.message ==
-              'Proof for did:ethr:0x8Dd4a3103C8eA18Cd530CecB4c15C67CF08b07d1 could not been verified')));
+              'Proof for did:ethr:0xC3d188C872e25c0370Ff3D2aA7268e2e13D11fe9 could not been verified')));
     });
 
     test('not enough proofs', () {
@@ -1436,6 +1436,21 @@ void main() async {
               erc1056: erc1056, rpcUrl: rpcUrl),
           throwsA(
               predicate((e) => e.message == 'There are dids without a proof')));
+    });
+
+    test('add additional proofs', () async {
+      var challenge = Uuid().v4();
+      var newDID = await holder.getNextConnectionDID();
+      var presentation = buildPresentation(
+          [signed1, signed2, signed3], holder, challenge,
+          additionalDids: [newDID]);
+      var presMap = jsonDecode(presentation) as Map;
+      List<dynamic> proofs = presMap['proof'];
+      expect(proofs.length, 4);
+      expect(
+          await verifyPresentation(presentation, challenge,
+              erc1056: erc1056, rpcUrl: rpcUrl),
+          true);
     });
 
     test('credential could not been verified (verifyCredential returns false)',

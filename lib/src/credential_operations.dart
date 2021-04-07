@@ -243,8 +243,12 @@ Future<bool> verifyCredential(dynamic credential,
 }
 
 /// Builds a presentation for [credentials].
+///
+/// If not only the ownership od the dids in the credentials should be proofed a List of [additionalDids]
+/// could be given and a proof section for each did is added.
 String buildPresentation(
-    List<dynamic> credentials, WalletStore wallet, String challenge) {
+    List<dynamic> credentials, WalletStore wallet, String challenge,
+    {List<String> additionalDids}) {
   List<Map<String, dynamic>> credMapList = [];
   List<String> holderDids = [];
   credentials.forEach((element) {
@@ -267,6 +271,14 @@ String buildPresentation(
             verificationMethod: element, challenge: challenge));
     proofList.add(proof);
   });
+  if (additionalDids != null) {
+    additionalDids.forEach((element) {
+      var proof = _buildProof(presentationHash, element, wallet,
+          proofOptions: _buildProofOptions(
+              verificationMethod: element, challenge: challenge));
+      proofList.add(proof);
+    });
+  }
   presentation['proof'] = proofList;
   return jsonEncode(presentation);
 }
@@ -548,7 +560,7 @@ String getHolderDidFromCredential(dynamic credential) {
     return null;
 }
 
-//Signs the given String [toSign] with key-pair of [didToSignWith].
+/// Signs the given String [toSign] with key-pair of [didToSignWith].
 String signString(WalletStore wallet, String didToSignWith, String toSign,
     {bool cred}) {
   var hash = util.sha256(toSign);
@@ -570,7 +582,7 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
       '.${base64UrlEncode(sigArray)}';
 }
 
-//Verifies the signature in [jws] for a string [toSign].
+/// Verifies the signature in [jws] for a string [toSign].
 Future<bool> verifyStringSignature(
     String toSign, String jws, String expectedDid,
     {Erc1056 erc1056}) async {
@@ -728,6 +740,9 @@ Map<String, dynamic> _buildProof(
   var pOptionsHash = util.sha256(pOptions);
   var hash = util.sha256(pOptionsHash + hashToSign);
   var privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  if (privKeyHex == null)
+    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+  if (privKeyHex == null) throw Exception('Could not find a private key');
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash, key.privateKey);
   var sigArray = intToBytes(signature.r) +
@@ -748,7 +763,8 @@ bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
   var signature = _getSignatureFromJws(proof['jws']);
 
   proof.remove('jws');
-
+  if (proof['type'] != 'EcdsaSecp256k1RecoverySignature2020')
+    throw Exception('Proof type ${proof['type']} is not supported');
   var proofHash = util.sha256(jsonEncode(proof));
   var hashToSign = util.sha256(proofHash + hash);
 
