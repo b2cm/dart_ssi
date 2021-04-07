@@ -238,10 +238,10 @@ class Erc1056 {
     var didOwnerChangedEvent = erc1056contract.event('DIDOwnerChanged');
     var didDelegateChangedEvent = erc1056contract.event('DIDDelegateChanged');
     var didAttributeChangedEvent = erc1056contract.event('DIDAttributeChanged');
-    var owners = List<String>();
+    List<String> owners = [];
     var delegates = Map<String, List<String>>();
     var attributes = Map<String, List<String>>();
-    var revokedAttributes = List<String>();
+    List<String> revokedAttributes = [];
     int secNow = (DateTime.now().millisecondsSinceEpoch ~/ 1000);
 
     var lastChange = await changed(identityDid);
@@ -254,7 +254,7 @@ class Erc1056 {
             null,
             ['0x${_didToAddress(identityDid).hexNo0x.padLeft(64, '0')}']
           ]));
-      var listOfPreviousChanges = List<BigInt>();
+      List<BigInt> listOfPreviousChanges = [];
 
       await Future.forEach(logs, (event) async {
         if (event.topics.first == bufferToHex(didOwnerChangedEvent.signature)) {
@@ -286,7 +286,7 @@ class Erc1056 {
                   (!attributes[nameStr].contains(valueStr))) {
                 attributes[nameStr].add(valueStr);
               } else {
-                var tmp = List<String>();
+                List<String> tmp = [];
                 tmp.add(valueStr);
                 attributes[nameStr] = tmp;
               }
@@ -311,7 +311,7 @@ class Erc1056 {
                     .contains(_addressToDid(delegate)))) {
               delegates[delegateTypeString].add(_addressToDid(delegate));
             } else {
-              var tmpList = List<String>();
+              List<String> tmpList = [];
               tmpList.add(_addressToDid(delegate));
               delegates[delegateTypeString] = tmpList;
             }
@@ -354,7 +354,7 @@ class Erc1056 {
   }
 
   String _bytes32ToString(Uint8List value) {
-    List<int> nameUnpadded = List();
+    List<int> nameUnpadded = [];
     for (int i = 0; i < value.length; i++) {
       if (value[i] != 0) nameUnpadded.add(value[i]);
     }
