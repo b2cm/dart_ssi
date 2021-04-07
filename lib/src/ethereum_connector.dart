@@ -343,6 +343,28 @@ class Erc1056 {
     return eventData;
   }
 
+  /// Returns a minimal did-document for [did], only with information about the current identity owner
+  Future<String> didDocument(String did) async {
+    var owner = await identityOwner(did);
+    Map<String, dynamic> doc = {
+      '@context': [
+        "https://www.w3.org/ns/did/v1",
+        "https://identity.foundation/EcdsaSecp256k1RecoverySignature2020/lds-ecdsa-secp256k1-recovery2020-0.0.jsonld"
+      ],
+      "id": did,
+      "verificationMethod": [
+        {
+          "id": '$owner#controller',
+          "type": "EcdsaSecp256k1RecoveryMethod2020",
+          "controller": owner,
+          "blockchainAccountId": _didToAddress(owner).hexEip55
+        }
+      ],
+      "authentication": ['$owner#controller']
+    };
+    return jsonEncode(doc);
+  }
+
   Uint8List _to32ByteUtf8(String name) {
     var nameUtf8 = utf8.encode(name);
     if (nameUtf8.length > 32) throw Exception('name is too long');
