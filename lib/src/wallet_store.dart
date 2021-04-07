@@ -197,7 +197,7 @@ class WalletStore {
     var did = await _bip32KeyToDid(key);
 
     //store temporarily
-    _credentialBox.put(did, new Credential(path, '', ''));
+    await _credentialBox.put(did, new Credential(path, '', ''));
 
     return did;
   }
@@ -217,7 +217,7 @@ class WalletStore {
     var did = await _bip32KeyToDid(key);
 
     //store temporarily
-    _connection.put(did, new Connection(path, '', ''));
+    await _connection.put(did, new Connection(path, '', ''));
 
     return did;
   }

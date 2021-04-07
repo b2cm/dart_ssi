@@ -561,24 +561,50 @@ String getHolderDidFromCredential(dynamic credential) {
 }
 
 /// Signs the given String [toSign] with key-pair of [didToSignWith].
+///
+/// Returned signature is formatted as jws without payload (header..signature), known as detached jws.
+/// If no custom [jwsHeader] is given, the default one is
+/// ```
+/// {
+///   "alg" : "ES256K-R",
+///   "b64" : false,
+///   "critical" : ["b64"]
+/// }
+/// ```
+/// If a custom one should be used, it has to be given in ist json representation (dart String or Map) and the value of alg has to be ES256K-R,
+/// because for now this is the only supported signature algorithm.
 String signString(WalletStore wallet, String didToSignWith, String toSign,
-    {bool cred}) {
-  var hash = util.sha256(toSign);
-  String privKeyHex;
-  if (cred != null && cred) {
-    privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+    {dynamic jwsHeader}) {
+  String header;
+  if (jwsHeader != null) {
+    Map<String, dynamic> headerMap;
+    if (jwsHeader is String)
+      headerMap = jsonDecode(jwsHeader);
+    else
+      headerMap = jwsHeader;
+    if (headerMap['alg'] != 'ES256K-R')
+      throw Exception('Unsupported signature algorithm ${headerMap['alg']}');
+    header = base64UrlEncode(utf8.encode(jsonEncode(headerMap)));
   } else {
-    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+    var critical = new Map<String, dynamic>();
+    critical['b64'] = false;
+    header = buildJwsHeader(alg: 'ES256K-R', extra: critical);
   }
+  var signingInput = '$header.${base64UrlEncode(utf8.encode(toSign))}';
+  var hash = util.sha256(signingInput);
+  String privKeyHex;
+
+  privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  if (privKeyHex == null)
+    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+  if (privKeyHex == null) throw Exception('Cpild not find private key');
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash, key.privateKey);
   var sigArray = intToBytes(signature.r) +
       intToBytes(signature.s) +
       util.intToBuffer(signature.v - 27);
 
-  var critical = new Map<String, dynamic>();
-  critical['b64'] = false;
-  return '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
+  return '$header.'
       '.${base64UrlEncode(sigArray)}';
 }
 
@@ -587,7 +613,9 @@ Future<bool> verifyStringSignature(
     String toSign, String jws, String expectedDid,
     {Erc1056 erc1056}) async {
   var signature = _getSignatureFromJws(jws);
-  var hashToSign = util.sha256(toSign);
+  var signingInput =
+      '${jws.split('.')[0]}.${base64UrlEncode(utf8.encode(toSign))}';
+  var hashToSign = util.sha256(signingInput);
   var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
   var recoveredDid =
       'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
@@ -796,6 +824,10 @@ String _buildProofOptions(
 
 util.ECDSASignature _getSignatureFromJws(String jws) {
   var splitJws = jws.split('.');
+  Map<String, dynamic> header =
+      jsonDecode(utf8.decode(base64Decode(splitJws[0])));
+  if (header['alg'] != 'ES256K-R')
+    throw Exception('Unsupported signature Algorithm ${header['alg']}');
   var sigArray = base64Decode(splitJws[2]);
   if (sigArray.length != 65) throw Exception('wrong signature');
   return new util.ECDSASignature(bytesToInt(sigArray.sublist(0, 32)),
