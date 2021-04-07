@@ -61,19 +61,20 @@ For now the only supported signature-suite for the proof-section is [EcdsaSecp25
 ## Usage of Credentials
 As the [W3C-Specification for Verifiable Credentials](https://www.w3.org/TR/vc-data-model/) describes, a credential is issued by an issuer, stored by a holder and presented to verifier. 
 How to achieve this using this package is shown in the examples [issuance.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/issuance.dart) 
-and [verification.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/verification.dart). Beside this a credential could be revoke by its issuer
+and [verification.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/verification.dart). Beside this a credential could be revoked by its issuer
 as shown in [credentialRevocation.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/credentialRevocation.dart). 
 For the revocation a simple Ethereum-SmartContract is used, that should be deployed for each issuer.
 
 ## Key- and Identifier Management
 The identifiers used here are [decentralized identifiers (DID)](https://www.w3.org/TR/did-core/) according to a [ethereum-specific DID-Method](https://github.com/decentralized-identity/ethr-did-resolver). These DIDs are ethereum-addresses prepended with `did:ethr`.
-Because of this a secp256k1- key pair belongs to each identifier. The keys are manage in a hierarchical-deterministic manner as known from Bitcoin wallets, because it is recommended to use
+Because of this a secp256k1- key pair belongs to each identifier. The keys are managed in a hierarchical-deterministic manner as known from Bitcoin wallets, because it is recommended to use
 a new identifier for each credential or service you would like to interact with. To generate one use
 ```
 var newDID = await wallet.getNextCredentialDID();
 // or (when get in contact with a new service)
 var newDID = await wallet.getNextConnectionDID();
 ```
+This package only supports credentials that are issued to different dids each, because each credential is identified be it.
 
 With the [ERC1056-SmartContract (EtheremDIDRegistry)](https://eips.ethereum.org/EIPS/eip-1056) it is for
 example possible to rotate a key if it is lost/corrupted. An example for that could be found in [keyRotation.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/keyRotation.dart).  
