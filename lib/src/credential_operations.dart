@@ -74,7 +74,8 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
 /// ```
 /// where salt is a Version 4 UUID and hash is the keccak256-hash of salt + value (concatenation).
 /// [credential] could be a string or Map<String, dynamic> representing a valid json-Object.
-String buildPlaintextCredential(dynamic credential, String holderDid) {
+String buildPlaintextCredential(dynamic credential, String holderDid,
+    {bool addHashAlg = true}) {
   Map<String, dynamic> credMap = credentialToMap(credential);
   Map<String, dynamic> finalCred = new Map();
 
@@ -89,8 +90,7 @@ String buildPlaintextCredential(dynamic credential, String holderDid) {
   if (holderDid != '') {
     finalCred['id'] = holderDid;
   }
-
-  finalCred['hashAlg'] = 'keccak-256';
+  if (addHashAlg) finalCred['hashAlg'] = 'keccak-256';
 
   credMap.forEach((key, value) {
     if (key == 'type' || key == '@type') {
@@ -103,13 +103,15 @@ String buildPlaintextCredential(dynamic credential, String holderDid) {
         if (element is String || element is num || element is bool)
           newValue.add(_hashStringOrNum(element));
         else if (element is Map<String, dynamic>) {
-          newValue.add(jsonDecode(buildPlaintextCredential(element, '')));
+          newValue.add(jsonDecode(
+              buildPlaintextCredential(element, '', addHashAlg: false)));
         } else
           throw Exception('unknown type with key $key');
       });
       finalCred[key] = newValue;
     } else if (value is Map<String, dynamic>) {
-      finalCred[key] = jsonDecode(buildPlaintextCredential(value, ''));
+      finalCred[key] =
+          jsonDecode(buildPlaintextCredential(value, '', addHashAlg: false));
     } else {
       throw Exception('unknown datatype  with key $key');
     }
@@ -248,7 +250,7 @@ Future<bool> verifyCredential(dynamic credential,
 /// could be given and a proof section for each did is added.
 String buildPresentation(
     List<dynamic> credentials, WalletStore wallet, String challenge,
-    {List<String> additionalDids}) {
+    {List<String> additionalDids, List<dynamic> undisclosedCredentials}) {
   List<Map<String, dynamic>> credMapList = [];
   List<String> holderDids = [];
   credentials.forEach((element) {
@@ -263,6 +265,16 @@ String buildPresentation(
     'type': ['VerifiablePresentation'],
     'verifiableCredential': credMapList
   };
+
+  if (undisclosedCredentials != null) {
+    List<Map<String, dynamic>> undisclosedCreds = [];
+    undisclosedCredentials.forEach((element) {
+      var credMap = credentialToMap(element);
+      undisclosedCreds.add(credMap);
+    });
+    presentation['undisclosedCredentials'] = undisclosedCreds;
+  }
+
   var presentationHash = util.sha256(jsonEncode(presentation));
   List<Map<String, dynamic>> proofList = [];
   holderDids.forEach((element) {
@@ -315,6 +327,19 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
       throw Exception('Proof for $verifMeth could not been verified');
   });
   if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
+
+  if (presentationMap.containsKey('undisclosedCredentials')) {
+    var undisclosedCredentials =
+        presentationMap['undisclosedCredentials'] as List;
+    Map<String, Map<String, dynamic>> credsToId = {};
+    credentials.forEach((element) {
+      var did = getHolderDidFromCredential(element);
+      credsToId[did] = element;
+    });
+
+    undisclosedCredentials.forEach((element) =>
+        compareW3cCredentialAndPlaintext(credsToId[element['id']], element));
+  }
   return true;
 }
 
@@ -843,7 +868,7 @@ util.ECDSASignature _getSignatureFromJws(String jws) {
   if (header['alg'] != 'ES256K-R')
     throw Exception('Unsupported signature Algorithm ${header['alg']}');
   var sigArray = base64Decode(_addPaddingToBase64(splitJws[2]));
-  if (sigArray.length != 65) throw Exception('wrong signature');
+  if (sigArray.length != 65) throw Exception('wrong signature-length');
   return new util.ECDSASignature(bytesToInt(sigArray.sublist(0, 32)),
       bytesToInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
 }

@@ -35,5 +35,5 @@ void main() async {
 
   var jws = signString(holder, did, challenge);
 
-  print(await verifyStringSignature(challenge, jws, did, erc1056: erc1056));
+  print(await verifyStringSignature(jws, did, erc1056: erc1056));
 }

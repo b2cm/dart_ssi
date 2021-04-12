@@ -1306,6 +1306,7 @@ void main() async {
   group('sign and verify presentation', () {
     WalletStore holder;
     String didCred1, didCred2, didCred3;
+    String plaintext1, plaintext2, plaintext3;
     String signed1, signed2, signed3;
     setUp(() async {
       var iss1 = WalletStore('testIss1');
@@ -1346,9 +1347,9 @@ void main() async {
       didCred2 = await holder.getNextCredentialDID();
       didCred3 = await holder.getNextCredentialDID();
 
-      var plaintext1 = buildPlaintextCredential(cred1, didCred1);
-      var plaintext2 = buildPlaintextCredential(cred2, didCred2);
-      var plaintext3 = buildPlaintextCredential(cred3, didCred3);
+      plaintext1 = buildPlaintextCredential(cred1, didCred1);
+      plaintext2 = buildPlaintextCredential(cred2, didCred2);
+      plaintext3 = buildPlaintextCredential(cred3, didCred3);
 
       var w3cCred1 =
           buildW3cCredentialwithHashes(plaintext1, iss1.getStandardIssuerDid());
@@ -1501,6 +1502,27 @@ void main() async {
           await verifyPresentation(presentation2, challenge,
               erc1056: erc1056, rpcUrl: rpcUrl),
           true);
+    });
+
+    group('undisclosed Credentials in presentation', () {
+      String undisclosed1, undisclosed2, undisclosed3;
+      setUp(() {
+        undisclosed1 =
+            discloseValues(plaintext1, ['name', 'address.streetAddress']);
+        undisclosed2 = discloseValues(plaintext2, ['grades.1']);
+        undisclosed3 = discloseValues(plaintext3, ['rolle']);
+      });
+
+      test('all without manipulation', () async {
+        var challenge = Uuid().v4();
+        var presentation = buildPresentation(
+            [signed1, signed2, signed3], holder, challenge,
+            undisclosedCredentials: [undisclosed1, undisclosed2, undisclosed3]);
+        Map<String, dynamic> presMap = jsonDecode(presentation);
+        expect(presMap.containsKey('undisclosedCredentials'), true);
+        expect(presMap['undisclosedCredentials'].length, 3);
+        expect(await verifyPresentation(presentation, challenge), true);
+      });
     });
 
     tearDown(() {
