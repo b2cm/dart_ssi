@@ -273,6 +273,9 @@ String buildPresentation(
       undisclosedCreds.add(credMap);
     });
     presentation['undisclosedCredentials'] = undisclosedCreds;
+    var type = presentation['type'] as List<String>;
+    type.add('UndisclosedCredentialPresentation');
+    presentation['type'] = type;
   }
 
   var presentationHash = util.sha256(jsonEncode(presentation));
