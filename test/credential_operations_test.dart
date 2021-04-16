@@ -1517,7 +1517,7 @@ void main() async {
         var challenge = Uuid().v4();
         var presentation = buildPresentation(
             [signed1, signed2, signed3], holder, challenge,
-            undisclosedCredentials: [undisclosed1, undisclosed2, undisclosed3]);
+            disclosedCredentials: [undisclosed1, undisclosed2, undisclosed3]);
         Map<String, dynamic> presMap = jsonDecode(presentation);
         expect(presMap.containsKey('undisclosedCredentials'), true);
         expect(presMap['undisclosedCredentials'].length, 3);

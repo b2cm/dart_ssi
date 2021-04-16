@@ -250,7 +250,7 @@ Future<bool> verifyCredential(dynamic credential,
 /// could be given and a proof section for each did is added.
 String buildPresentation(
     List<dynamic> credentials, WalletStore wallet, String challenge,
-    {List<String> additionalDids, List<dynamic> undisclosedCredentials}) {
+    {List<String> additionalDids, List<dynamic> disclosedCredentials}) {
   List<Map<String, dynamic>> credMapList = [];
   List<String> holderDids = [];
   credentials.forEach((element) {
@@ -266,15 +266,15 @@ String buildPresentation(
     'verifiableCredential': credMapList
   };
 
-  if (undisclosedCredentials != null) {
-    List<Map<String, dynamic>> undisclosedCreds = [];
-    undisclosedCredentials.forEach((element) {
+  if (disclosedCredentials != null) {
+    List<Map<String, dynamic>> disclosedCreds = [];
+    disclosedCredentials.forEach((element) {
       var credMap = credentialToMap(element);
-      undisclosedCreds.add(credMap);
+      disclosedCreds.add(credMap);
     });
-    presentation['undisclosedCredentials'] = undisclosedCreds;
+    presentation['disclosedCredentials'] = disclosedCreds;
     var type = presentation['type'] as List<String>;
-    type.add('UndisclosedCredentialPresentation');
+    type.add('DisclosedCredentialPresentation');
     presentation['type'] = type;
   }
 
@@ -331,16 +331,15 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   });
   if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
 
-  if (presentationMap.containsKey('undisclosedCredentials')) {
-    var undisclosedCredentials =
-        presentationMap['undisclosedCredentials'] as List;
+  if (presentationMap.containsKey('disclosedCredentials')) {
+    var disclosedCredentials = presentationMap['disclosedCredentials'] as List;
     Map<String, Map<String, dynamic>> credsToId = {};
     credentials.forEach((element) {
       var did = getHolderDidFromCredential(element);
       credsToId[did] = element;
     });
 
-    undisclosedCredentials.forEach((element) =>
+    disclosedCredentials.forEach((element) =>
         compareW3cCredentialAndPlaintext(credsToId[element['id']], element));
   }
   return true;
