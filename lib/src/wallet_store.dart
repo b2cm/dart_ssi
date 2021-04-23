@@ -35,22 +35,48 @@ class WalletStore {
     } catch (HiveError) {}
   }
 
-  /// Opens storage containers encrypted with [password]
-  Future<void> openBoxes(String password) async {
+  /// Opens storage containers optional encrypted with [password]
+  Future<bool> openBoxes([String password]) async {
     //password to AES-Key
-    var generator = new PBKDF2(hash: sha256);
-    var aesKey = generator.generateKey(password, "salt", 1000, 32);
-    //only values are encrypted, keys are stored in plaintext
-    this._keyBox =
-        await Hive.openBox('keyBox', encryptionCipher: HiveAesCipher(aesKey));
-    this._credentialBox = await Hive.openBox<Credential>('credentialBox',
-        encryptionCipher: HiveAesCipher(aesKey));
-    this._configBox = await Hive.openBox('configBox',
-        encryptionCipher: HiveAesCipher(aesKey));
-    this._issuingHistory = await Hive.openBox<Credential>('issuingHistory',
-        encryptionCipher: HiveAesCipher(aesKey));
-    this._connection = await Hive.openBox<Connection>('connections',
-        encryptionCipher: HiveAesCipher(aesKey));
+    if (password != null) {
+      var generator = new PBKDF2(hash: sha256);
+      var aesKey = generator.generateKey(password, "salt", 1000, 32);
+      //only values are encrypted, keys are stored in plaintext
+      this._keyBox =
+          await Hive.openBox('keyBox', encryptionCipher: HiveAesCipher(aesKey));
+      this._credentialBox = await Hive.openBox<Credential>('credentialBox',
+          encryptionCipher: HiveAesCipher(aesKey));
+      this._configBox = await Hive.openBox('configBox',
+          encryptionCipher: HiveAesCipher(aesKey));
+      this._issuingHistory = await Hive.openBox<Credential>('issuingHistory',
+          encryptionCipher: HiveAesCipher(aesKey));
+      this._connection = await Hive.openBox<Connection>('connections',
+          encryptionCipher: HiveAesCipher(aesKey));
+    } else {
+      this._keyBox = await Hive.openBox('keyBox');
+      this._credentialBox = await Hive.openBox<Credential>('credentialBox');
+      this._configBox = await Hive.openBox('configBox');
+      this._issuingHistory = await Hive.openBox<Credential>('issuingHistory');
+      this._connection = await Hive.openBox<Connection>('connections');
+    }
+    return this._keyBox != null &&
+        this._issuingHistory != null &&
+        this._credentialBox != null &&
+        this._configBox != null &&
+        this._connection != null;
+  }
+
+  bool isWalletOpen() {
+    return this._keyBox.isOpen &&
+        this._issuingHistory.isOpen &&
+        this._credentialBox.isOpen &&
+        this._configBox.isOpen &&
+        this._connection.isOpen;
+  }
+
+  //Checks whether the wallet is initialized with master-seed.
+  bool isInitialized() {
+    return this._keyBox.get('seed') != null;
   }
 
   /// Closes Storage Containers
@@ -197,6 +223,7 @@ class WalletStore {
     var did = await _bip32KeyToDid(key);
 
     //store temporarily
+    await _configBox.put('lastCredentialDid', did);
     await _credentialBox.put(did, new Credential(path, '', ''));
 
     return did;
@@ -217,9 +244,18 @@ class WalletStore {
     var did = await _bip32KeyToDid(key);
 
     //store temporarily
+    await _configBox.put('lastConnectionDid', did);
     await _connection.put(did, new Connection(path, '', ''));
 
     return did;
+  }
+
+  String getLastCredentialDid() {
+    return _configBox.get('lastCredentialDid');
+  }
+
+  String getLastConnectionDid() {
+    return _configBox.get('lastConnectionDid');
   }
 
   /// Returns the DID associated with [hdPath].
