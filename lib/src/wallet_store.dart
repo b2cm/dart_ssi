@@ -67,11 +67,18 @@ class WalletStore {
   }
 
   bool isWalletOpen() {
-    return this._keyBox.isOpen &&
-        this._issuingHistory.isOpen &&
-        this._credentialBox.isOpen &&
-        this._configBox.isOpen &&
-        this._connection.isOpen;
+    if (_keyBox == null ||
+        _issuingHistory == null ||
+        _credentialBox == null ||
+        _configBox == null ||
+        _connection == null)
+      return false;
+    else
+      return (this._keyBox.isOpen) &&
+          (_issuingHistory.isOpen) &&
+          (this._credentialBox.isOpen) &&
+          (this._configBox.isOpen) &&
+          (this._connection.isOpen);
   }
 
   //Checks whether the wallet is initialized with master-seed.
