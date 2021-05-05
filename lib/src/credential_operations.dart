@@ -496,6 +496,44 @@ String discloseValues(
   return jsonEncode(plaintextMap);
 }
 
+/// Returns all json-paths of the relevant keys used in the credentialSubject-part of a [w3cCredential].
+List<String> getAllJsonPathsOfCredential(dynamic w3cCredential) {
+  var cred = credentialToMap(w3cCredential);
+  if (cred.containsKey('credentialSubject')) cred = cred['credentialSubject'];
+  List<String> paths = [];
+  cred.forEach((key, value) {
+    if (!(key == 'type' ||
+        key == '@type' ||
+        key == '@context' ||
+        key == 'id')) {
+      if (value is String || value is num || value is bool)
+        paths.add(key);
+      else if (value is Map) {
+        var objectPaths = getAllJsonPathsOfCredential(value);
+        objectPaths.forEach((element) {
+          paths.add('$key.$element');
+        });
+      } else if (value is List) {
+        for (int i = 0; i < value.length; i++) {
+          if (value[i] is String || value[i] is num || value[i] is bool)
+            paths.add('$key.$i');
+          else if (value[i] is Map) {
+            var objectPaths = getAllJsonPathsOfCredential(value[i]);
+            objectPaths.forEach((element) {
+              paths.add('$key.$i.$element');
+            });
+          } else
+            throw Exception(
+                'Malformed array element in array with key $key at index $i');
+        }
+      } else
+        throw Exception('Unknown data type at key $key');
+    }
+  });
+
+  return paths;
+}
+
 String buildJwsHeader(
     {@required String alg,
     String jku,

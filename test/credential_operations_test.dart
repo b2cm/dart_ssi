@@ -1780,4 +1780,51 @@ void main() async {
       expect(f2familyName.keys, ['hash']);
     });
   });
+
+  group('get json-Paths', () {
+    test('simple credential', () {
+      var cred = {'name': 'Mustermann', 'surname': 'Max'};
+      var paths = getAllJsonPathsOfCredential(cred);
+      expect(paths.length, 2);
+      expect(paths.contains('name'), true);
+      expect(paths.contains('surname'), true);
+    });
+
+    test('credential with Object', () {
+      var cred = {
+        'address': {'street': 'Main Street', 'postalCode': 09661}
+      };
+      var paths = getAllJsonPathsOfCredential(cred);
+      expect(paths.length, 2);
+      expect(paths.contains('address.street'), true);
+      expect(paths.contains('address.postalCode'), true);
+    });
+
+    test('with simple array', () {
+      var cred = {
+        'drivingClasses': ['AM', 'L', 'B']
+      };
+      var paths = getAllJsonPathsOfCredential(cred);
+      expect(paths.length, 3);
+      expect(paths.contains('drivingClasses.0'), true);
+      expect(paths.contains('drivingClasses.1'), true);
+      expect(paths.contains('drivingClasses.2'), true);
+    });
+
+    test('Array with Objects', () {
+      var cred = {
+        'friends': [
+          {'name': 'Lukas', 'age': 19},
+          {'name': 'Bastian', 'age': 18}
+        ]
+      };
+      var paths = getAllJsonPathsOfCredential(cred);
+      print(paths);
+      expect(paths.length, 4);
+      expect(paths.contains('friends.0.name'), true);
+      expect(paths.contains('friends.1.name'), true);
+      expect(paths.contains('friends.0.age'), true);
+      expect(paths.contains('friends.1.age'), true);
+    });
+  });
 }
