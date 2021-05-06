@@ -198,6 +198,9 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
     w3cMap = w3cMap['credentialSubject'];
   if (plainMap['id'] != w3cMap['id'])
     throw Exception('Ids of given credentials do not match');
+  if (plainMap['hashAlg'] != 'keccak-256')
+    throw Exception(
+        'Hashing Algorithm ${plainMap['hashAlg']} is not supported');
   return _checkHashes(w3cMap, plainMap);
 }
 
@@ -764,9 +767,6 @@ String _collectHashes(dynamic credential, {String id}) {
 }
 
 bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
-  if (plainHash['hashAlg'] != 'keccak-256')
-    throw Exception(
-        'hashing Algorithm ${plainHash['hashAlg']} is not supported');
   plainHash.forEach((key, value) {
     if (!(key == '@context' ||
         key == 'type' ||
