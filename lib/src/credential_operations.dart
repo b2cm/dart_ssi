@@ -406,7 +406,9 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
 String discloseValues(
     dynamic plaintextCredential, List<String> valuesToDisclose) {
   Map<String, dynamic> plaintextMap = credentialToMap(plaintextCredential);
+  Map<String, dynamic> result = {};
   plaintextMap.forEach((key, value) {
+    result[key] = value;
     if (!(key == '@context' ||
         key == 'type' ||
         key == '@type' ||
@@ -416,7 +418,7 @@ String discloseValues(
       if (_hashedAttributeSchemaStrict.validate(value)) {
         // check if key should be disclosed
         if (valuesToDisclose.contains(key)) {
-          value as Map<String, dynamic>..remove('value')..remove('salt');
+          result[key] = {'hash': value['hash']};
         }
       }
       // new Object found
@@ -438,11 +440,12 @@ String discloseValues(
             valuesSeen.add(element);
           }
         });
-        value = jsonDecode(discloseValues(value, valuesToDiscloseNew));
-        plaintextMap[key] = value;
+        var newValue = jsonDecode(discloseValues(value, valuesToDiscloseNew));
+        result[key] = newValue;
       }
       // array found
       else if (value is List) {
+        result[key] = value;
         List<String> valuesSeen = [];
         valuesToDisclose.forEach((element) {
           if (valuesSeen.contains(element)) {
@@ -453,14 +456,15 @@ String discloseValues(
             for (var i = 0; i < value.length; i++) {
               valuesToDiscloseNew.add('$key.$i');
             }
-            value = jsonDecode(
+            result[key] = jsonDecode(
                 discloseValues({key: value}, valuesToDiscloseNew))[key];
           }
           //elementwise disclosing
           else if (element.split('.').first == key) {
             int arrayIndex = int.parse(element.split('.')[1]);
             if (_hashedAttributeSchemaStrict.validate(value[arrayIndex])) {
-              value[arrayIndex] = value[arrayIndex] as Map<String, dynamic>
+              result[key]
+                  [arrayIndex] = result[key][arrayIndex] as Map<String, dynamic>
                 ..remove('value')
                 ..remove('salt');
             }
@@ -483,7 +487,7 @@ String discloseValues(
                   }
                 }
               });
-              value[arrayIndex] = jsonDecode(
+              result[key][arrayIndex] = jsonDecode(
                   discloseValues(value[arrayIndex], valuesToDiscloseNew));
             } else {
               throw Exception(
@@ -496,7 +500,7 @@ String discloseValues(
       }
     }
   });
-  return jsonEncode(plaintextMap);
+  return jsonEncode(result);
 }
 
 /// Returns all json-paths of the relevant keys used in the credentialSubject-part of a [w3cCredential].
