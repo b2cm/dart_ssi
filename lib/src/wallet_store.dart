@@ -16,11 +16,11 @@ import 'hive_model.dart';
 /// Per default the path m/456/0/index is used for keys and dids to prove and identify the credentials someone hold.
 /// If a wallet is also used to issue credentials the keypair found at path m/456/1/0  is the default one.
 class WalletStore {
-  Box _keyBox;
-  Box<Credential> _credentialBox;
-  Box _configBox;
-  Box<Credential> _issuingHistory;
-  Box<Connection> _connection;
+  Box? _keyBox;
+  Box<Credential>? _credentialBox;
+  Box? _configBox;
+  Box<Credential>? _issuingHistory;
+  Box<Connection>? _connection;
 
   ///The Path used to derive keys
   final String standardCredentialPath = 'm/456/0/';
@@ -36,7 +36,7 @@ class WalletStore {
   }
 
   /// Opens storage containers optional encrypted with [password]
-  Future<bool> openBoxes([String password]) async {
+  Future<bool> openBoxes([String? password]) async {
     //password to AES-Key
     if (password != null) {
       var generator = new PBKDF2(hash: sha256);
@@ -74,83 +74,83 @@ class WalletStore {
         _connection == null)
       return false;
     else
-      return (this._keyBox.isOpen) &&
-          (_issuingHistory.isOpen) &&
-          (this._credentialBox.isOpen) &&
-          (this._configBox.isOpen) &&
-          (this._connection.isOpen);
+      return (this._keyBox!.isOpen) &&
+          (_issuingHistory!.isOpen) &&
+          (this._credentialBox!.isOpen) &&
+          (this._configBox!.isOpen) &&
+          (this._connection!.isOpen);
   }
 
   //Checks whether the wallet is initialized with master-seed.
   bool isInitialized() {
-    return this._keyBox.get('seed') != null;
+    return this._keyBox!.get('seed') != null;
   }
 
   /// Closes Storage Containers
   Future<void> closeBoxes() async {
-    await _keyBox.close();
-    await _credentialBox.close();
-    await _configBox.close();
-    await _connection.close();
+    await _keyBox!.close();
+    await _credentialBox!.close();
+    await _configBox!.close();
+    await _connection!.close();
   }
 
   /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
   ///
   /// Returns the used mnemonic.
-  String initialize([String mnemonic]) {
+  String? initialize([String? mnemonic]) {
     var mne = mnemonic;
     if (mnemonic == null) {
       mne = generateMnemonic();
     }
-    var seed = mnemonicToSeed(mne);
+    var seed = mnemonicToSeed(mne!);
 
-    this._keyBox.put('seed', seed);
-    this._keyBox.put('lastCredentialIndex', 0);
-    this._keyBox.put('lastConnectionIndex', 0);
+    this._keyBox!.put('seed', seed);
+    this._keyBox!.put('lastCredentialIndex', 0);
+    this._keyBox!.put('lastConnectionIndex', 0);
 
     return mne;
   }
 
   /// Generates and returns DID for the issuer.
   Future<String> initializeIssuer() async {
-    var master = BIP32.fromSeed(_keyBox.get('seed'));
+    var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var key = master.derivePath('m/456/1/0');
     var issuerDid = await _bip32KeyToDid(key);
-    _keyBox.put('issuerDid', issuerDid);
-    _credentialBox.put(issuerDid, new Credential('m/456/1/0', '', ''));
+    _keyBox!.put('issuerDid', issuerDid);
+    _credentialBox!.put(issuerDid, new Credential('m/456/1/0', '', ''));
     return issuerDid;
   }
 
   /// Returns the DID for issuing credentials.
-  String getStandardIssuerDid() {
-    return _keyBox.get('issuerDid');
+  String? getStandardIssuerDid() {
+    return _keyBox!.get('issuerDid');
   }
 
   /// Returns the private key for issuing credentials.
-  String getStandardIssuerPrivateKey() {
+  String? getStandardIssuerPrivateKey() {
     return getPrivateKeyToCredentialDid(getStandardIssuerDid());
   }
 
   /// Lists all Credentials.
   Map<dynamic, Credential> getAllCredentials() {
-    var credMap = _credentialBox.toMap();
+    var credMap = _credentialBox!.toMap();
     return credMap;
   }
 
   /// Lists all Connections.
   Map<dynamic, Connection> getAllConnections() {
-    var credMap = _connection.toMap();
+    var credMap = _connection!.toMap();
     return credMap;
   }
 
   /// Returns the credential associated with [did].
-  Credential getCredential(String did) {
-    return this._credentialBox.get(did);
+  Credential? getCredential(String? did) {
+    return this._credentialBox!.get(did);
   }
 
   /// Returns the connection associated with [did].
-  Connection getConnection(String did) {
-    return this._connection.get(did);
+  Connection? getConnection(String? did) {
+    return this._connection!.get(did);
   }
 
   /// Stores a credential permanently.
@@ -160,15 +160,15 @@ class WalletStore {
   /// - a json structure [plaintextCred] containing hashes, salts and values per credential attribute
   /// - the [hdPath] to derive the key for the did the credential is issued for
   Future<void> storeCredential(
-      String w3cCred, String plaintextCred, String hdPath,
-      {String credDid}) async {
+      String? w3cCred, String? plaintextCred, String? hdPath,
+      {String? credDid}) async {
     var did;
     if (credDid == null)
-      did = await getDid(hdPath);
+      did = await getDid(hdPath!);
     else
       did = credDid;
-    var tmp = new Credential(hdPath, w3cCred, plaintextCred);
-    await this._credentialBox.put(did, tmp);
+    var tmp = new Credential(hdPath!, w3cCred!, plaintextCred!);
+    await this._credentialBox!.put(did, tmp);
   }
 
   /// Stores a Connection permanently.
@@ -177,61 +177,61 @@ class WalletStore {
   /// - the did of the communication partner [otherDid]
   /// - the [name] of the connection / the username used in this connection.
   /// - the [hdPath] to derive the key for the did of the communication
-  Future<void> storeConnection(String otherDid, String name, String hdPath,
-      {String comDid}) async {
+  Future<void> storeConnection(String otherDid, String name, String? hdPath,
+      {String? comDid}) async {
     var did;
     if (comDid == null)
-      did = await getDid(hdPath);
+      did = await getDid(hdPath!);
     else
       did = comDid;
-    var tmp = new Connection(hdPath, otherDid, name);
-    await this._connection.put(did, tmp);
+    var tmp = new Connection(hdPath!, otherDid, name);
+    await this._connection!.put(did, tmp);
   }
 
   /// Stores a credential issued to [holderDid].
   void toIssuingHistory(
       String holderDid, String plaintextCredential, String w3cCredential) {
     var tmp = new Credential('', w3cCredential, plaintextCredential);
-    _issuingHistory.put(holderDid, tmp);
+    _issuingHistory!.put(holderDid, tmp);
   }
 
   /// Returns a credential one issued to [holderDid].
-  Credential getIssuedCredential(String holderDid) {
-    return _issuingHistory.get(holderDid);
+  Credential? getIssuedCredential(String holderDid) {
+    return _issuingHistory!.get(holderDid);
   }
 
   /// Returns all credentials one issued over time.
   Map<dynamic, Credential> getAllIssuedCredentials() {
-    return _issuingHistory.toMap();
+    return _issuingHistory!.toMap();
   }
 
   /// Returns the last value of the next HD-path.
-  int getLastIndex() {
-    return _keyBox.get('lastCredentialIndex');
+  int? getLastIndex() {
+    return _keyBox!.get('lastCredentialIndex');
   }
 
   /// Returns the last value of the next HD-path for the communication keys.
-  int getLastCommunicationIndex() {
-    return _keyBox.get('lastConnectionIndex');
+  int? getLastCommunicationIndex() {
+    return _keyBox!.get('lastConnectionIndex');
   }
 
   /// Returns a new DID a credential could be issued for.
   Future<String> getNextCredentialDID() async {
     //generate new keypair
-    var master = BIP32.fromSeed(_keyBox.get('seed'));
-    var lastIndex = _keyBox.get('lastCredentialIndex');
+    var master = BIP32.fromSeed(_keyBox!.get('seed'));
+    var lastIndex = _keyBox!.get('lastCredentialIndex');
     var path = '$standardCredentialPath${lastIndex.toString()}';
     var key = master.derivePath(path);
 
     //increment derivation index
     lastIndex++;
-    await _keyBox.put('lastCredentialIndex', lastIndex);
+    await _keyBox!.put('lastCredentialIndex', lastIndex);
 
     var did = await _bip32KeyToDid(key);
 
     //store temporarily
-    await _configBox.put('lastCredentialDid', did);
-    await _credentialBox.put(did, new Credential(path, '', ''));
+    await _configBox!.put('lastCredentialDid', did);
+    await _credentialBox!.put(did, new Credential(path, '', ''));
 
     return did;
   }
@@ -239,83 +239,83 @@ class WalletStore {
   /// Returns a new connection-DID.
   Future<String> getNextConnectionDID() async {
     //generate new keypair
-    var master = BIP32.fromSeed(_keyBox.get('seed'));
-    var lastIndex = _keyBox.get('lastConnectionIndex');
+    var master = BIP32.fromSeed(_keyBox!.get('seed'));
+    var lastIndex = _keyBox!.get('lastConnectionIndex');
     var path = '$standardConnectionPath${lastIndex.toString()}';
     var key = master.derivePath(path);
 
     //increment derivation index
     lastIndex++;
-    await _keyBox.put('lastConnectionIndex', lastIndex);
+    await _keyBox!.put('lastConnectionIndex', lastIndex);
 
     var did = await _bip32KeyToDid(key);
 
     //store temporarily
-    await _configBox.put('lastConnectionDid', did);
-    await _connection.put(did, new Connection(path, '', ''));
+    await _configBox!.put('lastConnectionDid', did);
+    await _connection!.put(did, new Connection(path, '', ''));
 
     return did;
   }
 
-  String getLastCredentialDid() {
-    return _configBox.get('lastCredentialDid');
+  String? getLastCredentialDid() {
+    return _configBox!.get('lastCredentialDid');
   }
 
-  String getLastConnectionDid() {
-    return _configBox.get('lastConnectionDid');
+  String? getLastConnectionDid() {
+    return _configBox!.get('lastConnectionDid');
   }
 
   /// Returns the DID associated with [hdPath].
   Future<String> getDid(String hdPath) async {
-    var master = BIP32.fromSeed(_keyBox.get('seed'));
+    var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var key = master.derivePath(hdPath);
     return await _bip32KeyToDid(key);
   }
 
   /// Returns the private key as hex-String associated with [hdPath].
   String getPrivateKey(String hdPath) {
-    var master = BIP32.fromSeed(_keyBox.get('seed'));
+    var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var key = master.derivePath(hdPath);
-    return HEX.encode(key.privateKey);
+    return HEX.encode(key.privateKey!);
   }
 
   /// Returns the public key as hex-String associated with [hdPath].
   String getPublicKey(String hdPath) {
-    var master = BIP32.fromSeed(_keyBox.get('seed'));
+    var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var key = master.derivePath(hdPath);
-    return HEX.encode(key.publicKey);
+    return HEX.encode(key.publicKey!);
   }
 
   /// Returns the private key as hex-String associated with [did].
-  String getPrivateKeyToCredentialDid(String did) {
+  String? getPrivateKeyToCredentialDid(String? did) {
     var cred = getCredential(did);
     if (cred == null) return null;
-    var master = BIP32.fromSeed(_keyBox.get('seed'));
-    var key = master.derivePath(cred.hdPath);
-    return HEX.encode(key.privateKey);
+    var master = BIP32.fromSeed(_keyBox!.get('seed'));
+    var key = master.derivePath(cred.hdPath!);
+    return HEX.encode(key.privateKey!);
   }
 
   /// Returns the private key as hex-String associated with [did].
-  String getPrivateKeyToConnectionDid(String did) {
+  String? getPrivateKeyToConnectionDid(String? did) {
     var com = getConnection(did);
     if (com == null) return null;
-    var master = BIP32.fromSeed(_keyBox.get('seed'));
-    var key = master.derivePath(com.hdPath);
-    return HEX.encode(key.privateKey);
+    var master = BIP32.fromSeed(_keyBox!.get('seed'));
+    var key = master.derivePath(com.hdPath!);
+    return HEX.encode(key.privateKey!);
   }
 
   /// Stores a configuration Entry.
   void storeConfigEntry(String key, String value) {
-    _configBox.put(key, value);
+    _configBox!.put(key, value);
   }
 
   /// Returns the configuration Entry for [key].
-  String getConfigEntry(String key) {
-    return _configBox.get(key);
+  String? getConfigEntry(String key) {
+    return _configBox!.get(key);
   }
 
   Future<String> _bip32KeyToDid(BIP32 key) async {
-    var private = EthPrivateKey.fromHex(HEX.encode(key.privateKey));
+    var private = EthPrivateKey.fromHex(HEX.encode(key.privateKey!));
     var addr = await private.extractAddress();
     return 'did:ethr:${addr.hexEip55}';
   }

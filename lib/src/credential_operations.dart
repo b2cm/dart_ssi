@@ -74,9 +74,9 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
 /// ```
 /// where salt is a Version 4 UUID and hash is the keccak256-hash of salt + value (concatenation).
 /// [credential] could be a string or Map<String, dynamic> representing a valid json-Object.
-String buildPlaintextCredential(dynamic credential, String holderDid,
+String buildPlaintextCredential(dynamic credential, String? holderDid,
     {bool addHashAlg = true}) {
-  Map<String, dynamic> credMap = credentialToMap(credential);
+  Map<String, dynamic> credMap = credentialToMap(credential)!;
   Map<String, dynamic> finalCred = new Map();
 
   if (credMap.containsKey('credentialSubject')) {
@@ -98,7 +98,7 @@ String buildPlaintextCredential(dynamic credential, String holderDid,
     } else if (value is String || value is num || value is bool) {
       finalCred[key] = _hashStringOrNum(value);
     } else if (value is List) {
-      List<Map<String, dynamic>> newValue = [];
+      List<Map<String, dynamic>?> newValue = [];
       value.forEach((element) {
         if (element is String || element is num || element is bool)
           newValue.add(_hashStringOrNum(element));
@@ -122,9 +122,9 @@ String buildPlaintextCredential(dynamic credential, String holderDid,
 
 /// Builds a credential conform to W3C-Standard, which includes all hashes a
 /// plaintext-credential [credential] contains.
-String buildW3cCredentialwithHashes(dynamic credential, String issuerDid,
-    {dynamic type, dynamic context, String revocationRegistryAddress}) {
-  var plaintectMap = credentialToMap(credential);
+String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
+    {dynamic type, dynamic context, String? revocationRegistryAddress}) {
+  var plaintectMap = credentialToMap(credential)!;
   var hashCred = _collectHashes(credential, id: plaintectMap['id']);
 
   List<String> credTypes = [];
@@ -156,7 +156,7 @@ String buildW3cCredentialwithHashes(dynamic credential, String issuerDid,
       throw Exception('type has unknown datatype');
   }
   // adding context of Plaintext-credential
-  var plaintextCredMap = credentialToMap(credential);
+  var plaintextCredMap = credentialToMap(credential)!;
   if (plaintextCredMap.containsKey('@context')) {
     var context = plaintextCredMap['@context'];
     if (context is List) {
@@ -192,8 +192,8 @@ String buildW3cCredentialwithHashes(dynamic credential, String issuerDid,
 
 /// Checks weather a W3C-Credential containing all attribute hashes belongs to a Plaintext Credential or not.
 bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
-  var w3cMap = credentialToMap(w3cCred);
-  var plainMap = credentialToMap(plaintext);
+  var w3cMap = credentialToMap(w3cCred)!;
+  var plainMap = credentialToMap(plaintext)!;
   if (w3cMap.containsKey('credentialSubject'))
     w3cMap = w3cMap['credentialSubject'];
   if (plainMap['id'] != w3cMap['id'])
@@ -207,13 +207,13 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 /// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
 String signCredential(WalletStore wallet, dynamic credential) {
   credential = credentialToMap(credential);
-  String issuerDid = getIssuerDidFromCredential(credential);
+  String? issuerDid = getIssuerDidFromCredential(credential);
   if (issuerDid == null) {
     throw new Exception('Could not examine IssuerDID');
   }
 
   var credHash = sha256.convert(utf8.encode(jsonEncode(credential))).bytes;
-  var proof = _buildProof(credHash, issuerDid, wallet);
+  var proof = _buildProof(credHash as Uint8List, issuerDid, wallet);
 
   credential['proof'] = proof;
   return jsonEncode(credential);
@@ -221,8 +221,8 @@ String signCredential(WalletStore wallet, dynamic credential) {
 
 /// Verifies the signature for the given [credential].
 Future<bool> verifyCredential(dynamic credential,
-    {Erc1056 erc1056, String rpcUrl}) async {
-  Map<String, dynamic> credMap = credentialToMap(credential);
+    {Erc1056? erc1056, String? rpcUrl}) async {
+  Map<String, dynamic> credMap = credentialToMap(credential)!;
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
   }
@@ -234,7 +234,7 @@ Future<bool> verifyCredential(dynamic credential,
       var revRegistry =
           RevocationRegistry(rpcUrl, contractAddress: credStatus['id']);
       var revoked =
-          await revRegistry.isRevoked(getHolderDidFromCredential(credMap));
+          await revRegistry.isRevoked(getHolderDidFromCredential(credMap)!);
       if (revoked) throw Exception('Credential was revoked');
     }
   }
@@ -243,8 +243,8 @@ Future<bool> verifyCredential(dynamic credential,
   credMap.remove('proof');
   var credHash = sha256.convert(utf8.encode(jsonEncode(credMap))).bytes;
   var issuerDid = getIssuerDidFromCredential(credential);
-  if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
-  return _verifyProof(proof, credHash, issuerDid);
+  if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid!);
+  return _verifyProof(proof, credHash as Uint8List, issuerDid);
 }
 
 /// Builds a presentation for [credentials].
@@ -252,10 +252,10 @@ Future<bool> verifyCredential(dynamic credential,
 /// If not only the ownership od the dids in the credentials should be proofed a List of [additionalDids]
 /// could be given and a proof section for each did is added.
 String buildPresentation(
-    List<dynamic> credentials, WalletStore wallet, String challenge,
-    {List<String> additionalDids, List<dynamic> disclosedCredentials}) {
-  List<Map<String, dynamic>> credMapList = [];
-  List<String> holderDids = [];
+    List<dynamic> credentials, WalletStore? wallet, String challenge,
+    {List<String>? additionalDids, List<dynamic>? disclosedCredentials}) {
+  List<Map<String, dynamic>?> credMapList = [];
+  List<String?> holderDids = [];
   credentials.forEach((element) {
     var credMap = credentialToMap(element);
     credMapList.add(credMap);
@@ -270,13 +270,13 @@ String buildPresentation(
   };
 
   if (disclosedCredentials != null) {
-    List<Map<String, dynamic>> disclosedCreds = [];
+    List<Map<String, dynamic>?> disclosedCreds = [];
     disclosedCredentials.forEach((element) {
       var credMap = credentialToMap(element);
       disclosedCreds.add(credMap);
     });
     presentation['disclosedCredentials'] = disclosedCreds;
-    var type = presentation['type'] as List<String>;
+    var type = presentation['type'] as List<String?>;
     type.add('DisclosedCredentialPresentation');
     presentation['type'] = type;
   }
@@ -285,14 +285,14 @@ String buildPresentation(
       sha256.convert(utf8.encode(jsonEncode(presentation))).bytes;
   List<Map<String, dynamic>> proofList = [];
   holderDids.forEach((element) {
-    var proof = _buildProof(presentationHash, element, wallet,
+    var proof = _buildProof(presentationHash as Uint8List, element, wallet!,
         proofOptions: _buildProofOptions(
             verificationMethod: element, challenge: challenge));
     proofList.add(proof);
   });
   if (additionalDids != null) {
     additionalDids.forEach((element) {
-      var proof = _buildProof(presentationHash, element, wallet,
+      var proof = _buildProof(presentationHash as Uint8List, element, wallet!,
           proofOptions: _buildProofOptions(
               verificationMethod: element, challenge: challenge));
       proofList.add(proof);
@@ -306,39 +306,39 @@ String buildPresentation(
 ///
 /// It uses erc1056 to look up the current owner of the dids a proof is given in [presentation].
 Future<bool> verifyPresentation(dynamic presentation, String challenge,
-    {Erc1056 erc1056, String rpcUrl}) async {
-  var presentationMap = credentialToMap(presentation);
+    {Erc1056? erc1056, String? rpcUrl}) async {
+  var presentationMap = credentialToMap(presentation)!;
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
   var presentationHash =
       sha256.convert(utf8.encode(jsonEncode(presentationMap))).bytes;
 
   var credentials = presentationMap['verifiableCredential'] as List;
-  List<String> holderDids = [];
-  await Future.forEach(credentials, (element) async {
+  List<String?> holderDids = [];
+  await Future.forEach(credentials, (dynamic element) async {
     if (!(await verifyCredential(element, erc1056: erc1056, rpcUrl: rpcUrl)))
       throw Exception('A credential could not been verified');
     else {
       var did = getHolderDidFromCredential(element);
-      if (erc1056 != null) did = await erc1056.identityOwner(did);
+      if (erc1056 != null) did = await erc1056.identityOwner(did!);
       holderDids.add(did);
     }
   });
 
-  await Future.forEach(proofs, (element) async {
+  await Future.forEach(proofs, (dynamic element) async {
     var verifMeth = element['verificationMethod'];
     var includedNonce = element['challenge'];
     if (includedNonce != challenge) throw Exception('Challenge does not match');
     if (erc1056 != null) verifMeth = await erc1056.identityOwner(verifMeth);
     if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
-    if (!_verifyProof(element, presentationHash, verifMeth))
+    if (!_verifyProof(element, presentationHash as Uint8List, verifMeth))
       throw Exception('Proof for $verifMeth could not been verified');
   });
   if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
 
   if (presentationMap.containsKey('disclosedCredentials')) {
     var disclosedCredentials = presentationMap['disclosedCredentials'] as List;
-    Map<String, Map<String, dynamic>> credsToId = {};
+    Map<String?, Map<String, dynamic>> credsToId = {};
     credentials.forEach((element) {
       var did = getHolderDidFromCredential(element);
       credsToId[did] = element;
@@ -407,7 +407,7 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
 /// could be given as follows: arrayKey.arrayIndex e.g. friends.1. ArrayIndex starts with 0.
 String discloseValues(
     dynamic plaintextCredential, List<String> valuesToDisclose) {
-  Map<String, dynamic> plaintextMap = credentialToMap(plaintextCredential);
+  Map<String, dynamic> plaintextMap = credentialToMap(plaintextCredential)!;
   Map<String, dynamic> result = {};
   plaintextMap.forEach((key, value) {
     result[key] = value;
@@ -507,7 +507,7 @@ String discloseValues(
 
 /// Returns all json-paths of the relevant keys used in the credentialSubject-part of a [w3cCredential].
 List<String> getAllJsonPathsOfCredential(dynamic w3cCredential) {
-  var cred = credentialToMap(w3cCredential);
+  var cred = credentialToMap(w3cCredential)!;
   if (cred.containsKey('credentialSubject')) cred = cred['credentialSubject'];
   List<String> paths = [];
   cred.forEach((key, value) {
@@ -544,16 +544,16 @@ List<String> getAllJsonPathsOfCredential(dynamic w3cCredential) {
 }
 
 String buildJwsHeader(
-    {@required String alg,
-    String jku,
-    Map<String, dynamic> jwk,
-    String kid,
-    String x5u,
-    List<String> x5c,
-    String x5t,
-    String x5tS256,
-    String typ,
-    Map<String, dynamic> extra}) {
+    {required String alg,
+    String? jku,
+    Map<String, dynamic>? jwk,
+    String? kid,
+    String? x5u,
+    List<String>? x5c,
+    String? x5t,
+    String? x5tS256,
+    String? typ,
+    Map<String, dynamic>? extra}) {
   Map<String, dynamic> jsonObject = new Map();
 
   jsonObject.putIfAbsent('alg', () => alg);
@@ -601,8 +601,8 @@ String buildJwsHeader(
 }
 
 /// Collects the did of the issuer of a [credential].
-String getIssuerDidFromCredential(dynamic credential) {
-  var credentialMap = credentialToMap(credential);
+String? getIssuerDidFromCredential(dynamic credential) {
+  var credentialMap = credentialToMap(credential)!;
 
   if (!credentialMap.containsKey('issuer'))
     return null;
@@ -621,8 +621,8 @@ String getIssuerDidFromCredential(dynamic credential) {
 }
 
 /// Collects the did of the Holder of [credential].
-String getHolderDidFromCredential(dynamic credential) {
-  var credMap = credentialToMap(credential);
+String? getHolderDidFromCredential(dynamic credential) {
+  var credMap = credentialToMap(credential)!;
   if (credMap.containsKey('credentialSubject')) {
     if (credMap['credentialSubject'].containsKey('id'))
       return credMap['credentialSubject']['id'];
@@ -651,12 +651,12 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
     {bool detached = false, dynamic jwsHeader}) {
   String header;
   if (jwsHeader != null) {
-    Map<String, dynamic> headerMap;
+    Map<String, dynamic>? headerMap;
     if (jwsHeader is String)
       headerMap = jsonDecode(jwsHeader);
     else
       headerMap = jwsHeader;
-    if (headerMap['alg'] != 'ES256K-R')
+    if (headerMap!['alg'] != 'ES256K-R')
       throw Exception('Unsupported signature algorithm ${headerMap['alg']}');
     header = _removePaddingFromBase64(
         base64UrlEncode(utf8.encode(jsonEncode(headerMap))));
@@ -669,14 +669,14 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
   var payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
   var signingInput = '$header.$payload';
   var hash = sha256.convert(ascii.encode(signingInput)).bytes;
-  String privKeyHex;
+  String? privKeyHex;
 
   privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
   if (privKeyHex == null)
     privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
   if (privKeyHex == null) throw Exception('Could not find private key');
   var key = EthPrivateKey.fromHex(privKeyHex);
-  MsgSignature signature = sign(hash, key.privateKey);
+  MsgSignature signature = sign(hash as Uint8List, key.privateKey);
   var sigArray =
       intToBytes(signature.r) + intToBytes(signature.s) + [signature.v - 27];
 
@@ -690,7 +690,7 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
 
 /// Verifies the signature in [jws]. If a detached jws is given the signed string must be given separately as [toSign].
 Future<bool> verifyStringSignature(String jws, String expectedDid,
-    {String toSign, Erc1056 erc1056}) async {
+    {String? toSign, Erc1056? erc1056}) async {
   var splitted = jws.split('.');
   if (splitted.length != 3) throw Exception('Malformed JWS');
   var signature = _getSignatureFromJws(jws);
@@ -703,7 +703,7 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
     throw Exception('No payload given');
   var signingInput = '${splitted[0]}.$payload';
   var hashToSign = sha256.convert(ascii.encode(signingInput)).bytes;
-  var pubKey = ecRecover(hashToSign, signature);
+  var pubKey = ecRecover(hashToSign as Uint8List, signature);
   var recoveredDid =
       'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   if (erc1056 != null) expectedDid = await erc1056.identityOwner(expectedDid);
@@ -712,7 +712,7 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
 }
 
 /// Converts json-String [credential] to dart Map.
-Map<String, dynamic> credentialToMap(dynamic credential) {
+Map<String, dynamic>? credentialToMap(dynamic credential) {
   if (credential is String)
     return jsonDecode(credential);
   else if (credential is Map<String, dynamic>)
@@ -734,8 +734,8 @@ Map<String, dynamic> _hashStringOrNum(dynamic value) {
   return hashed;
 }
 
-String _collectHashes(dynamic credential, {String id}) {
-  var credMap = credentialToMap(credential);
+String _collectHashes(dynamic credential, {String? id}) {
+  var credMap = credentialToMap(credential)!;
   Map<String, dynamic> hashCred = new Map();
   if (id != null) hashCred['id'] = id;
   credMap.forEach((key, value) {
@@ -771,7 +771,7 @@ String _collectHashes(dynamic credential, {String id}) {
   return jsonEncode(hashCred);
 }
 
-bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
+bool _checkHashes(Map<String, dynamic>? w3c, Map<String, dynamic> plainHash) {
   plainHash.forEach((key, value) {
     if (!(key == '@context' ||
         key == 'type' ||
@@ -780,7 +780,7 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
         key == 'hashAlg')) {
       if (value is String) {
         //Nothing was disclosed -> only compare hash
-        if (w3c[key] != value) throw Exception('hashes do not match at $key');
+        if (w3c![key] != value) throw Exception('hashes do not match at $key');
       } else if (value is Map<String, dynamic>) {
         if (_hashedAttributeSchemaStrict.validate(value)) {
           //a disclosed value -> rehash and check
@@ -791,17 +791,17 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
             throw Exception(
                 'Given hash and calculated hash do ot match at $key');
         } else if (_mapOfHashedAttributesSchema.validate(value) &&
-            _mapOfHashedAttributesSchema.validate(w3c[key])) {
+            _mapOfHashedAttributesSchema.validate(w3c![key])) {
           // a new Object
           _checkHashes(w3c[key], value);
         } else if (value.length == 1 && value.containsKey('hash')) {
           // hash value was left in an object
-          if (w3c[key] != value['hash'])
+          if (w3c![key] != value['hash'])
             throw Exception('hashes do not match at $key');
         } else
           throw Exception('malformed object with key $key');
       } else if (value is List) {
-        List<dynamic> fromW3c = w3c[key];
+        List<dynamic> fromW3c = w3c![key];
         if (fromW3c.length != value.length)
           throw Exception('List length at $key do not match');
         for (int i = 0; i < value.length; i++) {
@@ -839,7 +839,7 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
 }
 
 Map<String, dynamic> _buildProof(
-    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
+    Uint8List hashToSign, String? didToSignWith, WalletStore wallet,
     {dynamic proofOptions}) {
   String pOptions;
   if (proofOptions == null) {
@@ -858,7 +858,7 @@ Map<String, dynamic> _buildProof(
     privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
   if (privKeyHex == null) throw Exception('Could not find a private key');
   var key = EthPrivateKey.fromHex(privKeyHex);
-  MsgSignature signature = sign(hash, key.privateKey);
+  MsgSignature signature = sign(hash as Uint8List, key.privateKey);
   var sigArray =
       intToBytes(signature.r) + intToBytes(signature.s) + [signature.v - 27];
 
@@ -872,7 +872,7 @@ Map<String, dynamic> _buildProof(
   return optionsMap;
 }
 
-bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
+bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String? did) {
   var signature = _getSignatureFromJws(proof['jws']);
 
   proof.remove('jws');
@@ -881,14 +881,14 @@ bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
   var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
   var hashToSign = sha256.convert(proofHash + hash).bytes;
 
-  var pubKey = ecRecover(hashToSign, signature);
+  var pubKey = ecRecover(hashToSign as Uint8List, signature);
   var recoverdDid =
       'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   return recoverdDid == did;
 }
 
 String _buildProofOptions(
-    {@required String verificationMethod, String domain, String challenge}) {
+    {required String? verificationMethod, String? domain, String? challenge}) {
   Map<String, dynamic> jsonObject = new Map();
   jsonObject.putIfAbsent('type', () => 'EcdsaSecp256k1RecoverySignature2020');
   jsonObject.putIfAbsent('proofPurpose', () => 'assertionMethod');

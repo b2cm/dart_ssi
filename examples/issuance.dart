@@ -25,10 +25,10 @@ void main() async {
       EthPrivateKey.fromHex(spenderPrivateKey),
       Transaction(
           to: EthereumAddress.fromHex(
-              issuer.getStandardIssuerDid().substring(9)),
+              issuer.getStandardIssuerDid()!.substring(9)),
           value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1)));
   var revAddress =
-      await revocation.deploy(issuer.getStandardIssuerPrivateKey());
+      await revocation.deploy(issuer.getStandardIssuerPrivateKey()!);
   issuer.storeConfigEntry('revAddress', revAddress);
 
   //init Holder
@@ -107,7 +107,7 @@ void main() async {
       'Is my credential correct? : ${await verifyCredential(signedImma, erc1056: erc1056, rpcUrl: rpcUrl)}');
   //Holder stores Credential in wallet
   await holder.storeCredential(
-      signedImma, plaintextCred, holder.getCredential(immaDid).hdPath);
+      signedImma, plaintextCred, holder.getCredential(immaDid)!.hdPath);
 
   await issuer.closeBoxes();
   await holder.closeBoxes();

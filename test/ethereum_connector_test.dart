@@ -56,7 +56,7 @@ void main() async {
           false);
 
       var eventData = await erc1056.collectEventData(ganacheDid6);
-      List<String> signer2 = eventData['delegates']['Signer'];
+      List<String>? signer2 = eventData['delegates']['Signer'];
       expect(signer2, null);
     });
 
@@ -179,7 +179,7 @@ void main() async {
       Map<String, List<String>> attributes = eventData['attributes'];
       expect(attributes.keys.length, 1);
       expect(attributes.containsKey('serviceEndpoint'), true);
-      expect(attributes['serviceEndpoint'].first, 'http://identity.service.de');
+      expect(attributes['serviceEndpoint']!.first, 'http://identity.service.de');
     });
 
     test('revoke one attribute', () async {
@@ -225,7 +225,7 @@ void main() async {
       Map<String, List<String>> attributes = eventData['attributes'];
       expect(attributes.keys.length, 1);
       expect(attributes.containsKey('LongService'), true);
-      expect(attributes['LongService'].first, value);
+      expect(attributes['LongService']!.first, value);
     });
 
     test('two attributes with different names', () async {
@@ -244,8 +244,8 @@ void main() async {
       expect(attributes.keys.length, 2);
       expect(attributes.containsKey('LongService'), true);
       expect(attributes.containsKey('serviceEndpoint'), true);
-      expect(attributes['LongService'].first, value);
-      expect(attributes['serviceEndpoint'].first, 'http://identity.service.de');
+      expect(attributes['LongService']!.first, value);
+      expect(attributes['serviceEndpoint']!.first, 'http://identity.service.de');
     });
 
     test('two values for one attribute', () async {
@@ -258,13 +258,13 @@ void main() async {
       var eventData = await erc1056.collectEventData(ganacheDid8);
       Map<String, List<String>> attributes = eventData['attributes'];
       expect(attributes.containsKey('serviceEndpoint'), true);
-      expect(attributes['serviceEndpoint'].length, 2);
+      expect(attributes['serviceEndpoint']!.length, 2);
       expect(
-          attributes['serviceEndpoint']
+          attributes['serviceEndpoint']!
               .contains('http://hsmw.identity.service.de'),
           true);
       expect(
-          attributes['serviceEndpoint'].contains('http://identity.service.de'),
+          attributes['serviceEndpoint']!.contains('http://identity.service.de'),
           true);
     });
 
@@ -278,13 +278,13 @@ void main() async {
       var eventData = await erc1056.collectEventData(ganacheDid8);
       Map<String, List<String>> attributes = eventData['attributes'];
       expect(attributes.containsKey('serviceEndpoint'), true);
-      expect(attributes['serviceEndpoint'].length, 1);
+      expect(attributes['serviceEndpoint']!.length, 1);
       expect(
-          attributes['serviceEndpoint']
+          attributes['serviceEndpoint']!
               .contains('http://hsmw.identity.service.de'),
           false);
       expect(
-          attributes['serviceEndpoint'].contains('http://identity.service.de'),
+          attributes['serviceEndpoint']!.contains('http://identity.service.de'),
           true);
     });
   });

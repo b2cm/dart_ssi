@@ -23,7 +23,7 @@ void main() async {
   print('Is credential revoked? : ${await revocationContract.isRevoked(did)}');
 
   //revoke it
-  await revocationContract.revoke(issuer.getStandardIssuerPrivateKey(), did);
+  await revocationContract.revoke(issuer.getStandardIssuerPrivateKey()!, did);
 
   //show, that it is revoked
   print('Is credential revoked? : ${await revocationContract.isRevoked(did)}');

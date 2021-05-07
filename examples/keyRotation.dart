@@ -29,12 +29,12 @@ void main() async {
 
   //rotate it
   await erc1056.changeOwner(
-      holder.getPrivateKeyToCredentialDid(did), did, newDid);
+      holder.getPrivateKeyToCredentialDid(did)!, did, newDid);
 
   //store
-  var cred = holder.getCredential(did);
+  var cred = holder.getCredential(did)!;
   await holder.storeCredential(cred.w3cCredential, cred.plaintextCredential,
-      holder.getCredential(newDid).hdPath,
+      holder.getCredential(newDid)!.hdPath,
       credDid: did);
 
   holder.closeBoxes();

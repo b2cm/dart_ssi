@@ -6,7 +6,7 @@ void main() {
   test('init wallet with new seed', () async {
     var wallet = new WalletStore('testNew');
     await wallet.openBoxes('password');
-    var mne = wallet.initialize();
+    var mne = wallet.initialize()!;
     expect(validateMnemonic(mne), true);
     await wallet.closeBoxes();
   });
@@ -14,7 +14,7 @@ void main() {
   test('should increment index', () async {
     var wallet = new WalletStore('testNew');
     await wallet.openBoxes('password');
-    var indexBefore = wallet.getLastIndex();
+    var indexBefore = wallet.getLastIndex()!;
     var did = await wallet.getNextCredentialDID();
     print(did);
     var indexAfter = wallet.getLastIndex();

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:asn1lib/asn1lib.dart';
 
 /// Request TLS Certificate of [url] and extract important information from it.
-Future<CertificateInformation> getCertificateInfoFromUrl(String url) async {
+Future<CertificateInformation?> getCertificateInfoFromUrl(String url) async {
   if (!url.startsWith(RegExp('http.', caseSensitive: false))) {
     url = 'https://$url';
   }
@@ -27,11 +27,11 @@ Future<CertificateInformation> getCertificateInfoFromUrl(String url) async {
 
 /// Important information of TLS Certificate
 class CertificateInformation {
-  bool valid;
-  String subjectCommonName;
-  String subjectOrganization;
-  List<String> subjectAlternativeNames;
-  X509Certificate rawCert;
+  bool? valid;
+  String? subjectCommonName;
+  String? subjectOrganization;
+  List<String>? subjectAlternativeNames;
+  X509Certificate? rawCert;
   bool isEvCert = false;
 
   List<String> _evOIDs = [
@@ -74,10 +74,10 @@ class CertificateInformation {
     '1.3.6.1.4.1.6334.1.100.1'
   ];
 
-  CertificateInformation(X509Certificate certificate, bool valid) {
+  CertificateInformation(X509Certificate? certificate, bool valid) {
     this.valid = valid;
     this.rawCert = certificate;
-    var splittedSubject = _splitSubject(rawCert.subject);
+    var splittedSubject = _splitSubject(rawCert!.subject);
     subjectCommonName = splittedSubject['CN'];
     subjectOrganization = splittedSubject['O'];
     subjectAlternativeNames = _getSubjectAlternativeNames();
@@ -91,9 +91,9 @@ class CertificateInformation {
     }
   }
 
-  List<String> _extractEvOids() {
-    List<String> extracted = [];
-    var p = ASN1Parser(rawCert.der);
+  List<String?> _extractEvOids() {
+    List<String?> extracted = [];
+    var p = ASN1Parser(rawCert!.der);
     var signedCert = p.nextObject() as ASN1Sequence;
     var cert = signedCert.elements[0] as ASN1Sequence;
     if (cert.elements.length == 8) {
@@ -131,11 +131,11 @@ class CertificateInformation {
     return foundElements;
   }
 
-  List<String> _getSubjectAlternativeNames() {
-    var parser = ASN1Parser(rawCert.der);
+  List<String>? _getSubjectAlternativeNames() {
+    var parser = ASN1Parser(rawCert!.der);
     var topLevel = parser.nextObject() as ASN1Sequence;
     var dataSequence = topLevel.elements[0] as ASN1Sequence;
-    List<String> sans;
+    List<String>? sans;
     if (dataSequence.elements.length == 8) {
       var extensionObject = dataSequence.elements[7];
       var extParser = ASN1Parser(extensionObject.valueBytes());

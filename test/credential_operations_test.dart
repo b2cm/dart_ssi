@@ -14,8 +14,8 @@ void main() async {
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
   var ganacheAccounts = new WalletStore('ganache');
   await ganacheAccounts.openBoxes('ganache');
-  // ganacheAccounts.initialize(
-  //     'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
+  //ganacheAccounts.initialize(
+  //  'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
 
   var ganacheDid5 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/4');
   var ganacheDid6 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/5');
@@ -108,10 +108,10 @@ void main() async {
       var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
-      expect(plaintext['hobbies'].length, credObject['hobbies'].length);
+      expect(plaintext['hobbies']!.length, credObject['hobbies'].length);
 
-      for (int i = 0; i < plaintext['hobbies'].length; i++) {
-        expect(plaintext['hobbies'][i], credObject['hobbies'][i]['value']);
+      for (int i = 0; i < plaintext['hobbies']!.length; i++) {
+        expect(plaintext['hobbies']![i], credObject['hobbies'][i]['value']);
         expect(jScheme.validate(credObject['hobbies'][i]), true);
       }
     });
@@ -140,7 +140,7 @@ void main() async {
       var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
-      expect(credObject['hobbies'].length, plaintext['hobbies'].length);
+      expect(credObject['hobbies'].length, plaintext['hobbies']!.length);
       for (int i = 1; i < credObject['hobbies'].length; i++) {
         expect(jScheme.validate(credObject['hobbies'][i]['name']), true);
         expect(jScheme.validate(credObject['hobbies'][i]['duration']), true);
@@ -185,7 +185,7 @@ void main() async {
       expect(jScheme.validate(credObject['mother']['surname']), true);
       expect(credObject['mother']['name']['value'], 'Mustermann');
       expect(credObject['mother']['surname']['value'], 'Erika');
-      expect(credObject['mother'].length, plaintext['mother'].length);
+      expect(credObject['mother'].length, plaintext['mother']!.length);
     });
 
     test('objects (given as string)', () {
@@ -841,7 +841,7 @@ void main() async {
         plaintextMap['name']['value'] = 'Lilly';
         expect(
             () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
-            throwsA(predicate((e) =>
+            throwsA(predicate((dynamic e) =>
                 e.message ==
                 'Given hash and calculated hash do ot match at name')));
       });
@@ -870,7 +870,7 @@ void main() async {
         plainMap['mother']['age']['value'] = 35;
         expect(
             () => compareW3cCredentialAndPlaintext(w3c, plainMap),
-            throwsA(predicate((e) =>
+            throwsA(predicate((dynamic e) =>
                 e.message ==
                 'Given hash and calculated hash do ot match at age')));
       });
@@ -913,7 +913,7 @@ void main() async {
         plaintextMap['list'][1]['value'] = false;
         expect(
             () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
-            throwsA(predicate((e) =>
+            throwsA(predicate((dynamic e) =>
                 e.message ==
                 'Calculated and given Hash in List at list do not match at index 1')));
       });
@@ -945,7 +945,7 @@ void main() async {
         plaintextMap['friends'][1]['name']['value'] = 'Sebastian';
         expect(
             () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
-            throwsA(predicate((e) =>
+            throwsA(predicate((dynamic e) =>
                 e.message ==
                 'Given hash and calculated hash do ot match at name')));
       });
@@ -965,7 +965,7 @@ void main() async {
         expect(
             () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
             throwsA(predicate(
-                (e) => e.message == 'malformed object with key name')));
+                (dynamic e) => e.message == 'malformed object with key name')));
       });
 
       test('missing value', () {
@@ -983,7 +983,7 @@ void main() async {
         expect(
             () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
             throwsA(predicate(
-                (e) => e.message == 'malformed object with key name')));
+                (dynamic e) => e.message == 'malformed object with key name')));
       });
     });
     group('only show some values (or nothing)', () {
@@ -1158,8 +1158,8 @@ void main() async {
   });
 
   group('Sign and verify credential', () {
-    WalletStore wallet;
-    String w3c;
+    late WalletStore wallet;
+    String? w3c;
 
     setUp(() async {
       wallet = WalletStore('tests');
@@ -1229,7 +1229,8 @@ void main() async {
       expect(
           () async =>
               await verifyCredential(w3c, erc1056: erc1056, rpcUrl: rpcUrl),
-          throwsA(predicate((e) => e.message == 'no proof section found')));
+          throwsA(
+              predicate((dynamic e) => e.message == 'no proof section found')));
     });
 
     group('credential revocation', () {
@@ -1256,11 +1257,12 @@ void main() async {
         expect(
             () async => await verifyCredential(signed,
                 erc1056: erc1056, rpcUrl: rpcUrl),
-            throwsA(predicate((e) => e.message == 'Credential was revoked')));
+            throwsA(predicate(
+                (dynamic e) => e.message == 'Credential was revoked')));
       });
 
       test('unknown revocation method', () async {
-        var w3cMap = jsonDecode(w3c);
+        var w3cMap = jsonDecode(w3c!);
         var rev = {'type': 'RevocationList2020', 'id': 'http://example.com'};
         w3cMap['credentialStatus'] = rev;
         var signed = signCredential(wallet, w3cMap);
@@ -1268,7 +1270,7 @@ void main() async {
         expect(
             () async => await verifyCredential(signed,
                 erc1056: erc1056, rpcUrl: rpcUrl),
-            throwsA(predicate((e) =>
+            throwsA(predicate((dynamic e) =>
                 e.message == 'Unknown Status-method : RevocationList2020')));
       });
     });
@@ -1283,7 +1285,7 @@ void main() async {
       var tx = Transaction(
           from: EthereumAddress.fromHex(ganacheDid5.substring(9)),
           to: EthereumAddress.fromHex(
-              wallet.getStandardIssuerDid().substring(9)),
+              wallet.getStandardIssuerDid()!.substring(9)),
           value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1));
 
       await web3.sendTransaction(
@@ -1291,8 +1293,8 @@ void main() async {
               ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4')),
           tx);
 
-      await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey(),
-          wallet.getStandardIssuerDid(), await wallet.getNextCredentialDID());
+      await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey()!,
+          wallet.getStandardIssuerDid()!, await wallet.getNextCredentialDID());
 
       expect(await verifyCredential(signed, erc1056: erc1056, rpcUrl: rpcUrl),
           false);
@@ -1304,10 +1306,10 @@ void main() async {
   });
 
   group('sign and verify presentation', () {
-    WalletStore holder;
-    String didCred1, didCred2, didCred3;
-    String plaintext1, plaintext2, plaintext3;
-    String signed1, signed2, signed3;
+    WalletStore? holder;
+    String? didCred1, didCred2, didCred3;
+    String? plaintext1, plaintext2, plaintext3;
+    String? signed1, signed2, signed3;
     setUp(() async {
       var iss1 = WalletStore('testIss1');
       await iss1.openBoxes('password1');
@@ -1325,8 +1327,8 @@ void main() async {
       await iss3.initializeIssuer();
 
       holder = WalletStore('holder');
-      await holder.openBoxes('passwordH');
-      holder.initialize();
+      await holder!.openBoxes('passwordH');
+      holder!.initialize();
 
       var cred1 = {
         'name': 'Max Mustermann',
@@ -1343,9 +1345,9 @@ void main() async {
       };
       var cred3 = {'verein': 'Laufgruppe Döbeln', 'rolle': 'Mitglied'};
 
-      didCred1 = await holder.getNextCredentialDID();
-      didCred2 = await holder.getNextCredentialDID();
-      didCred3 = await holder.getNextCredentialDID();
+      didCred1 = await holder!.getNextCredentialDID();
+      didCred2 = await holder!.getNextCredentialDID();
+      didCred3 = await holder!.getNextCredentialDID();
 
       plaintext1 = buildPlaintextCredential(cred1, didCred1);
       plaintext2 = buildPlaintextCredential(cred2, didCred2);
@@ -1376,7 +1378,7 @@ void main() async {
       expect(presMap['verifiableCredential'] is List, true);
       expect(presMap['verifiableCredential'].length, 3);
 
-      List<String> verificationMethods = [];
+      List<String?> verificationMethods = [];
       presMap['proof'].forEach((elem) {
         expect(elem.containsKey('challenge'), true);
         expect(elem['challenge'], challenge);
@@ -1404,7 +1406,8 @@ void main() async {
       expect(
           () async => await verifyPresentation(presMap, challenge,
               erc1056: erc1056, rpcUrl: rpcUrl),
-          throwsA(predicate((e) => e.message == 'Challenge does not match')));
+          throwsA(predicate(
+              (dynamic e) => e.message == 'Challenge does not match')));
     });
 
     test('manipulated proof', () async {
@@ -1419,7 +1422,7 @@ void main() async {
       expect(
           () async => await verifyPresentation(presMap, challenge,
               erc1056: erc1056, rpcUrl: rpcUrl),
-          throwsA(predicate((e) =>
+          throwsA(predicate((dynamic e) =>
               e.message ==
               'Proof for did:ethr:0xC3d188C872e25c0370Ff3D2aA7268e2e13D11fe9 could not been verified')));
     });
@@ -1435,13 +1438,13 @@ void main() async {
       expect(
           () async => await verifyPresentation(presMap, challenge,
               erc1056: erc1056, rpcUrl: rpcUrl),
-          throwsA(
-              predicate((e) => e.message == 'There are dids without a proof')));
+          throwsA(predicate(
+              (dynamic e) => e.message == 'There are dids without a proof')));
     });
 
     test('add additional proofs', () async {
       var challenge = Uuid().v4();
-      var newDID = await holder.getNextConnectionDID();
+      var newDID = await holder!.getNextConnectionDID();
       var presentation = buildPresentation(
           [signed1, signed2, signed3], holder, challenge,
           additionalDids: [newDID]);
@@ -1461,13 +1464,13 @@ void main() async {
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       var presMap = jsonDecode(presentation) as Map;
       presMap['verifiableCredential'][0]['issuer'] =
-          await holder.getNextCredentialDID();
+          await holder!.getNextCredentialDID();
 
       expect(
           () async => await verifyPresentation(presMap, challenge,
               erc1056: erc1056, rpcUrl: rpcUrl),
-          throwsA(predicate(
-              (e) => e.message == 'A credential could not been verified')));
+          throwsA(predicate((dynamic e) =>
+              e.message == 'A credential could not been verified')));
     });
 
     test('one holder did was changed', () async {
@@ -1483,19 +1486,19 @@ void main() async {
 
       var tx = Transaction(
           from: EthereumAddress.fromHex(ganacheDid5.substring(9)),
-          to: EthereumAddress.fromHex(didCred1.substring(9)),
+          to: EthereumAddress.fromHex(didCred1!.substring(9)),
           value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1));
 
       await web3.sendTransaction(
           EthPrivateKey.fromHex(
               ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4')),
           tx);
-      var newDid = await holder.getNextCredentialDID();
+      var newDid = await holder!.getNextCredentialDID();
       await erc1056.changeOwner(
-          holder.getPrivateKeyToCredentialDid(didCred1), didCred1, newDid);
+          holder!.getPrivateKeyToCredentialDid(didCred1)!, didCred1!, newDid);
 
-      var newPath = holder.getCredential(newDid).hdPath;
-      holder.storeCredential('', '', newPath, credDid: didCred1);
+      var newPath = holder!.getCredential(newDid)!.hdPath;
+      holder!.storeCredential('', '', newPath, credDid: didCred1);
       var presentation2 =
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       expect(
@@ -1505,7 +1508,7 @@ void main() async {
     });
 
     group('undisclosed Credentials in presentation', () {
-      String undisclosed1, undisclosed2, undisclosed3;
+      String? undisclosed1, undisclosed2, undisclosed3;
       setUp(() {
         undisclosed1 =
             discloseValues(plaintext1, ['name', 'address.streetAddress']);

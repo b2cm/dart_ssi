@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -86,10 +87,10 @@ class Erc1056 {
       '"uint256"},{"indexed":false,"name":"previousChange","type":"uint256"}],'
       '"name":"DIDAttributeChanged","type":"event"}]';
 
-  DeployedContract erc1056contract;
-  Web3Client web3Client;
-  EthereumAddress contractAddress;
-  Utf8Codec utf8;
+  late DeployedContract erc1056contract;
+  late Web3Client web3Client;
+  late EthereumAddress contractAddress;
+  late Utf8Codec utf8;
 
   Erc1056(String rpcUrl,
       {String contractName: 'EthereumDIDRegistry',
@@ -193,7 +194,7 @@ class Erc1056 {
     await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx);
   }
 
-  Future<bool> validDelegate(
+  Future<bool?> validDelegate(
       String identityDid, String delegateType, String delegateDid) async {
     var validDelegateFunction = erc1056contract.function('validDelegate');
     var valid = await web3Client.call(
@@ -205,26 +206,26 @@ class Erc1056 {
           _didToAddress(delegateDid)
         ]);
 
-    return valid.first as bool;
+    return valid.first as bool?;
   }
 
-  Future<BigInt> changed(String identityDid) async {
+  Future<BigInt?> changed(String identityDid) async {
     var changedFunction = erc1056contract.function('changed');
     var changedBlock = await web3Client.call(
         contract: erc1056contract,
         function: changedFunction,
         params: [_didToAddress(identityDid)]);
-    return changedBlock.first as BigInt;
+    return changedBlock.first as BigInt?;
   }
 
-  Future<BigInt> nonce(String identityDid) async {
+  Future<BigInt?> nonce(String identityDid) async {
     var nonceFunction = erc1056contract.function('nonce');
     var nonceValue = await web3Client.call(
         contract: erc1056contract,
         function: nonceFunction,
         params: [_didToAddress(identityDid)]);
 
-    return nonceValue.first as BigInt;
+    return nonceValue.first as BigInt?;
   }
 
   ///Collects all data from contract log for [identityDid].
@@ -247,21 +248,21 @@ class Erc1056 {
 
     while (lastChange != BigInt.zero) {
       var logs = await web3Client.getLogs(FilterOptions(
-          fromBlock: BlockNum.exact(lastChange.toInt()),
+          fromBlock: BlockNum.exact(lastChange!.toInt()),
           toBlock: BlockNum.exact(lastChange.toInt()),
           topics: [
-            null,
+            [],
             ['0x${_didToAddress(identityDid).hexNo0x.padLeft(64, '0')}']
           ]));
-      List<BigInt> listOfPreviousChanges = [];
+      List<BigInt?> listOfPreviousChanges = [];
 
-      await Future.forEach(logs, (event) async {
+      await Future.forEach(logs, (dynamic event) async {
         if (event.topics.first ==
             bytesToHex(didOwnerChangedEvent.signature, include0x: true)) {
           var decodedEvent =
               didOwnerChangedEvent.decodeResults(event.topics, event.data);
           var owner = decodedEvent[1] as EthereumAddress;
-          var previousChange = decodedEvent[2] as BigInt;
+          var previousChange = decodedEvent[2] as BigInt?;
 
           listOfPreviousChanges.add(previousChange);
           owners.add(_addressToDid(owner));
@@ -272,7 +273,7 @@ class Erc1056 {
           var name = decodedEvent[1] as Uint8List;
           var value = decodedEvent[2] as Uint8List;
           var validTo = decodedEvent[3] as BigInt;
-          var previousChange = decodedEvent[4] as BigInt;
+          var previousChange = decodedEvent[4] as BigInt?;
           var nameStr = _bytes32ToString(name);
           var valueStr = utf8.decode(value);
 
@@ -283,8 +284,8 @@ class Erc1056 {
           } else {
             if (!revokedAttributes.contains('$nameStr-$valueStr')) {
               if (attributes.containsKey(nameStr) &&
-                  (!attributes[nameStr].contains(valueStr))) {
-                attributes[nameStr].add(valueStr);
+                  (!attributes[nameStr]!.contains(valueStr))) {
+                attributes[nameStr]!.add(valueStr);
               } else {
                 List<String> tmp = [];
                 tmp.add(valueStr);
@@ -298,18 +299,19 @@ class Erc1056 {
               didDelegateChangedEvent.decodeResults(event.topics, event.data);
           var delegateType = decodedEvent[1] as Uint8List;
           var delegate = decodedEvent[2] as EthereumAddress;
-          var previousChange = decodedEvent[4] as BigInt;
+          var previousChange = decodedEvent[4] as BigInt?;
           var delegateTypeString = _bytes32ToString(delegateType);
 
           listOfPreviousChanges.add(previousChange);
 
-          var validDelegate = await this.validDelegate(
-              identityDid, delegateTypeString, _addressToDid(delegate));
+          var validDelegate = await (this.validDelegate(
+                  identityDid, delegateTypeString, _addressToDid(delegate))
+              as FutureOr<bool>);
           if (validDelegate) {
             if (delegates.containsKey(delegateTypeString) &&
-                (!delegates[delegateTypeString]
+                (!delegates[delegateTypeString]!
                     .contains(_addressToDid(delegate)))) {
-              delegates[delegateTypeString].add(_addressToDid(delegate));
+              delegates[delegateTypeString]!.add(_addressToDid(delegate));
             } else {
               List<String> tmpList = [];
               tmpList.add(_addressToDid(delegate));
@@ -322,10 +324,10 @@ class Erc1056 {
       });
 
       listOfPreviousChanges.sort();
-      BigInt lastChangeNew = listOfPreviousChanges.last;
+      BigInt? lastChangeNew = listOfPreviousChanges.last;
       for (int i = listOfPreviousChanges.length - 1; i >= 0; i--) {
         if (lastChangeNew != lastChange &&
-            (!(listOfPreviousChanges[i] < lastChangeNew))) {
+            (!(listOfPreviousChanges[i]! < lastChangeNew!))) {
           lastChangeNew = listOfPreviousChanges[i];
         }
       }
@@ -407,10 +409,10 @@ class RevocationRegistry {
   String _bytecode =
       '608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555043600181905550610396806100676000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c806374a8f103146100515780638da5cb5b14610095578063a6f9dae1146100c9578063f905c15a1461010d575b600080fd5b6100936004803603602081101561006757600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919050505061012b565b005b61009d610232565b604051808273ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b61010b600480360360208110156100df57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610256565b005b61011561035a565b6040518082815260200191505060405180910390f35b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146101ec576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260088152602001807f6e6f206f776e657200000000000000000000000000000000000000000000000081525060200191505060405180910390fd5b8073ffffffffffffffffffffffffffffffffffffffff167fa4e30c0434a0fd06abd5093463a1a4a0e8886a6b803f82bc06e56d799668099960405160405180910390a250565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614610317576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260088152602001807f6e6f206f776e657200000000000000000000000000000000000000000000000081525060200191505060405180910390fd5b806000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b6001548156fea2646970667358221220d3b1720f8ebb198a64a353f3ba110eb4f71210c4af5b56dee1be962355aade1b64736f6c63430007050033';
 
-  Web3Client _web3Client;
-  DeployedContract _contract;
+  late Web3Client _web3Client;
+  late DeployedContract _contract;
 
-  RevocationRegistry(String rpcUrl, {String contractAddress}) {
+  RevocationRegistry(String rpcUrl, {String? contractAddress}) {
     _web3Client = Web3Client(rpcUrl, Client());
 
     if (contractAddress != null) {
@@ -430,15 +432,15 @@ class RevocationRegistry {
         maxGas: 474455);
 
     var res = await _web3Client.sendTransaction(creds, tx);
-    if (res == null) {
-      return null;
+    if (res == '') {
+      return '';
     }
     var receipt = await _web3Client.getTransactionReceipt(res);
 
     _contract = DeployedContract(
         ContractAbi.fromJson(_abi, 'RevocationRegistry'),
-        receipt.contractAddress);
-    return receipt.contractAddress.hexEip55;
+        receipt.contractAddress!);
+    return receipt.contractAddress!.hexEip55;
   }
 
   Future<void> revoke(String privateKeyFrom, String credDidToRevoke) async {
@@ -452,18 +454,18 @@ class RevocationRegistry {
   }
 
   /// Returns the block number of the block in which the contract was deployed.
-  Future<BigInt> deployed() async {
+  Future<BigInt?> deployed() async {
     var deployedFunction = _contract.function('deployed');
     var res = await _web3Client
         .call(contract: _contract, function: deployedFunction, params: []);
 
-    return res.first as BigInt;
+    return res.first as BigInt?;
   }
 
   Future<bool> isRevoked(String credentialDid) async {
     var revokedEvent = _contract.event('RevokedEvent');
     var revEventSig = bytesToHex(revokedEvent.signature);
-    var deployedBlock = await deployed();
+    var deployedBlock = await (deployed() as FutureOr<BigInt>);
     var logs = await _web3Client.getLogs(FilterOptions(
         fromBlock: BlockNum.exact(deployedBlock.toInt()),
         topics: [

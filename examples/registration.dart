@@ -23,10 +23,10 @@ void main() async {
   //They exchange their dids, e.g. during a registration process
 
   // now both can store them
-  var com = holder.getConnection(did);
+  var com = holder.getConnection(did)!;
   holder.storeConnection(didIss, 'Issuer1', com.hdPath);
 
-  var comIss = issuer.getConnection(didIss);
+  var comIss = issuer.getConnection(didIss)!;
   issuer.storeConnection(did, 'student1', comIss.hdPath);
 
   // meeting the next time they can authenticate each Other by e.g. signing a challenge.

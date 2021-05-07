@@ -26,10 +26,10 @@ void main() async {
       EthPrivateKey.fromHex(spenderPrivateKey),
       Transaction(
           to: EthereumAddress.fromHex(
-              issuer.getStandardIssuerDid().substring(9)),
+              issuer.getStandardIssuerDid()!.substring(9)),
           value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1)));
   var revAddress =
-      await revocation.deploy(issuer.getStandardIssuerPrivateKey());
+      await revocation.deploy(issuer.getStandardIssuerPrivateKey()!);
   issuer.storeConfigEntry('revAddress', revAddress);
 
   //init Holder
@@ -114,11 +114,11 @@ void main() async {
       'Is email-credential credential correct? : ${await verifyCredential(signedEmail, erc1056: erc1056, rpcUrl: rpcUrl)}');
   //Holder stores Credential in wallet
   await holder.storeCredential(
-      signedName, plaintextName, holder.getCredential(nameDid).hdPath);
+      signedName, plaintextName, holder.getCredential(nameDid)!.hdPath);
   await holder.storeCredential(signedDriversLicense, plaintextDriversLicense,
-      holder.getCredential(driversLicenseDid).hdPath);
+      holder.getCredential(driversLicenseDid)!.hdPath);
   await holder.storeCredential(
-      signedEmail, plaintextEmail, holder.getCredential(emailDid).hdPath);
+      signedEmail, plaintextEmail, holder.getCredential(emailDid)!.hdPath);
 
   // generates challenge for presentations
   var challenge1 = new Uuid().v4();

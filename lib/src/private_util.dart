@@ -4,19 +4,19 @@ import 'package:crypto/crypto.dart';
 
 // Reference https://github.com/marceloneppel/pbkdf2/blob/master/lib/pbkdf2_dart.dart
 class PBKDF2 {
-  Hash hash;
-  List<int> _blockList = [4];
-  int _prfLengthInBytes;
+  Hash? hash;
+  List<int> _blockList = [1, 1, 1, 1];
+  int? _prfLengthInBytes;
 
   PBKDF2({this.hash});
 
   List<int> generateKey(String password, String salt, int c, int dkLen) {
-    if (dkLen > (2 << 31 - 1) * prfLengthInBytes) {
+    if (dkLen > (2 << 31 - 1) * prfLengthInBytes!) {
       throw "derived key too long";
     }
 
-    var numberOfBlocks = (dkLen / prfLengthInBytes).ceil();
-    var sizeOfLastBlock = dkLen - (numberOfBlocks - 1) * prfLengthInBytes;
+    var numberOfBlocks = (dkLen / prfLengthInBytes!).ceil();
+    var sizeOfLastBlock = dkLen - (numberOfBlocks - 1) * prfLengthInBytes!;
 
     var key = <int>[];
     for (var i = 1; i <= numberOfBlocks; ++i) {
@@ -30,19 +30,19 @@ class PBKDF2 {
     return key;
   }
 
-  int get prfLengthInBytes {
+  int? get prfLengthInBytes {
     if (_prfLengthInBytes != null) {
       return _prfLengthInBytes;
     }
 
-    var digest = hash.convert([1, 2, 3]);
+    var digest = hash!.convert([1, 2, 3]);
     var digestLength = digest.bytes.length;
     return digestLength;
   }
 
   List<int> _computeBlock(
       String password, String salt, int iterations, int blockNumber) {
-    var hmac = new Hmac(hash, password.codeUnits);
+    var hmac = new Hmac(hash!, password.codeUnits);
     var sink = new SyncChunkedConversionSink();
     var outsink = hmac.startChunkedConversion(sink);
 
@@ -58,7 +58,7 @@ class PBKDF2 {
     List<int> result = new List.from(bytes);
 
     for (var i = 1; i < iterations; i++) {
-      hmac = new Hmac(hash, password.codeUnits);
+      hmac = new Hmac(hash!, password.codeUnits);
       var newDigest = hmac.convert(lastDigest);
 
       _xorLists(result, newDigest.bytes);

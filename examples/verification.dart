@@ -23,12 +23,12 @@ main() async {
   //Holder searches credential in Wallet and builds a Presentation with the W3C-Credential
   var allCredentials = holder.getAllCredentials();
   var keyList = allCredentials.keys;
-  Credential c = allCredentials[keyList.first];
+  Credential c = allCredentials[keyList.first]!;
   var presentation = buildPresentation([c.w3cCredential], holder, challenge);
   await new File('example/presentation.json').writeAsString(presentation);
 
   //Holder hides all values he wouldn't show
-  Map<String, dynamic> plaintext = jsonDecode(c.plaintextCredential);
+  Map<String, dynamic> plaintext = jsonDecode(c.plaintextCredential!);
   print(plaintext.containsKey('student'));
   var plaintextDis = discloseValues(c.plaintextCredential, [
     'issuanceDate',
