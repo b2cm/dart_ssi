@@ -17,7 +17,6 @@ dependencies:
   bip39: ^1.0.3
   web3dart: ^2.0.0-dev.9
   hex:
-  pbkdf2_dart:
   crypto:
   uuid: 2.2.2
   json_schema2:

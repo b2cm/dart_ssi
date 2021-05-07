@@ -3,9 +3,9 @@ library flutter_ssi_wallet;
 import 'package:bip32/bip32.dart';
 import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter_ssi_wallet/src/private_util.dart';
 import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
-import 'package:pbkdf2_dart/pbkdf2_dart.dart';
 import 'package:web3dart/credentials.dart';
 
 import 'hive_model.dart';
