@@ -208,8 +208,9 @@ void main() async {
       var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
       expect(credObject['@context'].length, 1);
+      expect(credObject['hashAlg'], 'keccak-256');
       expect(credObject['@context'][0], 'https://hs-mittweida.de');
-      expect(credObject.keys.length, 2);
+      expect(credObject.keys.length, 3);
       expect(jScheme.validate(credObject['@context']), false);
     });
 
@@ -228,7 +229,8 @@ void main() async {
       };
       var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
-      expect(credObject.keys.length, 3);
+      expect(credObject.keys.length, 4);
+      expect(credObject['hashAlg'], 'keccak-256');
       expect(credObject['type'], 'VerifiableCredential');
       expect(credObject['@type'].length, 2);
       expect(credObject['@type'] is List, true);
@@ -1519,8 +1521,9 @@ void main() async {
             [signed1, signed2, signed3], holder, challenge,
             disclosedCredentials: [undisclosed1, undisclosed2, undisclosed3]);
         Map<String, dynamic> presMap = jsonDecode(presentation);
-        expect(presMap.containsKey('undisclosedCredentials'), true);
-        expect(presMap['undisclosedCredentials'].length, 3);
+        print(presMap);
+        expect(presMap.containsKey('disclosedCredentials'), true);
+        expect(presMap['disclosedCredentials'].length, 3);
         expect(await verifyPresentation(presentation, challenge), true);
       });
     });
