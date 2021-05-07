@@ -17,12 +17,12 @@ dependencies:
   bip39: ^1.0.3
   web3dart: ^2.0.0-dev.9
   hex:
-  ethereum_util:
   pbkdf2_dart:
   crypto:
   uuid: 2.2.2
-  json_schema: 2.2.1
+  json_schema2:
   asn1lib:
+
 
 dev_dependencies:
   flutter_test:

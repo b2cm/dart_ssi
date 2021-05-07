@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:ethereum_util/ethereum_util.dart' as util;
+import 'package:crypto/crypto.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
-import 'package:json_schema/json_schema.dart';
+import 'package:json_schema2/json_schema2.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web3dart/credentials.dart';
@@ -212,7 +212,7 @@ String signCredential(WalletStore wallet, dynamic credential) {
     throw new Exception('Could not examine IssuerDID');
   }
 
-  var credHash = util.sha256(jsonEncode(credential));
+  var credHash = sha256.convert(utf8.encode(jsonEncode(credential))).bytes;
   var proof = _buildProof(credHash, issuerDid, wallet);
 
   credential['proof'] = proof;
@@ -241,7 +241,7 @@ Future<bool> verifyCredential(dynamic credential,
 
   Map<String, dynamic> proof = credMap['proof'];
   credMap.remove('proof');
-  var credHash = util.sha256(jsonEncode(credMap));
+  var credHash = sha256.convert(utf8.encode(jsonEncode(credMap))).bytes;
   var issuerDid = getIssuerDidFromCredential(credential);
   if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
   return _verifyProof(proof, credHash, issuerDid);
@@ -281,7 +281,8 @@ String buildPresentation(
     presentation['type'] = type;
   }
 
-  var presentationHash = util.sha256(jsonEncode(presentation));
+  var presentationHash =
+      sha256.convert(utf8.encode(jsonEncode(presentation))).bytes;
   List<Map<String, dynamic>> proofList = [];
   holderDids.forEach((element) {
     var proof = _buildProof(presentationHash, element, wallet,
@@ -309,7 +310,8 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   var presentationMap = credentialToMap(presentation);
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
-  var presentationHash = util.sha256(jsonEncode(presentationMap));
+  var presentationHash =
+      sha256.convert(utf8.encode(jsonEncode(presentationMap))).bytes;
 
   var credentials = presentationMap['verifiableCredential'] as List;
   List<String> holderDids = [];
@@ -666,7 +668,7 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
   }
   var payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
   var signingInput = '$header.$payload';
-  var hash = util.sha256(ascii.encode(signingInput));
+  var hash = sha256.convert(ascii.encode(signingInput)).bytes;
   String privKeyHex;
 
   privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
@@ -675,9 +677,8 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
   if (privKeyHex == null) throw Exception('Could not find private key');
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash, key.privateKey);
-  var sigArray = intToBytes(signature.r) +
-      intToBytes(signature.s) +
-      util.intToBuffer(signature.v - 27);
+  var sigArray =
+      intToBytes(signature.r) + intToBytes(signature.s) + [signature.v - 27];
 
   if (detached)
     return '$header.'
@@ -701,8 +702,8 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
   else
     throw Exception('No payload given');
   var signingInput = '${splitted[0]}.$payload';
-  var hashToSign = util.sha256(ascii.encode(signingInput));
-  var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
+  var hashToSign = sha256.convert(ascii.encode(signingInput)).bytes;
+  var pubKey = ecRecover(hashToSign, signature);
   var recoveredDid =
       'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   if (erc1056 != null) expectedDid = await erc1056.identityOwner(expectedDid);
@@ -726,7 +727,7 @@ Map<String, dynamic> _hashStringOrNum(dynamic value) {
   var uuid = Uuid();
   Map<String, dynamic> hashed = new Map();
   var salt = uuid.v4();
-  var hash = util.bufferToHex(util.keccak256(salt + value.toString()));
+  var hash = bytesToHex(keccakUtf8(salt + value.toString()), include0x: true);
   hashed.putIfAbsent('value', () => value);
   hashed.putIfAbsent('salt', () => salt);
   hashed.putIfAbsent('hash', () => hash);
@@ -783,8 +784,9 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
       } else if (value is Map<String, dynamic>) {
         if (_hashedAttributeSchemaStrict.validate(value)) {
           //a disclosed value -> rehash and check
-          var hash = util.bufferToHex(
-              util.keccak256(value['salt'] + value['value'].toString()));
+          var hash = bytesToHex(
+              keccakUtf8(value['salt'] + value['value'].toString()),
+              include0x: true);
           if (hash != value['hash'])
             throw Exception(
                 'Given hash and calculated hash do ot match at $key');
@@ -811,8 +813,9 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
           } else if (value[i] is Map<String, dynamic> &&
               _hashedAttributeSchemaStrict.validate(value[i])) {
             // a disclosed value -> rehash and check
-            var hash = util.bufferToHex(util
-                .keccak256(value[i]['salt'] + value[i]['value'].toString()));
+            var hash = bytesToHex(
+                keccakUtf8(value[i]['salt'] + value[i]['value'].toString()),
+                include0x: true);
             if (hash != fromW3c[i])
               throw Exception(
                   'Calculated and given Hash in List at $key do not match at '
@@ -848,17 +851,16 @@ Map<String, dynamic> _buildProof(
       pOptions = jsonEncode(proofOptions);
   }
 
-  var pOptionsHash = util.sha256(pOptions);
-  var hash = util.sha256(pOptionsHash + hashToSign);
+  var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
+  var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
   var privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
   if (privKeyHex == null)
     privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
   if (privKeyHex == null) throw Exception('Could not find a private key');
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash, key.privateKey);
-  var sigArray = intToBytes(signature.r) +
-      intToBytes(signature.s) +
-      util.intToBuffer(signature.v - 27);
+  var sigArray =
+      intToBytes(signature.r) + intToBytes(signature.s) + [signature.v - 27];
 
   Map<String, dynamic> optionsMap = jsonDecode(pOptions);
 
@@ -876,10 +878,10 @@ bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
   proof.remove('jws');
   if (proof['type'] != 'EcdsaSecp256k1RecoverySignature2020')
     throw Exception('Proof type ${proof['type']} is not supported');
-  var proofHash = util.sha256(jsonEncode(proof));
-  var hashToSign = util.sha256(proofHash + hash);
+  var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
+  var hashToSign = sha256.convert(proofHash + hash).bytes;
 
-  var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
+  var pubKey = ecRecover(hashToSign, signature);
   var recoverdDid =
       'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   return recoverdDid == did;
@@ -905,7 +907,7 @@ String _buildProofOptions(
   return json.encode(jsonObject);
 }
 
-util.ECDSASignature _getSignatureFromJws(String jws) {
+MsgSignature _getSignatureFromJws(String jws) {
   var splitJws = jws.split('.');
   Map<String, dynamic> header =
       jsonDecode(utf8.decode(base64Decode(_addPaddingToBase64(splitJws[0]))));
@@ -913,7 +915,7 @@ util.ECDSASignature _getSignatureFromJws(String jws) {
     throw Exception('Unsupported signature Algorithm ${header['alg']}');
   var sigArray = base64Decode(_addPaddingToBase64(splitJws[2]));
   if (sigArray.length != 65) throw Exception('wrong signature-length');
-  return new util.ECDSASignature(bytesToInt(sigArray.sublist(0, 32)),
+  return new MsgSignature(bytesToInt(sigArray.sublist(0, 32)),
       bytesToInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
 }
 

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:ethereum_util/ethereum_util.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/web3dart.dart';
@@ -257,7 +256,8 @@ class Erc1056 {
       List<BigInt> listOfPreviousChanges = [];
 
       await Future.forEach(logs, (event) async {
-        if (event.topics.first == bufferToHex(didOwnerChangedEvent.signature)) {
+        if (event.topics.first ==
+            bytesToHex(didOwnerChangedEvent.signature, include0x: true)) {
           var decodedEvent =
               didOwnerChangedEvent.decodeResults(event.topics, event.data);
           var owner = decodedEvent[1] as EthereumAddress;
@@ -266,7 +266,7 @@ class Erc1056 {
           listOfPreviousChanges.add(previousChange);
           owners.add(_addressToDid(owner));
         } else if (event.topics.first ==
-            bufferToHex(didAttributeChangedEvent.signature)) {
+            bytesToHex(didAttributeChangedEvent.signature, include0x: true)) {
           var decodedEvent =
               didAttributeChangedEvent.decodeResults(event.topics, event.data);
           var name = decodedEvent[1] as Uint8List;
@@ -293,7 +293,7 @@ class Erc1056 {
             }
           }
         } else if (event.topics.first ==
-            bufferToHex(didDelegateChangedEvent.signature)) {
+            bytesToHex(didDelegateChangedEvent.signature, include0x: true)) {
           var decodedEvent =
               didDelegateChangedEvent.decodeResults(event.topics, event.data);
           var delegateType = decodedEvent[1] as Uint8List;
