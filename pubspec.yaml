@@ -11,23 +11,24 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  hive: ^1.4.4+1
-  hive_flutter: ^0.3.1
-  bip32: ^1.0.5
-  bip39: ^1.0.3
-  web3dart: ^2.0.0-dev.9
-  hex:
-  crypto:
-  uuid: 2.2.2
-  json_schema2:
+  hive: 2.0.4
+  hive_flutter: 1.0.0
+  bip32:
+    path: ../bip32-dart
+  bip39: 1.0.6
+  web3dart: 2.0.0
+  hex: 0.2.0
+  crypto: 3.0.1
+  uuid: 3.0.4
+  json_schema2: 2.0.0+1
   asn1lib:
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  hive_generator: ^0.8.1
-  build_runner: ^1.10.4
+  hive_generator: 1.1.0
+  build_runner: 2.0.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
