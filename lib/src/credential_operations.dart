@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:json_schema2/json_schema2.dart';
-import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web3dart/credentials.dart';
 import 'package:web3dart/crypto.dart';
@@ -316,7 +315,9 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   var credentials = presentationMap['verifiableCredential'] as List;
   List<String?> holderDids = [];
   await Future.forEach(credentials, (dynamic element) async {
-    if (!(await verifyCredential(element, erc1056: erc1056, rpcUrl: rpcUrl)))
+    bool verified =
+        await verifyCredential(element, erc1056: erc1056, rpcUrl: rpcUrl);
+    if (!verified)
       throw Exception('A credential could not been verified');
     else {
       var did = getHolderDidFromCredential(element);
@@ -677,8 +678,9 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
   if (privKeyHex == null) throw Exception('Could not find private key');
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash as Uint8List, key.privateKey);
-  var sigArray =
-      intToBytes(signature.r) + intToBytes(signature.s) + [signature.v - 27];
+  var sigArray = unsignedIntToBytes(signature.r) +
+      unsignedIntToBytes(signature.s) +
+      [signature.v - 27];
 
   if (detached)
     return '$header.'
@@ -859,11 +861,10 @@ Map<String, dynamic> _buildProof(
   if (privKeyHex == null) throw Exception('Could not find a private key');
   var key = EthPrivateKey.fromHex(privKeyHex);
   MsgSignature signature = sign(hash as Uint8List, key.privateKey);
-  var sigArray =
-      intToBytes(signature.r) + intToBytes(signature.s) + [signature.v - 27];
-
+  var sigArray = unsignedIntToBytes(signature.r) +
+      unsignedIntToBytes(signature.s) +
+      [signature.v - 27];
   Map<String, dynamic> optionsMap = jsonDecode(pOptions);
-
   var critical = new Map<String, dynamic>();
   critical['b64'] = false;
   optionsMap['jws'] = '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
@@ -915,8 +916,8 @@ MsgSignature _getSignatureFromJws(String jws) {
     throw Exception('Unsupported signature Algorithm ${header['alg']}');
   var sigArray = base64Decode(_addPaddingToBase64(splitJws[2]));
   if (sigArray.length != 65) throw Exception('wrong signature-length');
-  return new MsgSignature(bytesToInt(sigArray.sublist(0, 32)),
-      bytesToInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
+  return new MsgSignature(bytesToUnsignedInt(sigArray.sublist(0, 32)),
+      bytesToUnsignedInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
 }
 
 String _addPaddingToBase64(String base64Input) {

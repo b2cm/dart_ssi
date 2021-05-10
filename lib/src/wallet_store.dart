@@ -7,6 +7,7 @@ import 'package:flutter_ssi_wallet/src/private_util.dart';
 import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
 import 'package:web3dart/credentials.dart';
+import 'package:web3dart/crypto.dart';
 
 import 'hive_model.dart';
 
@@ -315,7 +316,7 @@ class WalletStore {
   }
 
   Future<String> _bip32KeyToDid(BIP32 key) async {
-    var private = EthPrivateKey.fromHex(HEX.encode(key.privateKey!));
+    var private = EthPrivateKey.fromHex(bytesToHex(key.privateKey!));
     var addr = await private.extractAddress();
     return 'did:ethr:${addr.hexEip55}';
   }

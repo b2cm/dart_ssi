@@ -14,8 +14,8 @@ void main() async {
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
   var ganacheAccounts = new WalletStore('ganache');
   await ganacheAccounts.openBoxes('ganache');
-  //ganacheAccounts.initialize(
-  //  'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
+  ganacheAccounts.initialize(
+      'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
 
   var ganacheDid5 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/4');
   var ganacheDid6 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/5');
@@ -1038,7 +1038,6 @@ void main() async {
             buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['list'][0] = plaintextMap['list'][0]['hash'];
-        print(plaintextMap);
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
       });
 
@@ -1052,7 +1051,6 @@ void main() async {
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['list'][0].remove('value');
         plaintextMap['list'][0].remove('salt');
-        print(plaintextMap);
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
       });
     });
@@ -1164,10 +1162,13 @@ void main() async {
     String? w3c;
 
     setUp(() async {
-      wallet = WalletStore('tests');
-      await wallet.openBoxes('password');
-      wallet.initialize();
-      await wallet.initializeIssuer();
+      var dir = Directory('tests');
+      if (!dir.existsSync()) {
+        wallet = WalletStore('tests');
+        await wallet.openBoxes('password');
+        wallet.initialize();
+        await wallet.initializeIssuer();
+      }
       var cred = {'name': 'Max', 'age': 20, 'height': 1.78, 'student': true};
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       w3c = buildW3cCredentialwithHashes(
@@ -1197,6 +1198,7 @@ void main() async {
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
       signedMap['credentialSubject']['id'] = '0x567';
       expect(signedMap.containsKey('proof'), true);
+      print(signedMap['proof']);
       expect(signedMap['proof']['verificationMethod'],
           wallet.getStandardIssuerDid());
       expect(signedMap['proof']['type'], 'EcdsaSecp256k1RecoverySignature2020');
@@ -1303,7 +1305,8 @@ void main() async {
     });
 
     tearDown(() {
-      new Directory('tests').delete(recursive: true);
+      var dir = Directory('tests');
+      if (dir.existsSync()) dir.delete(recursive: true);
     });
   });
 
@@ -1313,17 +1316,17 @@ void main() async {
     String? plaintext1, plaintext2, plaintext3;
     String? signed1, signed2, signed3;
     setUp(() async {
-      var iss1 = WalletStore('testIss1');
+      var iss1 = WalletStore('wurite');
       await iss1.openBoxes('password1');
       iss1.initialize();
       await iss1.initializeIssuer();
 
-      var iss2 = WalletStore('testIss2');
+      var iss2 = WalletStore('sdfjgk');
       await iss2.openBoxes('password2');
       iss2.initialize();
       await iss2.initializeIssuer();
 
-      var iss3 = WalletStore('testIss3');
+      var iss3 = WalletStore('cvbymx');
       await iss3.openBoxes('password3');
       iss3.initialize();
       await iss3.initializeIssuer();
@@ -1390,7 +1393,6 @@ void main() async {
       expect(verificationMethods.contains(didCred1), true);
       expect(verificationMethods.contains(didCred2), true);
       expect(verificationMethods.contains(didCred3), true);
-
       expect(
           await verifyPresentation(presentation, challenge,
               erc1056: erc1056, rpcUrl: rpcUrl),
@@ -1524,7 +1526,6 @@ void main() async {
             [signed1, signed2, signed3], holder, challenge,
             disclosedCredentials: [undisclosed1, undisclosed2, undisclosed3]);
         Map<String, dynamic> presMap = jsonDecode(presentation);
-        print(presMap);
         expect(presMap.containsKey('disclosedCredentials'), true);
         expect(presMap['disclosedCredentials'].length, 3);
         expect(await verifyPresentation(presentation, challenge), true);
@@ -1532,10 +1533,14 @@ void main() async {
     });
 
     tearDown(() {
-      new Directory('holder').delete(recursive: true);
-      new Directory('testIss1').delete(recursive: true);
-      new Directory('testIss2').delete(recursive: true);
-      new Directory('testIss3').delete(recursive: true);
+      var holder = Directory('holder');
+      if (holder.existsSync()) holder.delete(recursive: true);
+      var iss1 = Directory('testIss1');
+      if (iss1.existsSync()) iss1.delete(recursive: true);
+      var iss2 = Directory('testIss2');
+      if (iss2.existsSync()) iss2.delete(recursive: true);
+      var iss3 = Directory('testIss3');
+      if (iss3.existsSync()) iss3.delete(recursive: true);
     });
   });
 
@@ -1547,14 +1552,14 @@ void main() async {
       w.initialize();
       var did = await w.getNextCredentialDID();
       var jws = signString(w, did, toSign);
-      print(jws);
 
       var verified = await verifyStringSignature(jws, did,
           erc1056: erc1056, toSign: toSign);
 
       expect(verified, true);
 
-      new Directory('tests').delete(recursive: true);
+      var dir = Directory('tests');
+      if (dir.existsSync()) dir.delete(recursive: true);
     });
   });
 
@@ -1825,7 +1830,6 @@ void main() async {
         ]
       };
       var paths = getAllJsonPathsOfCredential(cred);
-      print(paths);
       expect(paths.length, 4);
       expect(paths.contains('friends.0.name'), true);
       expect(paths.contains('friends.1.name'), true);
