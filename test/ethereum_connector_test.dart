@@ -8,11 +8,11 @@ void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
 
   var erc1056 = Erc1056(rpcUrl,
-      contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
-  var ganacheAccounts = new WalletStore('ganache');
+      contractAddress: '0x5782FB2ec86bD6828420487189F0b06C8aD3c74e');
+  var ganacheAccounts = new WalletStore('ganacheNew');
   await ganacheAccounts.openBoxes('ganache');
-  // ganacheAccounts.initialize(
-  //     'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
+  ganacheAccounts.initialize(
+      'cave huge ripple fiber deny shove hello refuse push saddle siege notice');
 
   var ganacheDid5 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/4');
   var ganacheDid6 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/5');
@@ -137,7 +137,7 @@ void main() async {
               ganacheDid5),
           throwsException);
       var identityOwner = await erc1056.identityOwner(ganacheDid7);
-      expect(identityOwner, '0x${ganacheDid5.substring(9)}');
+      expect(identityOwner, ganacheDid5);
       var eventData = await erc1056.collectEventData(ganacheDid7);
       List<String> owners = eventData['owners'];
       expect(owners.length, 1);
@@ -157,7 +157,7 @@ void main() async {
               ganacheDid8),
           throwsException);
       var identityOwner = await erc1056.identityOwner(ganacheDid7);
-      expect(identityOwner, '0x${ganacheDid8.substring(9)}');
+      expect(identityOwner, ganacheDid8);
       var eventData = await erc1056.collectEventData(ganacheDid7);
       List<String> owners = eventData['owners'];
       expect(owners.length, 2);
@@ -171,15 +171,16 @@ void main() async {
       await erc1056.setAttribute(
           ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
-          'serviceEndpoint2',
-          'http://service±.de');
+          'serviceEndpoint',
+          'http://identity.service.de');
 
       var eventData = await erc1056.collectEventData(ganacheDid8);
       print(eventData);
       Map<String, List<String>> attributes = eventData['attributes'];
       expect(attributes.keys.length, 1);
       expect(attributes.containsKey('serviceEndpoint'), true);
-      expect(attributes['serviceEndpoint']!.first, 'http://identity.service.de');
+      expect(
+          attributes['serviceEndpoint']!.first, 'http://identity.service.de');
     });
 
     test('revoke one attribute', () async {
@@ -245,7 +246,8 @@ void main() async {
       expect(attributes.containsKey('LongService'), true);
       expect(attributes.containsKey('serviceEndpoint'), true);
       expect(attributes['LongService']!.first, value);
-      expect(attributes['serviceEndpoint']!.first, 'http://identity.service.de');
+      expect(
+          attributes['serviceEndpoint']!.first, 'http://identity.service.de');
     });
 
     test('two values for one attribute', () async {

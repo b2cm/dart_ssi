@@ -251,7 +251,11 @@ class Erc1056 {
           fromBlock: BlockNum.exact(lastChange!.toInt()),
           toBlock: BlockNum.exact(lastChange.toInt()),
           topics: [
-            [],
+            [
+              bytesToHex(didOwnerChangedEvent.signature, include0x: true),
+              bytesToHex(didDelegateChangedEvent.signature, include0x: true),
+              bytesToHex(didAttributeChangedEvent.signature, include0x: true)
+            ],
             ['0x${_didToAddress(identityDid).hexNo0x.padLeft(64, '0')}']
           ]));
       List<BigInt?> listOfPreviousChanges = [];
