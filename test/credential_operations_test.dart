@@ -14,8 +14,9 @@ void main() async {
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
   var ganacheAccounts = new WalletStore('ganache');
   await ganacheAccounts.openBoxes('ganache');
-  // ganacheAccounts.initialize(
-  //     'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
+  ganacheAccounts.initialize(
+      mnemonic:
+          'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
 
   var ganacheDid5 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/4');
   var ganacheDid6 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/5');
@@ -1828,6 +1829,51 @@ void main() async {
       expect(paths.contains('friends.1.name'), true);
       expect(paths.contains('friends.0.age'), true);
       expect(paths.contains('friends.1.age'), true);
+    });
+  });
+
+  group('use other network', () {
+    WalletStore wallet;
+    Erc1056 ercWithId;
+
+    setUp(() async {
+      wallet = WalletStore('other');
+      await wallet.openBoxes();
+      wallet.initialize(network: 'ropsten');
+      await wallet.initializeIssuer();
+      ercWithId = Erc1056(rpcUrl,
+          networkNameOrId: 'ropsten',
+          contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+    });
+
+    test('next did', () async {
+      var did = await wallet.getNextCredentialDID();
+      expect(did.startsWith('did:ethr:ropsten'), true);
+    });
+
+    test('sign String', () async {
+      var toSign = 'test';
+      var didToSignWith = await wallet.getNextConnectionDID();
+      var jws = signString(wallet, didToSignWith, toSign);
+      expect(
+          await verifyStringSignature(jws, didToSignWith, erc1056: ercWithId),
+          true);
+    });
+
+    test('sign a credential', () async {
+      var cred = {'name': 'Max', 'age': 23};
+      var holderDid = await wallet.getNextCredentialDID();
+      var plain = buildPlaintextCredential(cred, holderDid);
+      expect(
+          wallet.getStandardIssuerDid().startsWith('did:ethr:ropsten'), true);
+      var w3c =
+          buildW3cCredentialwithHashes(plain, wallet.getStandardIssuerDid());
+      var signed = signCredential(wallet, w3c);
+      expect(await verifyCredential(signed, erc1056: ercWithId), true);
+    });
+
+    tearDown(() {
+      new Directory('other').delete(recursive: true);
     });
   });
 }

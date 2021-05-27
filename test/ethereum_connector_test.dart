@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_ssi_wallet/src/ethereum_connector.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:web3dart/credentials.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
@@ -11,8 +12,9 @@ void main() async {
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
   var ganacheAccounts = new WalletStore('ganache');
   await ganacheAccounts.openBoxes('ganache');
-  // ganacheAccounts.initialize(
-  //     'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
+  ganacheAccounts.initialize(
+      mnemonic:
+          'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
 
   var ganacheDid5 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/4');
   var ganacheDid6 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/5');
@@ -315,6 +317,33 @@ void main() async {
           () async => await rev.revoke('m/44\'/60\'/0\'/0/6',
               'did:ethr:0x6d32738382c6389eF0D79045a76411C42Fff3a5e'),
           throwsException);
+    });
+  });
+
+  group('Revocation on Ropsten', () {
+    test('contract deployment', () async {
+      var creds = EthPrivateKey.fromHex(
+          'db721f19a3a1a96becb15bc6443e429345c48f9317926e935b9018341b4b6b23');
+      var address = await creds.extractAddress();
+      print(address);
+      var rev = RevocationRegistry(
+          'https://ropsten.infura.io/v3/c79506ae5f37452681b58978ac57e927',
+          chainId: 3);
+      var addr = await rev.deploy(
+          'db721f19a3a1a96becb15bc6443e429345c48f9317926e935b9018341b4b6b23');
+      print(addr);
+      expect(addr != null, true);
+    });
+  });
+
+  group('erc with network id', () {
+    var ercWithId = Erc1056(rpcUrl,
+        networkNameOrId: 'ganache',
+        contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+    test('get owner did', () async {
+      var did = await ercWithId.identityOwner(
+          'did:ethr:ganache:0xC3d188C872e25c0370Ff3D2aA7268e2e13D11fe9');
+      expect(did.startsWith('did:ethr:ganache'), true);
     });
   });
 }

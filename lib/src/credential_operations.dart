@@ -124,8 +124,8 @@ String buildPlaintextCredential(dynamic credential, String holderDid,
 /// plaintext-credential [credential] contains.
 String buildW3cCredentialwithHashes(dynamic credential, String issuerDid,
     {dynamic type, dynamic context, String revocationRegistryAddress}) {
-  var plaintectMap = credentialToMap(credential);
-  var hashCred = _collectHashes(credential, id: plaintectMap['id']);
+  var plaintextMap = credentialToMap(credential);
+  var hashCred = _collectHashes(credential, id: plaintextMap['id']);
 
   List<String> credTypes = [];
   credTypes.add('VerifiableCredential');
@@ -703,11 +703,10 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
   var signingInput = '${splitted[0]}.$payload';
   var hashToSign = util.sha256(ascii.encode(signingInput));
   var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
-  var recoveredDid =
-      'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   if (erc1056 != null) expectedDid = await erc1056.identityOwner(expectedDid);
 
-  return recoveredDid == expectedDid;
+  return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
+      expectedDid.split(':').last;
 }
 
 /// Converts json-String [credential] to dart Map.
@@ -880,9 +879,8 @@ bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
   var hashToSign = util.sha256(proofHash + hash);
 
   var pubKey = util.recoverPublicKeyFromSignature(signature, hashToSign);
-  var recoverdDid =
-      'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
-  return recoverdDid == did;
+
+  return EthereumAddress.fromPublicKey(pubKey).hexEip55 == did.split(':').last;
 }
 
 String _buildProofOptions(
