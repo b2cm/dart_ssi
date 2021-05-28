@@ -122,7 +122,9 @@ class WalletStore {
   /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
   ///
   /// Returns the used mnemonic.
-  String? initialize([String? mnemonic]) {
+  /// If the wallet should be used on another ethereum-network than the mainnet,
+  /// pass the nme or its id as [network].
+  String? initialize({String? mnemonic, String network = 'mainnet'}) {
     var mne = mnemonic;
     if (mnemonic == null) {
       mne = generateMnemonic();
@@ -132,6 +134,7 @@ class WalletStore {
     this._keyBox!.put('seed', seed);
     this._keyBox!.put('lastCredentialIndex', 0);
     this._keyBox!.put('lastConnectionIndex', 0);
+    this._configBox!.put('network', network);
 
     return mne;
   }
@@ -342,6 +345,10 @@ class WalletStore {
   Future<String> _bip32KeyToDid(BIP32 key) async {
     var private = EthPrivateKey.fromHex(bytesToHex(key.privateKey!));
     var addr = await private.extractAddress();
-    return 'did:ethr:${addr.hexEip55}';
+    String network = _configBox!.get('network') as String;
+    if (network == 'mainnet')
+      return 'did:ethr:${addr.hexEip55}';
+    else
+      return 'did:ethr:$network:${addr.hexEip55}';
   }
 }
