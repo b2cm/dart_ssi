@@ -1861,9 +1861,9 @@ void main() async {
       var toSign = 'test';
       var didToSignWith = await wallet.getNextConnectionDID();
       var jws = signString(wallet, didToSignWith, toSign);
-      expect(
-          await verifyStringSignature(jws, didToSignWith, erc1056: ercWithId),
-          true);
+      var checked =
+          await verifyStringSignature(jws, didToSignWith, erc1056: ercWithId);
+      expect(checked, true);
     });
 
     test('sign a credential', () async {

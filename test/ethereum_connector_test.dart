@@ -7,9 +7,8 @@ import 'package:web3dart/crypto.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
-
-  var erc1056 = Erc1056(rpcUrl,
-      contractAddress: '0xdB076430742256219299b4Ab173F094E583C4c9B');
+  String contractAddress = '0xF7551cC988437d0D33A615cCE4716D8384Aa8AEB';
+  var erc1056 = Erc1056(rpcUrl, contractAddress: contractAddress);
   var ganacheAccounts = new WalletStore('ganacheNew');
   await ganacheAccounts.openBoxes('ganache');
   ganacheAccounts.initialize(
@@ -326,8 +325,7 @@ void main() async {
   group('erc with network id', () {
     test('get owner did', () async {
       var ercWithId = Erc1056(rpcUrl,
-          networkNameOrId: 'ganache',
-          contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+          networkNameOrId: 'ganache', contractAddress: contractAddress);
       var did = await ercWithId.identityOwner(
           'did:ethr:ganache:0xC3d188C872e25c0370Ff3D2aA7268e2e13D11fe9');
       expect(did.startsWith('did:ethr:ganache'), true);
@@ -335,8 +333,7 @@ void main() async {
 
     test('transact to private network', () async {
       var ercWithId = Erc1056(rpcUrl,
-          networkNameOrId: 'ganache',
-          contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+          networkNameOrId: 'ganache', contractAddress: contractAddress);
       ganacheDid10 = 'did:ethr:ganache:${ganacheDid10.split(':').last}';
       ganacheDid9 = 'did:ethr:ganache:${ganacheDid9.split(':').last}';
       expect(ercWithId.chainId, 1337);
@@ -350,8 +347,7 @@ void main() async {
 
     test('network id in did', () async {
       var ercWithId = Erc1056(rpcUrl,
-          networkNameOrId: 'ganache',
-          contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+          networkNameOrId: 'ganache', contractAddress: contractAddress);
       ganacheDid10 =
           'did:ethr:${bytesToHex(intToBytes(BigInt.from(1337)))}:${ganacheDid10.split(':').last}';
       ganacheDid9 = 'did:ethr:ganache:${ganacheDid9.split(':').last}';
@@ -359,9 +355,8 @@ void main() async {
     });
 
     test('Exception did not in network', () {
-      var ercWithId = Erc1056(rpcUrl,
-          networkNameOrId: 3,
-          contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+      var ercWithId =
+          Erc1056(rpcUrl, networkNameOrId: 3, contractAddress: contractAddress);
       ganacheDid9 = 'did:ethr:ganache:${ganacheDid9.split(':').last}';
       expect(ercWithId.networkName, 'ropsten');
       expect(() async => await ercWithId.identityOwner(ganacheDid9),

@@ -454,10 +454,18 @@ class Erc1056 {
     String expectedName = 'did:ethr:$networkName:${addr.hexEip55}';
     String expectedId =
         'did:ethr:${bytesToHex(intToBytes(BigInt.from(chainId)))}:${addr.hexEip55}';
-    if (!(did == expectedId || did == expectedName))
-      return false;
-    else
-      return true;
+    if (chainId == 1) {
+      String expectedName2 = 'did:ethr:${addr.hexEip55}';
+      if (!(did == expectedId || did == expectedName || did == expectedName2))
+        return false;
+      else
+        return true;
+    } else {
+      if (!(did == expectedId || did == expectedName))
+        return false;
+      else
+        return true;
+    }
   }
 
   Uint8List _to32ByteUtf8(String name) {
