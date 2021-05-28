@@ -308,10 +308,9 @@ class Erc1056 {
 
           listOfPreviousChanges.add(previousChange);
 
-          var validDelegate = await (this.validDelegate(
-                  identityDid, delegateTypeString, _addressToDid(delegate))
-              as FutureOr<bool>);
-          if (validDelegate) {
+          var validDelegate = await this.validDelegate(
+              identityDid, delegateTypeString, _addressToDid(delegate));
+          if (validDelegate!) {
             if (delegates.containsKey(delegateTypeString) &&
                 (!delegates[delegateTypeString]!
                     .contains(_addressToDid(delegate)))) {
@@ -469,9 +468,9 @@ class RevocationRegistry {
   Future<bool> isRevoked(String credentialDid) async {
     var revokedEvent = _contract.event('RevokedEvent');
     var revEventSig = bytesToHex(revokedEvent.signature);
-    var deployedBlock = await (deployed() as FutureOr<BigInt>);
+    var deployedBlock = await deployed();
     var logs = await _web3Client.getLogs(FilterOptions(
-        fromBlock: BlockNum.exact(deployedBlock.toInt()),
+        fromBlock: BlockNum.exact(deployedBlock!.toInt()),
         topics: [
           ['0x${revEventSig.padLeft(64, '0')}'],
           ['0x${_didToAddress(credentialDid).hexNo0x.padLeft(64, '0')}']

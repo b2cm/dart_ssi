@@ -1311,7 +1311,7 @@ void main() async {
   });
 
   group('sign and verify presentation', () {
-    WalletStore? holder;
+    late WalletStore holder;
     String? didCred1, didCred2, didCred3;
     String? plaintext1, plaintext2, plaintext3;
     String? signed1, signed2, signed3;
@@ -1332,8 +1332,8 @@ void main() async {
       await iss3.initializeIssuer();
 
       holder = WalletStore('holder');
-      await holder!.openBoxes('passwordH');
-      holder!.initialize();
+      await holder.openBoxes('passwordH');
+      holder.initialize();
 
       var cred1 = {
         'name': 'Max Mustermann',
@@ -1350,9 +1350,9 @@ void main() async {
       };
       var cred3 = {'verein': 'Laufgruppe Döbeln', 'rolle': 'Mitglied'};
 
-      didCred1 = await holder!.getNextCredentialDID();
-      didCred2 = await holder!.getNextCredentialDID();
-      didCred3 = await holder!.getNextCredentialDID();
+      didCred1 = await holder.getNextCredentialDID();
+      didCred2 = await holder.getNextCredentialDID();
+      didCred3 = await holder.getNextCredentialDID();
 
       plaintext1 = buildPlaintextCredential(cred1, didCred1);
       plaintext2 = buildPlaintextCredential(cred2, didCred2);
@@ -1448,7 +1448,7 @@ void main() async {
 
     test('add additional proofs', () async {
       var challenge = Uuid().v4();
-      var newDID = await holder!.getNextConnectionDID();
+      var newDID = await holder.getNextConnectionDID();
       var presentation = buildPresentation(
           [signed1, signed2, signed3], holder, challenge,
           additionalDids: [newDID]);
@@ -1468,7 +1468,7 @@ void main() async {
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       var presMap = jsonDecode(presentation) as Map;
       presMap['verifiableCredential'][0]['issuer'] =
-          await holder!.getNextCredentialDID();
+          await holder.getNextCredentialDID();
 
       expect(
           () async => await verifyPresentation(presMap, challenge,
@@ -1497,12 +1497,12 @@ void main() async {
           EthPrivateKey.fromHex(
               ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4')),
           tx);
-      var newDid = await holder!.getNextCredentialDID();
+      var newDid = await holder.getNextCredentialDID();
       await erc1056.changeOwner(
-          holder!.getPrivateKeyToCredentialDid(didCred1)!, didCred1!, newDid);
+          holder.getPrivateKeyToCredentialDid(didCred1)!, didCred1!, newDid);
 
-      var newPath = holder!.getCredential(newDid)!.hdPath;
-      holder!.storeCredential('', '', newPath, credDid: didCred1);
+      var newPath = holder.getCredential(newDid)!.hdPath;
+      holder.storeCredential('', '', newPath, credDid: didCred1);
       var presentation2 =
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       expect(

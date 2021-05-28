@@ -8,7 +8,7 @@ void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
 
   var erc1056 = Erc1056(rpcUrl,
-      contractAddress: '0x5782FB2ec86bD6828420487189F0b06C8aD3c74e');
+      contractAddress: '0xdB076430742256219299b4Ab173F094E583C4c9B');
   var ganacheAccounts = new WalletStore('ganacheNew');
   await ganacheAccounts.openBoxes('ganache');
   ganacheAccounts.initialize(
@@ -294,8 +294,7 @@ void main() async {
   group('Revocation Contract', () {
     var rev = RevocationRegistry(rpcUrl);
     test('revoke something', () async {
-      var address = await rev
-          .deploy(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'));
+      await rev.deploy(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'));
 
       var isRevoked = await rev
           .isRevoked('did:ethr:0x3B974dC1107e45cDDf1174B810960A7212562Ae4');

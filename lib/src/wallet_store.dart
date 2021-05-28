@@ -17,6 +17,8 @@ import 'hive_model.dart';
 /// Per default the path m/456/0/index is used for keys and dids to prove and identify the credentials someone hold.
 /// If a wallet is also used to issue credentials the keypair found at path m/456/1/0  is the default one.
 class WalletStore {
+  String _walletPath;
+  late String _nameExpansion;
   Box? _keyBox;
   Box<Credential>? _credentialBox;
   Box? _configBox;
@@ -28,12 +30,20 @@ class WalletStore {
   final String standardConnectionPath = 'm/456/1';
 
   /// Constructs a wallet at file-system path [path]
-  WalletStore(String path) {
-    Hive.init(path);
+  WalletStore(this._walletPath) {
+    Hive.init(_walletPath);
+    _nameExpansion = _walletPath.replaceAll('/', '_');
+    var split = _nameExpansion.split('_');
+    if (split.length > 3) {
+      _nameExpansion =
+          '${split[split.length - 3]}${split[split.length - 2]}${split[split.length - 1]}';
+    }
     try {
       Hive.registerAdapter(CredentialAdapter());
       Hive.registerAdapter(ConnectionAdapter());
-    } catch (HiveError) {}
+    } on HiveError catch (e) {
+      print(e);
+    }
   }
 
   /// Opens storage containers optional encrypted with [password]
@@ -43,22 +53,36 @@ class WalletStore {
       var generator = new PBKDF2(hash: sha256);
       var aesKey = generator.generateKey(password, "salt", 1000, 32);
       //only values are encrypted, keys are stored in plaintext
-      this._keyBox =
-          await Hive.openBox('keyBox', encryptionCipher: HiveAesCipher(aesKey));
-      this._credentialBox = await Hive.openBox<Credential>('credentialBox',
+      this._keyBox = await Hive.openBox('keyBox_$_nameExpansion',
+          path: _walletPath, encryptionCipher: HiveAesCipher(aesKey));
+      this._credentialBox = await Hive.openBox<Credential>(
+          'credentialBox_$_nameExpansion',
+          path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
-      this._configBox = await Hive.openBox('configBox',
+      this._configBox = await Hive.openBox('configBox_$_nameExpansion',
+          path: _walletPath, encryptionCipher: HiveAesCipher(aesKey));
+      this._issuingHistory = await Hive.openBox<Credential>(
+          'issuingHistory_$_nameExpansion',
+          path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
-      this._issuingHistory = await Hive.openBox<Credential>('issuingHistory',
-          encryptionCipher: HiveAesCipher(aesKey));
-      this._connection = await Hive.openBox<Connection>('connections',
+      this._connection = await Hive.openBox<Connection>(
+          'connections_$_nameExpansion',
+          path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
     } else {
-      this._keyBox = await Hive.openBox('keyBox');
-      this._credentialBox = await Hive.openBox<Credential>('credentialBox');
-      this._configBox = await Hive.openBox('configBox');
-      this._issuingHistory = await Hive.openBox<Credential>('issuingHistory');
-      this._connection = await Hive.openBox<Connection>('connections');
+      this._keyBox =
+          await Hive.openBox('keyBox_$_nameExpansion', path: _walletPath);
+      this._credentialBox = await Hive.openBox<Credential>(
+          'credentialBox_$_nameExpansion',
+          path: _walletPath);
+      this._configBox =
+          await Hive.openBox('configBox_$_nameExpansion', path: _walletPath);
+      this._issuingHistory = await Hive.openBox<Credential>(
+          'issuingHistory_$_nameExpansion',
+          path: _walletPath);
+      this._connection = await Hive.openBox<Connection>(
+          'connections_$_nameExpansion',
+          path: _walletPath);
     }
     return this._keyBox != null &&
         this._issuingHistory != null &&
@@ -284,7 +308,7 @@ class WalletStore {
   String getPublicKey(String hdPath) {
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var key = master.derivePath(hdPath);
-    return HEX.encode(key.publicKey!);
+    return HEX.encode(key.publicKey);
   }
 
   /// Returns the private key as hex-String associated with [did].
@@ -292,7 +316,7 @@ class WalletStore {
     var cred = getCredential(did);
     if (cred == null) return null;
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
-    var key = master.derivePath(cred.hdPath!);
+    var key = master.derivePath(cred.hdPath);
     return HEX.encode(key.privateKey!);
   }
 
@@ -301,7 +325,7 @@ class WalletStore {
     var com = getConnection(did);
     if (com == null) return null;
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
-    var key = master.derivePath(com.hdPath!);
+    var key = master.derivePath(com.hdPath);
     return HEX.encode(key.privateKey!);
   }
 

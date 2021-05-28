@@ -28,7 +28,7 @@ main() async {
   await new File('example/presentation.json').writeAsString(presentation);
 
   //Holder hides all values he wouldn't show
-  Map<String, dynamic> plaintext = jsonDecode(c.plaintextCredential!);
+  Map<String, dynamic> plaintext = jsonDecode(c.plaintextCredential);
   print(plaintext.containsKey('student'));
   var plaintextDis = discloseValues(c.plaintextCredential, [
     'issuanceDate',
