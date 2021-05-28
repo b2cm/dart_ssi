@@ -142,6 +142,8 @@ class Erc1056 {
 
   /// Request the current owner (its did) for identity [did].
   Future<String> identityOwner(String did) async {
+    if (!_matchesExpectedDid(did))
+      throw Exception('Information about $did cannot be found in this network');
     var identityOwnerFunction = _erc1056contract.function('identityOwner');
     var owner = await web3Client.call(
         contract: _erc1056contract,
@@ -153,6 +155,12 @@ class Erc1056 {
 
   Future<void> changeOwner(
       String privateKeyFrom, String identityDid, String newDid) async {
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
+    if (!_matchesExpectedDid(newDid))
+      throw Exception(
+          'Information about $newDid do not belong to this network');
     var changeOwnerFunction = _erc1056contract.function('changeOwner');
 
     await web3Client.sendTransaction(
@@ -168,6 +176,9 @@ class Erc1056 {
       String privateKeyFrom, String identityDid, String name, String value,
       {int validity: 86400}) async {
     if (validity <= 0) throw Exception('negative validity');
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
     var setAttributeFunction = _erc1056contract.function('setAttribute');
     var valueList = Uint8List.fromList(_utf8.encode(value));
     Transaction tx = Transaction.callContract(
@@ -186,6 +197,9 @@ class Erc1056 {
 
   Future<void> revokeAttribute(String privateKeyFrom, String identityDid,
       String name, String value) async {
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
     var revokeAttributeFunction = _erc1056contract.function('revokeAttribute');
     var nameList = _to32ByteUtf8(name);
     var valueList = Uint8List.fromList(_utf8.encode(value));
@@ -203,6 +217,9 @@ class Erc1056 {
       String delegateType, String delegateDid,
       {int validity: 86400}) async {
     if (validity <= 0) throw Exception('negative validity');
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
     var addDelegateFunction = _erc1056contract.function('addDelegate');
     Transaction tx = Transaction.callContract(
         contract: _erc1056contract,
@@ -220,6 +237,12 @@ class Erc1056 {
 
   Future<void> revokeDelegate(String privateKeyFrom, String identityDid,
       String delegateType, String delegateDid) async {
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
+    if (!_matchesExpectedDid(delegateDid))
+      throw Exception(
+          'Information about $delegateDid do not belong to this network');
     var revokeDelegateFunction = _erc1056contract.function('revokeDelegate');
     Transaction tx = Transaction.callContract(
         contract: _erc1056contract,
@@ -236,6 +259,12 @@ class Erc1056 {
 
   Future<bool> validDelegate(
       String identityDid, String delegateType, String delegateDid) async {
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
+    if (!_matchesExpectedDid(delegateDid))
+      throw Exception(
+          'Information about $delegateDid do not belong to this network');
     var validDelegateFunction = _erc1056contract.function('validDelegate');
     var valid = await web3Client.call(
         contract: _erc1056contract,
@@ -250,6 +279,9 @@ class Erc1056 {
   }
 
   Future<BigInt> changed(String identityDid) async {
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
     var changedFunction = _erc1056contract.function('changed');
     var changedBlock = await web3Client.call(
         contract: _erc1056contract,
@@ -259,6 +291,9 @@ class Erc1056 {
   }
 
   Future<BigInt> nonce(String identityDid) async {
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
     var nonceFunction = _erc1056contract.function('nonce');
     var nonceValue = await web3Client.call(
         contract: _erc1056contract,
@@ -275,6 +310,9 @@ class Erc1056 {
   /// controlled this identity in the past. attributes and delegates gives a Map<String, List<String>>
   /// mapping the delegate-type or attribute-name to their values.
   Future<Map<String, dynamic>> collectEventData(String identityDid) async {
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
     var didOwnerChangedEvent = _erc1056contract.event('DIDOwnerChanged');
     var didDelegateChangedEvent = _erc1056contract.event('DIDDelegateChanged');
     var didAttributeChangedEvent =
@@ -384,15 +422,15 @@ class Erc1056 {
     return eventData;
   }
 
-  /// Returns a minimal did-document for [did], only with information about the current identity owner
-  Future<String> didDocument(String did) async {
-    var owner = await identityOwner(did);
+  /// Returns a minimal did-document for [identityDid], only with information about the current identity owner
+  Future<String> didDocument(String identityDid) async {
+    var owner = await identityOwner(identityDid);
     Map<String, dynamic> doc = {
       '@context': [
         "https://www.w3.org/ns/did/v1",
         "https://identity.foundation/EcdsaSecp256k1RecoverySignature2020/lds-ecdsa-secp256k1-recovery2020-0.0.jsonld"
       ],
-      "id": did,
+      "id": identityDid,
       "verificationMethod": [
         {
           "id": '$owner#controller',
@@ -404,6 +442,16 @@ class Erc1056 {
       "authentication": ['$owner#controller']
     };
     return jsonEncode(doc);
+  }
+
+  bool _matchesExpectedDid(String did) {
+    var addr = _didToAddress(did);
+    String expectedName = 'did:ethr:$networkName:${addr.hexEip55}';
+    String expectedId = 'did:ethr:${intToHex(chainId)}:${addr.hexEip55}';
+    if (!(did == expectedId || did == expectedName))
+      return false;
+    else
+      return true;
   }
 
   Uint8List _to32ByteUtf8(String name) {
