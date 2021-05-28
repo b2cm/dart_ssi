@@ -452,7 +452,8 @@ class Erc1056 {
   bool _matchesExpectedDid(String did) {
     var addr = _didToAddress(did);
     String expectedName = 'did:ethr:$networkName:${addr.hexEip55}';
-    String expectedId = 'did:ethr:${bytesToHex(intToBytes(BigInt.from(chainId)))}:${addr.hexEip55}';
+    String expectedId =
+        'did:ethr:${bytesToHex(intToBytes(BigInt.from(chainId)))}:${addr.hexEip55}';
     if (!(did == expectedId || did == expectedName))
       return false;
     else
