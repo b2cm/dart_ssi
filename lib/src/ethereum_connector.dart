@@ -541,10 +541,16 @@ class RevocationRegistry {
     if (res == '') {
       return '';
     }
-    var receipt = await _web3Client.getTransactionReceipt(res);
+    var receipt;
+    try {
+      receipt = await _web3Client.getTransactionReceipt(res);
+    } catch (e) {}
+
     while (receipt == null) {
       sleep(Duration(seconds: 1));
-      receipt = await _web3Client.getTransactionReceipt(res);
+      try {
+        receipt = await _web3Client.getTransactionReceipt(res);
+      } catch (e) {}
     }
 
     _contract = DeployedContract(
