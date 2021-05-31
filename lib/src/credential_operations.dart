@@ -207,7 +207,7 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 String signCredential(WalletStore wallet, dynamic credential) {
   credential = credentialToMap(credential);
   String? issuerDid = getIssuerDidFromCredential(credential);
-  if (issuerDid == null) {
+  if (issuerDid == '') {
     throw new Exception('Could not examine IssuerDID');
   }
 
@@ -233,7 +233,7 @@ Future<bool> verifyCredential(dynamic credential,
       var revRegistry =
           RevocationRegistry(rpcUrl, contractAddress: credStatus['id']);
       var revoked =
-          await revRegistry.isRevoked(getHolderDidFromCredential(credMap)!);
+          await revRegistry.isRevoked(getHolderDidFromCredential(credMap));
       if (revoked) throw Exception('Credential was revoked');
     }
   }
@@ -242,8 +242,8 @@ Future<bool> verifyCredential(dynamic credential,
   credMap.remove('proof');
   var credHash = sha256.convert(utf8.encode(jsonEncode(credMap))).bytes;
   var issuerDid = getIssuerDidFromCredential(credential);
-  if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid!);
-  return _verifyProof(proof, credHash as Uint8List, issuerDid!);
+  if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
+  return _verifyProof(proof, credHash as Uint8List, issuerDid);
 }
 
 /// Builds a presentation for [credentials].
@@ -313,7 +313,7 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
       sha256.convert(utf8.encode(jsonEncode(presentationMap))).bytes;
 
   var credentials = presentationMap['verifiableCredential'] as List;
-  List<String?> holderDids = [];
+  List<String> holderDids = [];
   await Future.forEach(credentials, (dynamic element) async {
     bool verified =
         await verifyCredential(element, erc1056: erc1056, rpcUrl: rpcUrl);
@@ -321,7 +321,7 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
       throw Exception('A credential could not been verified');
     else {
       var did = getHolderDidFromCredential(element);
-      if (erc1056 != null) did = await erc1056.identityOwner(did!);
+      if (erc1056 != null) did = await erc1056.identityOwner(did);
       holderDids.add(did);
     }
   });
@@ -602,18 +602,18 @@ String buildJwsHeader(
 }
 
 /// Collects the did of the issuer of a [credential].
-String? getIssuerDidFromCredential(dynamic credential) {
+String getIssuerDidFromCredential(dynamic credential) {
   var credentialMap = credentialToMap(credential);
 
   if (!credentialMap.containsKey('issuer'))
-    return null;
+    return '';
   else {
     var issuer = credentialMap['issuer'];
     if (issuer is String)
       return issuer;
     else {
       if (!(issuer is Map))
-        return null;
+        return '';
       else {
         return issuer['id'];
       }
@@ -622,17 +622,17 @@ String? getIssuerDidFromCredential(dynamic credential) {
 }
 
 /// Collects the did of the Holder of [credential].
-String? getHolderDidFromCredential(dynamic credential) {
+String getHolderDidFromCredential(dynamic credential) {
   var credMap = credentialToMap(credential);
   if (credMap.containsKey('credentialSubject')) {
     if (credMap['credentialSubject'].containsKey('id'))
       return credMap['credentialSubject']['id'];
     else
-      return null;
+      return '';
   } else if (credMap.containsKey('id'))
     return credMap['id'];
   else
-    return null;
+    return '';
 }
 
 /// Signs the given String [toSign] with key-pair of [didToSignWith].
