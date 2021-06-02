@@ -297,7 +297,9 @@ void main() async {
               'type': ['string', 'array', 'object'],
             }
           },
-          'issuer': {'type': 'string'},
+          'issuer': {
+            'type': ['string', 'object']
+          },
           'issuanceDate': {'type': 'string'}
         },
         'additionalProperties': false
@@ -464,7 +466,7 @@ void main() async {
         expect(w3cObj['type'].length, 1);
       });
 
-      test('value VerifiableCredential schould not be added (given as List)',
+      test('value VerifiableCredential should not be added (given as List)',
           () {
         var plaintext = {
           "id": "did:ethr:0x12234",
@@ -811,6 +813,55 @@ void main() async {
       expect(w3cObj.containsKey('credentialStatus'), true);
       expect(w3cObj['credentialStatus']['type'], 'EthereumRevocationList');
       expect(w3cObj['credentialStatus']['id'], '0x456127387');
+    });
+
+    test('Add issuer information', () {
+      var plaintext = {
+        "id": "did:ethr:0x12234",
+        "givenName": {
+          "value": "Max",
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+          "hash":
+              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+        }
+      };
+
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
+          revocationRegistryAddress: '0x456127387',
+          issuerInformation: {
+            'url': 'hs-mittweida.de',
+            'name': 'Hochschule Mittweida'
+          });
+      var w3cObj = jsonDecode(w3c);
+      Map<String, dynamic> issInfo = w3cObj['issuer'];
+      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(issInfo.length, 3);
+      expect(issInfo['id'], 'did:ethr:0x12345678');
+      expect(issInfo['url'], 'hs-mittweida.de');
+      expect(issInfo['name'], 'Hochschule Mittweida');
+    });
+
+    test('only issuer id', () {
+      var plaintext = {
+        "id": "did:ethr:0x12234",
+        "givenName": {
+          "value": "Max",
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
+          "hash":
+              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+        }
+      };
+
+      var w3c = buildW3cCredentialwithHashes(
+        plaintext,
+        'did:ethr:0x12345678',
+        revocationRegistryAddress: '0x456127387',
+      );
+      var w3cObj = jsonDecode(w3c);
+      var issInfo = w3cObj['issuer'];
+      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(issInfo.runtimeType, String);
+      expect(issInfo, 'did:ethr:0x12345678');
     });
   });
 

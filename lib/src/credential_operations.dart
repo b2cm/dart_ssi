@@ -122,7 +122,10 @@ String buildPlaintextCredential(dynamic credential, String? holderDid,
 /// Builds a credential conform to W3C-Standard, which includes all hashes a
 /// plaintext-credential [credential] contains.
 String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
-    {dynamic type, dynamic context, String? revocationRegistryAddress}) {
+    {dynamic type,
+    dynamic context,
+    dynamic issuerInformation,
+    String? revocationRegistryAddress}) {
   var plaintextMap = credentialToMap(credential);
   var hashCred = _collectHashes(credential, id: plaintextMap['id']);
 
@@ -170,11 +173,17 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
       throw Exception('@context has unsupported type');
   }
 
+  var issuerInfo = {};
+  if (issuerInformation != null) {
+    issuerInfo = credentialToMap(issuerInformation);
+    issuerInfo['id'] = issuerDid;
+  }
+
   var w3cCred = {
     '@context': credContext,
     'type': credTypes,
     'credentialSubject': jsonDecode(hashCred),
-    'issuer': issuerDid,
+    'issuer': issuerInfo.length == 0 ? issuerDid : issuerInfo,
     'issuanceDate': DateTime.now().toUtc().toIso8601String()
   };
 
@@ -206,7 +215,7 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 /// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
 String signCredential(WalletStore wallet, dynamic credential) {
   credential = credentialToMap(credential);
-  String? issuerDid = getIssuerDidFromCredential(credential);
+  String issuerDid = getIssuerDidFromCredential(credential);
   if (issuerDid == '') {
     throw new Exception('Could not examine IssuerDID');
   }
