@@ -6,13 +6,14 @@ class CredentialRequest {
   String? responseUrl;
   String? challenge;
   String? domain;
+  bool? isAppLink;
   String type = 'CredentialRequest';
   String acceptType = 'CredentialResponse';
   String vpType = 'VerifiablePresentation';
   String selectiveDisclosureType = 'HashedPlaintextCredential2021';
 
   CredentialRequest(this.credentialTypes, this.responseUrl, this.challenge,
-      [this.requiredProperties, this.domain]);
+      [this.requiredProperties, this.isAppLink = true, this.domain]);
 
   CredentialRequest.fromQuery(String query) {
     Map<String, dynamic> json = jsonDecode(utf8.decode(base64Decode(query)));
@@ -20,6 +21,7 @@ class CredentialRequest {
 
     responseUrl = json['responseUrl'];
     challenge = json['challenge'];
+    isAppLink = json['appLink'];
     if (json.containsKey('domain')) domain = json['domain'];
 
     if (json['accept']['type'] != acceptType)
@@ -69,6 +71,7 @@ class CredentialRequest {
     json['accept'] = accept;
     json['responseUrl'] = responseUrl;
     json['challenge'] = challenge;
+    json['appLink'] = isAppLink;
     if (domain != null) {
       json['domain'] = domain;
     }
