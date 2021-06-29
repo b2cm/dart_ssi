@@ -8,6 +8,10 @@ import 'package:web3dart/crypto.dart';
 import 'package:web3dart/json_rpc.dart';
 import 'package:web3dart/web3dart.dart';
 
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
+import 'package:flutter_ssi_wallet/src/ethereum_connector.dart';
+
 /// Dart representation of Ethereums ERC-1056 SmartContract.
 class Erc1056 {
   final String abi =
@@ -114,7 +118,9 @@ class Erc1056 {
   Erc1056(String rpcUrl,
       {dynamic networkNameOrId = 1,
       String contractName: 'EthereumDIDRegistry',
-      String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'}) {
+      //String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'
+      String contractAddress: '0xA46f0bB111fF7186505AB3091b28412d689aF512'
+      }) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
     _utf8 = Utf8Codec(allowMalformed: true);
@@ -173,6 +179,105 @@ class Erc1056 {
         chainId: chainId);
   }
 
+  Future<void> changeOwnerSigned( //Credentials cred,
+      var ethClient,
+      String newDid,
+      credentials,
+      Transaction transaction,
+      String addressFrom, String addressTo, String addressSpender,
+      String privateKeyFrom, String privateKeyTo, String privateKeySpender,
+      int _chainId) async {
+    if (!_matchesExpectedDid(newDid))
+      throw Exception(
+          'Information about $newDid do not belong to this network');
+
+    var changeOwnerSignedFunction = _erc1056contract.function(
+        'changeOwnerSigned');
+
+    //Function Filter null
+    List<String> filter(List<String?> input) {
+      input.removeWhere((e) => e == null);
+      return List<String>.from(input);
+    }
+    Uint8List uint8ListFromList(List<int> data) {
+      if (data is Uint8List) return data;
+      return Uint8List.fromList(data);
+    }
+    bool areListsEqual(var list1, var list2) {
+      // check if both are lists
+      if(!(list1 is List && list2 is List)
+          // check if both have same length
+          || list1.length!=list2.length) {
+        return false;
+      }
+
+      // check if elements are equal
+      for(int i=0;i<list1.length;i++) {
+        if(list1[i]!=list2[i]) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    //Create Hash to sign the message
+    //bytes32 hash = keccak256(byte(0x19), byte(0), this, nonce[identityOwner(identity)], identity, "changeOwner", newOwner);
+    var contractAddress_ = contractAddress.toString();
+    List<String?> list_ = [
+      '0x19',
+      '0x0',
+      contractAddress_,
+      '0',
+      addressFrom,
+      'changeOwner',
+      addressTo
+    ];
+    List<String> filteredList_ = filter(list_); // New list
+    String filteredList = filteredList_.join(', ');
+    //print('filteredList: ${filteredList}');
+
+    Uint8List messageHash;
+    messageHash = keccak256(uint8ListFromList(utf8.encode(filteredList)));
+
+    //Sign the hash and privateKey
+    var privateKey_ = Utf8Encoder().convert(privateKeyFrom, 51);
+    //Check: https://onlineutf8tools.com/convert-utf8-to-decimal
+    MsgSignature messageSignature = sign(messageHash, privateKey_);
+    //print('Signature: ${messageSignature}');
+
+    //checkSignature(identity, sigV, sigR, sigS, hash)
+    //checkSignature(addressFrom, messageSignature.v, messageSignature.r, messageSignature.s, messageHash)
+    Uint8List pubKey_privateKeyBytesToPublic, pubKey_ecRecover;
+    pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKey_);
+    //pubKey_ecRecover = ecRecover(messageHash, messageSignature);
+
+    bool isValidSignature_ = isValidSignature(
+        messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
+
+    //if ((areListsEqual(pubKey_privateKeyBytesToPublic, pubKey_ecRecover) == true) && (isValidSignature_ == true)) {
+    if (isValidSignature_ == true)
+      {
+      //Call of the changeOwnerSignedFunction with the raw data
+      // function changeOwnerSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, address newOwner) public;
+      Transaction tx = Transaction.callContract(
+          contract: _erc1056contract,
+          function: changeOwnerSignedFunction,
+          parameters: [
+            _didToAddress(addressFrom),
+            messageSignature.v,
+            messageSignature.r,
+            messageSignature.s,
+            _didToAddress(addressSpender)
+          ]);
+      await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeySpender), tx,
+          chainId: chainId);
+
+    }
+    else {
+
+    }
+  }
   Future<void> setAttribute(
       String privateKeyFrom, String identityDid, String name, String value,
       {int validity: 86400}) async {
