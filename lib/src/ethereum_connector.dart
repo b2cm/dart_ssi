@@ -179,50 +179,30 @@ class Erc1056 {
         chainId: chainId);
   }
 
+  Uint8List uint8ListFromList(List<int> data) {
+    if (data is Uint8List) return data;
+    return Uint8List.fromList(data);
+  }
+  //Function Filter null
+  List<String> filter(List<String?> input) {
+    input.removeWhere((e) => e == null);
+    return List<String>.from(input);
+  }
+
   Future<void> changeOwnerSigned( //Credentials cred,
-      var ethClient,
-      String newDid,
-      credentials,
-      Transaction transaction,
-      String addressFrom, String addressTo, String addressSpender,
-      String privateKeyFrom, String privateKeyTo, String privateKeySpender,
-      int _chainId) async {
-    if (!_matchesExpectedDid(newDid))
-      throw Exception(
-          'Information about $newDid do not belong to this network');
+      String privateKeyFrom,
+      String addressFrom,
+      String addressTo,
+      String addressSpender,
+      String privateKeySpender,
+      ) async {
 
     var changeOwnerSignedFunction = _erc1056contract.function(
         'changeOwnerSigned');
 
-    //Function Filter null
-    List<String> filter(List<String?> input) {
-      input.removeWhere((e) => e == null);
-      return List<String>.from(input);
-    }
-    Uint8List uint8ListFromList(List<int> data) {
-      if (data is Uint8List) return data;
-      return Uint8List.fromList(data);
-    }
-    bool areListsEqual(var list1, var list2) {
-      // check if both are lists
-      if(!(list1 is List && list2 is List)
-          // check if both have same length
-          || list1.length!=list2.length) {
-        return false;
-      }
-
-      // check if elements are equal
-      for(int i=0;i<list1.length;i++) {
-        if(list1[i]!=list2[i]) {
-          return false;
-        }
-      }
-
-      return true;
-    }
+    String nonce_credential = nonce(addressFrom).toString();
 
     //Create Hash to sign the message
-    //bytes32 hash = keccak256(byte(0x19), byte(0), this, nonce[identityOwner(identity)], identity, "changeOwner", newOwner);
     var contractAddress_ = contractAddress.toString();
     List<String?> list_ = [
       '0x19',
@@ -235,39 +215,36 @@ class Erc1056 {
     ];
     List<String> filteredList_ = filter(list_); // New list
     String filteredList = filteredList_.join(', ');
-    //print('filteredList: ${filteredList}');
 
     Uint8List messageHash;
     messageHash = keccak256(uint8ListFromList(utf8.encode(filteredList)));
 
     //Sign the hash and privateKey
     var privateKey_ = Utf8Encoder().convert(privateKeyFrom, 51);
-    //Check: https://onlineutf8tools.com/convert-utf8-to-decimal
-    MsgSignature messageSignature = sign(messageHash, privateKey_);
-    //print('Signature: ${messageSignature}');
 
-    //checkSignature(identity, sigV, sigR, sigS, hash)
-    //checkSignature(addressFrom, messageSignature.v, messageSignature.r, messageSignature.s, messageHash)
-    Uint8List pubKey_privateKeyBytesToPublic, pubKey_ecRecover;
+    MsgSignature messageSignature = sign(messageHash, privateKey_);
+
+    Uint8List pubKey_privateKeyBytesToPublic;
     pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKey_);
-    //pubKey_ecRecover = ecRecover(messageHash, messageSignature);
 
     bool isValidSignature_ = isValidSignature(
         messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
 
-    //if ((areListsEqual(pubKey_privateKeyBytesToPublic, pubKey_ecRecover) == true) && (isValidSignature_ == true)) {
     if (isValidSignature_ == true)
       {
+        BigInt msgV    = BigInt.from(messageSignature.v);
+        Uint8List msgR = unsignedIntToBytes(messageSignature.r);
+        Uint8List msgS = unsignedIntToBytes(messageSignature.s);
+
       //Call of the changeOwnerSignedFunction with the raw data
-      // function changeOwnerSigned(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS, address newOwner) public;
       Transaction tx = Transaction.callContract(
           contract: _erc1056contract,
           function: changeOwnerSignedFunction,
           parameters: [
             _didToAddress(addressFrom),
-            messageSignature.v,
-            messageSignature.r,
-            messageSignature.s,
+            msgV, //messageSignature.v,
+            msgR, //messageSignature.r,
+            msgS, //messageSignature.s,
             _didToAddress(addressSpender)
           ]);
       await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeySpender), tx,
@@ -275,9 +252,10 @@ class Erc1056 {
 
     }
     else {
-
     }
+
   }
+
   Future<void> setAttribute(
       String privateKeyFrom, String identityDid, String name, String value,
       {int validity: 86400}) async {
