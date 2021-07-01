@@ -81,17 +81,12 @@ void main() async {
 
       //Call with the necessary information, which is still to be adapted
       await erc1056.changeOwnerSigned(
-          ethClient,
-          newDid,
-          credentials,
-          transaction,
+          privateKeyFrom,
           addressFrom,
           addressTo,
           addressSpender,
-          privateKeyFrom,
-          privateKeyTo,
           privateKeySpender,
-          _chainId);
+          );
 
     });
   });
