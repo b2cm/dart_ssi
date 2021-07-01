@@ -121,6 +121,10 @@ String buildPlaintextCredential(dynamic credential, String? holderDid,
 
 /// Builds a credential conform to W3C-Standard, which includes all hashes a
 /// plaintext-credential [credential] contains.
+///
+/// [issuerInformation] is a valid json Object (dart string or map) containing additional Information about the issuer, e.g its homepage or name.
+///
+/// [revocationRegistryAddress] is a valid Ethereum-Address of a SmartContract capable of showing the revocation Status of the credential.
 String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
     {dynamic type,
     dynamic context,
@@ -228,6 +232,10 @@ String signCredential(WalletStore wallet, dynamic credential) {
 }
 
 /// Verifies the signature for the given [credential].
+///
+/// If an [erc1056] instance is given it is used to determine the current ethereum-Address behind a did.
+///
+/// If [rpcUrl] is given and the credential contains a `credentialStatus` property, the revocation status is checked.
 Future<bool> verifyCredential(dynamic credential,
     {Erc1056? erc1056, String? rpcUrl}) async {
   Map<String, dynamic> credMap = credentialToMap(credential);
@@ -257,7 +265,7 @@ Future<bool> verifyCredential(dynamic credential,
 
 /// Builds a presentation for [credentials].
 ///
-/// If not only the ownership od the dids in the credentials should be proofed a List of [additionalDids]
+/// If not only the ownership of the dids in the credentials should be proofed a List of [additionalDids]
 /// could be given and a proof section for each did is added.
 String buildPresentation(
     List<dynamic> credentials, WalletStore? wallet, String challenge,
@@ -411,7 +419,14 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
 ///```
 ///and you only want to show your familyName and the postalCode of your living place,
 /// a working call of this function would be :
-/// ```discloseValues(plaintextCredential, [issuanceDate, student.givenName, student.address.addressLocality, student.address.streetAddress])
+/// ```dart
+/// discloseValues(
+/// plaintextCredential,
+/// [issuanceDate,
+///   student.givenName,
+///   student.address.addressLocality,
+///   student.address.streetAddress
+///  ])
 /// ```
 /// If there is an array in the plaintext-Credential the array elements that should be disclosed,
 /// could be given as follows: arrayKey.arrayIndex e.g. friends.1. ArrayIndex starts with 0.
@@ -655,7 +670,7 @@ String getHolderDidFromCredential(dynamic credential) {
 ///   "crit" : ["b64"]
 /// }
 /// ```
-/// If a custom one should be used, it has to be given in ist json representation (dart String or Map) and the value of alg has to be ES256K-R,
+/// If a custom one should be used, it has to be given in its json representation (dart String or Map) and the value of alg has to be ES256K-R,
 /// because for now this is the only supported signature algorithm.
 String signString(WalletStore wallet, String didToSignWith, String toSign,
     {bool detached = false, dynamic jwsHeader}) {

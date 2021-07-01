@@ -2,47 +2,61 @@ import 'dart:convert';
 
 /// Represents a credential request as documented in inter-wallet-credential-exchange protocol.
 class CredentialRequest {
-  List<dynamic>? credentialTypes;
-  Map<String, dynamic>? requiredProperties;
-  String? location;
-  String? challenge;
-  String? domain;
-  bool? isAppLink;
-  String type = 'CredentialRequest';
-  String acceptType = 'CredentialResponse';
-  String vpType = 'VerifiablePresentation';
-  String selectiveDisclosureType = 'HashedPlaintextCredential2021';
+  List<dynamic>? _credentialTypes;
 
-  CredentialRequest(this.credentialTypes, this.location, this.challenge,
-      [this.requiredProperties, this.isAppLink = true, this.domain]);
+  Map<String, List<dynamic>>? _requiredProperties;
+
+  String? _location;
+
+  String? _challenge;
+
+  String? _domain;
+
+  bool? _isAppLink;
+
+  String _type = 'CredentialRequest';
+
+  String _acceptType = 'CredentialResponse';
+
+  String _vpType = 'VerifiablePresentation';
+
+  String _selectiveDisclosureType = 'HashedPlaintextCredential2021';
+
+  CredentialRequest(this._credentialTypes, this._location, this._challenge,
+      [this._requiredProperties, this._isAppLink = true, this._domain]);
 
   /// Generates credential request from base64Url encoded [query]
   CredentialRequest.fromQuery(String query) {
     Map<String, dynamic> json = jsonDecode(utf8.decode(base64Decode(query)));
-    if (json['type'] != type) throw FormatException('Unsupported Request Type');
+    if (json['type'] != _type)
+      throw FormatException('Unsupported Request Type');
 
-    location = json['endpoint']['location'];
-    challenge = json['challenge'];
+    _location = json['endpoint']['location'];
+    _challenge = json['challenge'];
     var endpointType = json['endpoint']['type'];
     if (endpointType == 'AppLink')
-      isAppLink = true;
+      _isAppLink = true;
     else
-      isAppLink = false;
-    if (json.containsKey('domain')) domain = json['domain'];
+      _isAppLink = false;
+    if (json.containsKey('domain')) _domain = json['domain'];
 
-    if (json['accept']['type'] != acceptType)
+    if (json['accept']['type'] != _acceptType)
       throw FormatException('Unsupported Accept Type');
-    if (json['accept']['verifiablePresentation']['type'] != vpType)
+    if (json['accept']['verifiablePresentation']['type'] != _vpType)
       throw FormatException('Unsupported Verifiable Presentation Type');
-    credentialTypes =
+    _credentialTypes =
         json['accept']['verifiablePresentation']['credentialTypes'];
 
     if (json['accept'].containsKey('selectiveDisclosure')) {
       if (json['accept']['selectiveDisclosure']['type'] !=
-          selectiveDisclosureType)
+          _selectiveDisclosureType)
         throw FormatException('Unsupported Selective Disclosure Type');
-      requiredProperties =
+      Map<String, dynamic> prop =
           json['accept']['selectiveDisclosure']['requiredProperties'];
+      _requiredProperties = {};
+      prop.forEach((key, value) {
+        _requiredProperties![key] = value as List<dynamic>;
+      });
     }
   }
 
@@ -63,55 +77,87 @@ class CredentialRequest {
     Map<String, dynamic> vp = {};
     Map<String, dynamic> endpoint = {};
 
-    vp['type'] = vpType;
-    vp['credentialTypes'] = credentialTypes;
-    accept['type'] = acceptType;
+    vp['type'] = _vpType;
+    vp['credentialTypes'] = _credentialTypes;
+    accept['type'] = _acceptType;
     accept['verifiablePresentation'] = vp;
 
-    if (requiredProperties != null && requiredProperties!.length != 0) {
+    if (_requiredProperties != null && _requiredProperties!.length != 0) {
       Map<String, dynamic> sd = {};
-      sd['type'] = selectiveDisclosureType;
-      sd['requiredProperties'] = requiredProperties;
+      sd['type'] = _selectiveDisclosureType;
+      sd['requiredProperties'] = _requiredProperties;
       accept['selectiveDisclosure'] = sd;
     }
 
-    if (isAppLink!)
+    if (_isAppLink!)
       endpoint['type'] = 'AppLink';
     else
       endpoint['type'] = 'WebAddress';
-    endpoint['location'] = location;
+    endpoint['location'] = _location;
 
-    json['type'] = type;
+    json['type'] = _type;
     json['accept'] = accept;
     json['endpoint'] = endpoint;
-    json['challenge'] = challenge;
-    if (domain != null) {
-      json['domain'] = domain;
+    json['challenge'] = _challenge;
+    if (_domain != null) {
+      json['domain'] = _domain;
     }
 
     return json;
   }
+
+  /// List of URIs denoting all requested credential types.
+  List<dynamic>? get credentialTypes => _credentialTypes;
+
+  /// Maps the requested Credential types to a list of attributes of them that should be disclosed.
+  Map<String, dynamic>? get requiredProperties => _requiredProperties;
+
+  /// URL to which the response has to be send.
+  String? get location => _location;
+
+  /// Long random String /String representation of number that has to be included in the Verifiable presentation the response contains.
+  String? get challenge => _challenge;
+
+  /// URI to announce domain specific fields.
+  String? get domain => _domain;
+
+  /// Whether [_location] should be interpreted as App-Link or not.
+  bool? get isAppLink => _isAppLink;
+
+  /// Type of this object
+  String get type => _type;
+
+  /// Type the response to this request should have
+  String get acceptType => _acceptType;
+
+  /// Accepted Verifiable Presentation type
+  String get vpType => _vpType;
+
+  /// Accepted selective Disclosure Method
+  String get selectiveDisclosureType => _selectiveDisclosureType;
 }
 
 /// Represents a credential response as documented in inter-wallet-credential-exchange protocol.
 class CredentialResponse {
-  Map<String, dynamic>? verifiablePresentation;
-  List<dynamic>? plaintextCredentials;
-  String type = 'CredentialResponse';
+  Map<String, dynamic>? _verifiablePresentation;
 
-  CredentialResponse(this.verifiablePresentation, this.plaintextCredentials);
+  List<dynamic>? _plaintextCredentials;
+
+  String _type = 'CredentialResponse';
+
+  CredentialResponse(this._verifiablePresentation, this._plaintextCredentials);
 
   /// Generates credential request from base64Url encoded [query]
   CredentialResponse.fromQuery(String query) {
     Map<String, dynamic> json = jsonDecode(utf8.decode(base64Decode(query)));
-    if (json['type'] != type)
+    if (json['type'] != _type)
       throw FormatException('Unsupported Response-Type');
-    verifiablePresentation = json['verifiablePresentation'];
+    _verifiablePresentation = json['verifiablePresentation'];
     if (json.containsKey('selectiveDisclosure'))
-      plaintextCredentials =
+      _plaintextCredentials =
           json['selectiveDisclosure']['plaintextCredentials'];
     else
-      plaintextCredentials = [];
+      _plaintextCredentials = [];
   }
 
   /// Returns the base64Url encoded credential request that could be used as query in an uri.
@@ -123,9 +169,9 @@ class CredentialResponse {
   Map<String, dynamic> _toJson() {
     Map<String, dynamic> json = {};
     Map<String, dynamic> selectiveDisclosure = {};
-    json['type'] = type;
-    json['verifiablePresentation'] = verifiablePresentation;
-    selectiveDisclosure['plaintextCredentials'] = plaintextCredentials;
+    json['type'] = _type;
+    json['verifiablePresentation'] = _verifiablePresentation;
+    selectiveDisclosure['plaintextCredentials'] = _plaintextCredentials;
     json['selectiveDisclosure'] = selectiveDisclosure;
     return json;
   }
@@ -134,4 +180,13 @@ class CredentialResponse {
   String toString() {
     return jsonEncode(_toJson());
   }
+
+  /// The Verifiable Presentation containing the requested Verifiable Credentials
+  Map<String, dynamic>? get verifiablePresentation => _verifiablePresentation;
+
+  /// List of plaintext Credentials with some values disclosed
+  List<dynamic>? get plaintextCredentials => _plaintextCredentials;
+
+  /// Type of this object.
+  String get type => _type;
 }
