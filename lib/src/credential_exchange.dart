@@ -1,9 +1,10 @@
 import 'dart:convert';
 
+/// Represents a credential request as documented in inter-wallet-credential-exchange protocol.
 class CredentialRequest {
   List<dynamic>? credentialTypes;
   Map<String, dynamic>? requiredProperties;
-  String? responseUrl;
+  String? location;
   String? challenge;
   String? domain;
   bool? isAppLink;
@@ -12,16 +13,21 @@ class CredentialRequest {
   String vpType = 'VerifiablePresentation';
   String selectiveDisclosureType = 'HashedPlaintextCredential2021';
 
-  CredentialRequest(this.credentialTypes, this.responseUrl, this.challenge,
+  CredentialRequest(this.credentialTypes, this.location, this.challenge,
       [this.requiredProperties, this.isAppLink = true, this.domain]);
 
+  /// Generates credential request from base64Url encoded [query]
   CredentialRequest.fromQuery(String query) {
     Map<String, dynamic> json = jsonDecode(utf8.decode(base64Decode(query)));
     if (json['type'] != type) throw FormatException('Unsupported Request Type');
 
-    responseUrl = json['responseUrl'];
+    location = json['endpoint']['location'];
     challenge = json['challenge'];
-    isAppLink = json['appLink'];
+    var endpointType = json['endpoint']['type'];
+    if (endpointType == 'AppLink')
+      isAppLink = true;
+    else
+      isAppLink = false;
     if (json.containsKey('domain')) domain = json['domain'];
 
     if (json['accept']['type'] != acceptType)
@@ -40,6 +46,7 @@ class CredentialRequest {
     }
   }
 
+  /// Returns the base64Url encoded credential request that could be used as query in an uri.
   String toQuery() {
     var json = _toJson();
     return base64UrlEncode(utf8.encode(jsonEncode(json)));
@@ -54,24 +61,30 @@ class CredentialRequest {
     Map<String, dynamic> json = {};
     Map<String, dynamic> accept = {};
     Map<String, dynamic> vp = {};
+    Map<String, dynamic> endpoint = {};
 
     vp['type'] = vpType;
     vp['credentialTypes'] = credentialTypes;
     accept['type'] = acceptType;
     accept['verifiablePresentation'] = vp;
 
-    if (requiredProperties != null || requiredProperties!.length != 0) {
+    if (requiredProperties != null && requiredProperties!.length != 0) {
       Map<String, dynamic> sd = {};
       sd['type'] = selectiveDisclosureType;
       sd['requiredProperties'] = requiredProperties;
       accept['selectiveDisclosure'] = sd;
     }
 
+    if (isAppLink!)
+      endpoint['type'] = 'AppLink';
+    else
+      endpoint['type'] = 'WebAddress';
+    endpoint['location'] = location;
+
     json['type'] = type;
     json['accept'] = accept;
-    json['responseUrl'] = responseUrl;
+    json['endpoint'] = endpoint;
     json['challenge'] = challenge;
-    json['appLink'] = isAppLink;
     if (domain != null) {
       json['domain'] = domain;
     }
@@ -80,6 +93,7 @@ class CredentialRequest {
   }
 }
 
+/// Represents a credential response as documented in inter-wallet-credential-exchange protocol.
 class CredentialResponse {
   Map<String, dynamic>? verifiablePresentation;
   List<dynamic>? plaintextCredentials;
@@ -87,6 +101,7 @@ class CredentialResponse {
 
   CredentialResponse(this.verifiablePresentation, this.plaintextCredentials);
 
+  /// Generates credential request from base64Url encoded [query]
   CredentialResponse.fromQuery(String query) {
     Map<String, dynamic> json = jsonDecode(utf8.decode(base64Decode(query)));
     if (json['type'] != type)
@@ -99,6 +114,7 @@ class CredentialResponse {
       plaintextCredentials = [];
   }
 
+  /// Returns the base64Url encoded credential request that could be used as query in an uri.
   String toQuery() {
     var json = _toJson();
     return base64UrlEncode(utf8.encode(jsonEncode(json)));
