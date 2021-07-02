@@ -86,6 +86,7 @@ void main() async {
           addressTo,
           addressSpender,
           privateKeySpender,
+          newDid,
           );
 
     });
