@@ -179,16 +179,6 @@ class Erc1056 {
         chainId: chainId);
   }
 
-  Uint8List uint8ListFromList(List<int> data) {
-    if (data is Uint8List) return data;
-    return Uint8List.fromList(data);
-  }
-  //Function Filter null
-  List<String> filter(List<String?> input) {
-    input.removeWhere((e) => e == null);
-    return List<String>.from(input);
-  }
-
   Future<void> changeOwnerSigned( //Credentials cred,
       String privateKeyFrom,
       String addressFrom,
@@ -200,37 +190,37 @@ class Erc1056 {
     var changeOwnerSignedFunction = _erc1056contract.function(
         'changeOwnerSigned');
 
-    String nonce_credential = nonce(addressFrom).toString();
+    String nonceCredential = nonce(addressFrom).toString();
 
     //Create Hash to sign the message
-    var contractAddress_ = contractAddress.toString();
-    List<String?> list_ = [
+    var contractAddressString = contractAddress.toString();
+    List<String?> list = [
       '0x19',
       '0x0',
-      contractAddress_,
-      '0',
+      contractAddressString,
+      nonceCredential,
       addressFrom,
       'changeOwner',
       addressTo
     ];
-    List<String> filteredList_ = filter(list_); // New list
-    String filteredList = filteredList_.join(', ');
+    List<String> filteredList = _filter(list); // New list
+    String filteredListString = filteredList.join(', ');
 
     Uint8List messageHash;
-    messageHash = keccak256(uint8ListFromList(utf8.encode(filteredList)));
+    messageHash = keccak256(_uint8ListFromList(utf8.encode(filteredListString)));
 
     //Sign the hash and privateKey
-    var privateKey_ = Utf8Encoder().convert(privateKeyFrom, 51);
+    var privateKeyUtf8 = Utf8Encoder().convert(privateKeyFrom, 51);
 
-    MsgSignature messageSignature = sign(messageHash, privateKey_);
+    MsgSignature messageSignature = sign(messageHash, privateKeyUtf8);
 
     Uint8List pubKey_privateKeyBytesToPublic;
-    pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKey_);
+    pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKeyUtf8);
 
-    bool isValidSignature_ = isValidSignature(
+    bool isValidSignatureBool = isValidSignature(
         messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
 
-    if (isValidSignature_ == true)
+    if (isValidSignatureBool == true)
       {
         BigInt msgV    = BigInt.from(messageSignature.v);
         Uint8List msgR = unsignedIntToBytes(messageSignature.r);
@@ -722,4 +712,14 @@ class RevocationRegistry {
 EthereumAddress _didToAddress(String did) {
   var splitted = did.split(':');
   return EthereumAddress.fromHex(splitted.last);
+}
+
+Uint8List _uint8ListFromList(List<int> data) {
+  if (data is Uint8List) return data;
+  return Uint8List.fromList(data);
+}
+//Function Filter null
+List<String> _filter(List<String?> input) {
+  input.removeWhere((e) => e == null);
+  return List<String>.from(input);
 }
