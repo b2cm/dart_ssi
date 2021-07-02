@@ -185,12 +185,13 @@ class Erc1056 {
       String addressTo,
       String addressSpender,
       String privateKeySpender,
+      String newDid,
       ) async {
 
     var changeOwnerSignedFunction = _erc1056contract.function(
         'changeOwnerSigned');
 
-    String nonceCredential = nonce(addressFrom).toString();
+    String nonceCredential = nonce(newDid).toString();
 
     //Create Hash to sign the message
     var contractAddressString = contractAddress.toString();
