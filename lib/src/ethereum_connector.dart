@@ -181,17 +181,22 @@ class Erc1056 {
 
   Future<void> changeOwnerSigned( //Credentials cred,
       String privateKeyFrom,
-      String addressFrom,
-      String addressTo,
-      String addressSpender,
+      String identityDid, //String addressFrom,
+      String newDid, //String addressTo,
+      String spenderDid, //String addressSpender,
       String privateKeySpender,
-      String newDid,
       ) async {
+    if (!_matchesExpectedDid(identityDid))
+      throw Exception(
+          'Information about $identityDid do not belong to this network');
+    if (!_matchesExpectedDid(newDid))
+      throw Exception(
+          'Information about $newDid do not belong to this network');
 
     var changeOwnerSignedFunction = _erc1056contract.function(
         'changeOwnerSigned');
 
-    String nonceCredential = nonce(newDid).toString();
+    String nonceCredential = await nonce(newDid).toString();
 
     //Create Hash to sign the message
     var contractAddressString = contractAddress.toString();
@@ -200,11 +205,12 @@ class Erc1056 {
       '0x0',
       contractAddressString,
       nonceCredential,
-      addressFrom,
+      _didToAddress(identityDid).toString(),
       'changeOwner',
-      addressTo
+      _didToAddress(newDid).toString()
     ];
     List<String> filteredList = _filter(list); // New list
+    //String filteredListString = filteredList.join(', ');
     String filteredListString = filteredList.join(', ');
 
     Uint8List messageHash;
@@ -232,11 +238,11 @@ class Erc1056 {
           contract: _erc1056contract,
           function: changeOwnerSignedFunction,
           parameters: [
-            _didToAddress(addressFrom),
+          _didToAddress(identityDid),
             msgV, //messageSignature.v,
             msgR, //messageSignature.r,
             msgS, //messageSignature.s,
-            _didToAddress(addressSpender)
+            _didToAddress(spenderDid),
           ]);
       await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeySpender), tx,
           chainId: chainId);
