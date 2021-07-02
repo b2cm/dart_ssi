@@ -58,7 +58,7 @@ void main() async {
       String privateKeyFrom = ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4');
       String privateKeyTo = ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5');
 
-      //Test-Accounts
+      //Test-Accounts - Did statt der Adresse
       String addressFrom = ganacheDid5.substring(9);
       String addressTo = ganacheDid6.substring(9);
       String addressSpender = ganacheDid7.substring(9);
@@ -82,11 +82,10 @@ void main() async {
       //Call with the necessary information, which is still to be adapted
       await erc1056.changeOwnerSigned(
           privateKeyFrom,
-          addressFrom,
-          addressTo,
-          addressSpender,
+          ganacheDid5, //addressFrom,
+          ganacheDid6, //addressTo,
+          ganacheDid7, //addressSpender,
           privateKeySpender,
-          newDid,
           );
 
     });
