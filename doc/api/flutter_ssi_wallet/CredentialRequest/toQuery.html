@@ -60,7 +60,7 @@
     </section>
     
 <section class="desc markdown">
-  <p>Returns the base64Url encoded credential request that could be used as query in an uri.</p>
+  <p>Returns the base64Url encoded credential request that could be used as query in an uri. It is prefixed with key 'iwce='.</p>
 </section>
 
 
@@ -69,7 +69,7 @@
   <h2><span>Implementation</span></h2>
   <pre class="language-dart"><code class="language-dart">String toQuery() {
   var json = _toJson();
-  return base64UrlEncode(utf8.encode(jsonEncode(json)));
+  return &#39;iwce=${base64UrlEncode(utf8.encode(jsonEncode(json)))}&#39;;
 }</code></pre>
 </section>
 
