@@ -25,9 +25,14 @@ class CredentialRequest {
   CredentialRequest(this._credentialTypes, this._location, this._challenge,
       [this._requiredProperties, this._isAppLink = true, this._domain]);
 
-  /// Generates credential request from base64Url encoded [query]
-  CredentialRequest.fromQuery(String query) {
-    Map<String, dynamic> json = jsonDecode(utf8.decode(base64Decode(query)));
+  /// Searches base64URL encoded Response from [queryParameters] and decodes it.
+  ///
+  /// Expected key is 'iwce'
+  CredentialRequest.fromQuery(Map<String, dynamic> queryParameters) {
+    if (!queryParameters.containsKey('iwce'))
+      throw FormatException('Could not find expected query parameter');
+    Map<String, dynamic> json =
+        jsonDecode(utf8.decode(base64Decode(queryParameters['iwce'])));
     if (json['type'] != _type)
       throw FormatException('Unsupported Request Type');
 
@@ -60,10 +65,10 @@ class CredentialRequest {
     }
   }
 
-  /// Returns the base64Url encoded credential request that could be used as query in an uri.
+  /// Returns the base64Url encoded credential request that could be used as query in an uri. It is prefixed with key 'iwce='.
   String toQuery() {
     var json = _toJson();
-    return base64UrlEncode(utf8.encode(jsonEncode(json)));
+    return 'iwce=${base64UrlEncode(utf8.encode(jsonEncode(json)))}';
   }
 
   @override
@@ -145,25 +150,34 @@ class CredentialResponse {
 
   String _type = 'CredentialResponse';
 
+  String _sdType = 'HashedPlaintextCredential2021';
+
   CredentialResponse(this._verifiablePresentation, this._plaintextCredentials);
 
-  /// Generates credential request from base64Url encoded [query]
-  CredentialResponse.fromQuery(String query) {
-    Map<String, dynamic> json = jsonDecode(utf8.decode(base64Decode(query)));
+  /// Searches base64URL encoded Response from [queryParameters] and decodes it.
+  ///
+  /// Expected key is 'iwce'
+  CredentialResponse.fromQuery(Map<String, dynamic> queryParameters) {
+    if (!queryParameters.containsKey('iwce'))
+      throw FormatException('Could not find expected query parameter');
+    Map<String, dynamic> json =
+        jsonDecode(utf8.decode(base64Decode(queryParameters['iwce'])));
     if (json['type'] != _type)
       throw FormatException('Unsupported Response-Type');
     _verifiablePresentation = json['verifiablePresentation'];
-    if (json.containsKey('selectiveDisclosure'))
+    if (json.containsKey('selectiveDisclosure')) {
+      if (json['selectiveDisclosure']['type'] != _sdType)
+        throw FormatException('Unsupported Selective Disclosure Type');
       _plaintextCredentials =
           json['selectiveDisclosure']['plaintextCredentials'];
-    else
+    } else
       _plaintextCredentials = [];
   }
 
-  /// Returns the base64Url encoded credential request that could be used as query in an uri.
+  /// Returns the base64Url encoded credential request that could be used as query in an uri. It is prefix with key 'iwce='.
   String toQuery() {
     var json = _toJson();
-    return base64UrlEncode(utf8.encode(jsonEncode(json)));
+    return 'iwce=${base64UrlEncode(utf8.encode(jsonEncode(json)))}';
   }
 
   Map<String, dynamic> _toJson() {
@@ -171,6 +185,7 @@ class CredentialResponse {
     Map<String, dynamic> selectiveDisclosure = {};
     json['type'] = _type;
     json['verifiablePresentation'] = _verifiablePresentation;
+    selectiveDisclosure['type'] = _sdType;
     selectiveDisclosure['plaintextCredentials'] = _plaintextCredentials;
     json['selectiveDisclosure'] = selectiveDisclosure;
     return json;
@@ -189,4 +204,7 @@ class CredentialResponse {
 
   /// Type of this object.
   String get type => _type;
+
+  /// Type of supported selective disclosure method
+  String get selectiveDisclosureType => _sdType;
 }
