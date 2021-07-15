@@ -185,70 +185,86 @@ class Erc1056 {
       String spenderDid, //String addressSpender,
       String privateKeySpender,
       ) async {
+    /*
     if (!_matchesExpectedDid(identityDid))
       throw Exception(
           'Information about $identityDid do not belong to this network');
     if (!_matchesExpectedDid(newDid))
       throw Exception(
           'Information about $newDid do not belong to this network');
-
+*/
     var changeOwnerSignedFunction = _erc1056contract.function(
         'changeOwnerSigned');
 
-    String nonceCredential = await nonce(newDid).toString();
+    var nonceCredential = await nonce(newDid);
+    chainId = 1337;
 
     //Create Hash to sign the message
-    var contractAddressString = contractAddress.toString();
-    List<String?> list = [
-      '0x19',
-      '0x0',
-      contractAddressString,
-      nonceCredential,
-      _didToAddress(identityDid).toString(),
-      'changeOwner',
-      _didToAddress(newDid).toString()
+    var contractAddressString = contractAddress;
+
+    List<int> listInt = [
+      hexToInt('0x19').toInt(),
+      hexToInt('0x0').toInt()
+      //contractAddressString.addressBytes
+      //hexToBytes(nonceCredential.toString(16)),
+      //_didToAddress(identityDid).addressBytes,
+      //'changeOwner',
+      //_didToAddress(newDid).addressBytes
     ];
-    List<String> filteredList = _filter(list); // New list
-    //String filteredListString = filteredList.join(', ');
-    String filteredListString = filteredList.join(', ');
+
+    listInt.addAll(contractAddressString.addressBytes);
+
+    var nonceCredentialInt = int.parse(nonceCredential.toString());
+    listInt.add(nonceCredentialInt);
+
+    listInt.addAll(_didToAddress(identityDid).addressBytes);
+
+    var stringChangeOwner = 'changeOwner';
+    List<int> stringChangeOwnerInt = utf8.encode(stringChangeOwner);
+    listInt.addAll(stringChangeOwnerInt);
+
+    listInt.addAll(_didToAddress(newDid).addressBytes);
+    Uint8List listIntFlat  = Uint8List.fromList(listInt);
 
     Uint8List messageHash;
-    messageHash = keccak256(_uint8ListFromList(utf8.encode(filteredListString)));
+    messageHash = keccak256(listIntFlat);
 
-    //Sign the hash and privateKey
-    var privateKeyUtf8 = Utf8Encoder().convert(privateKeyFrom, 51);
+    //Convert the privateKeyFrom
+    var privateKeyUtf8 = Utf8Encoder().convert(privateKeyFrom, 64);
 
+    //Sign the message
     MsgSignature messageSignature = sign(messageHash, privateKeyUtf8);
 
     Uint8List pubKey_privateKeyBytesToPublic;
     pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKeyUtf8);
 
     bool isValidSignatureBool = isValidSignature(
-        messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
+    messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
 
     if (isValidSignatureBool == true)
       {
-        BigInt msgV    = BigInt.from(messageSignature.v);
-        Uint8List msgR = unsignedIntToBytes(messageSignature.r);
-        Uint8List msgS = unsignedIntToBytes(messageSignature.s);
+        //Convert the raw messages (v, r and s)
+         BigInt msgV    = BigInt.from(messageSignature.v);
+         Uint8List msgR = unsignedIntToBytes(messageSignature.r);
+         Uint8List msgS = unsignedIntToBytes(messageSignature.s);
 
-      //Call of the changeOwnerSignedFunction with the raw data
-      Transaction tx = Transaction.callContract(
-          contract: _erc1056contract,
-          function: changeOwnerSignedFunction,
-          parameters: [
-          _didToAddress(identityDid),
-            msgV, //messageSignature.v,
-            msgR, //messageSignature.r,
-            msgS, //messageSignature.s,
-            _didToAddress(spenderDid),
-          ]);
-      await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeySpender), tx,
-          chainId: chainId);
+       //Call of the changeOwnerSignedFunction with the raw data
+       Transaction tx = Transaction.callContract(
+           contract: _erc1056contract,
+           function: changeOwnerSignedFunction,
+           parameters: [
+             _didToAddress(identityDid),
+             msgV, //messageSignature.v,
+             msgR, //messageSignature.r,
+             msgS, //messageSignature.s,
+             _didToAddress(spenderDid),
+           ]);
+       await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeySpender), tx,
+           chainId: chainId);
 
-    }
-    else {
-    }
+     }
+     else {
+     }
 
   }
 
@@ -370,7 +386,7 @@ class Erc1056 {
     return changedBlock.first as BigInt?;
   }
 
-  Future<BigInt?> nonce(String identityDid) async {
+  Future nonce(String identityDid) async {
     if (!_matchesExpectedDid(identityDid))
       throw Exception(
           'Information about $identityDid do not belong to this network');
@@ -380,7 +396,7 @@ class Erc1056 {
         function: nonceFunction,
         params: [_didToAddress(identityDid)]);
 
-    return nonceValue.first as BigInt?;
+    return nonceValue.first;
   }
 
   ///Collects all data from contract log for [identityDid].
@@ -687,14 +703,4 @@ class RevocationRegistry {
 EthereumAddress _didToAddress(String did) {
   var splitted = did.split(':');
   return EthereumAddress.fromHex(splitted.last);
-}
-
-Uint8List _uint8ListFromList(List<int> data) {
-  if (data is Uint8List) return data;
-  return Uint8List.fromList(data);
-}
-//Function Filter null
-List<String> _filter(List<String?> input) {
-  input.removeWhere((e) => e == null);
-  return List<String>.from(input);
 }
