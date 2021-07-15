@@ -11,8 +11,7 @@ import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart'; //You can also import the browser version
 
 void main() async {
-
-
+  
   const String rpcUrl = 'http://127.0.0.1:7545';
   //String contractAddress = '0xF7551cC988437d0D33A615cCE4716D8384Aa8AEB';
   String contractAddress = '0xA46f0bB111fF7186505AB3091b28412d689aF512';
@@ -49,8 +48,10 @@ void main() async {
       int _chainId = 1337;
       var httpClient = new Client();
       var ethClient = new Web3Client(rpcUrl, httpClient);
-      const String privateKeySpender =
+      //const String privateKeySpender =
           '80ebf26c2b59f216ba156374fcb2de4bbfd7aae4f5c08b00205ca5e552f532ac';
+      const String privateKeySpender =
+          '5d4237b3d0c52f96614fd3d19c67f1d8fb8d65af8e6cf8009954a364caec4982';
 
       //Test-Keys
       String contractAddress = '0xA46f0bB111fF7186505AB3091b28412d689aF512';
