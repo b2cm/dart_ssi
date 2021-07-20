@@ -217,23 +217,6 @@ void main() async {
       expect(jScheme.validate(credObject['@context']), false);
     });
 
-    test('ignore type and @type', () {
-      var plaintext = {
-        'type': 'VerifiableCredential',
-        '@type': ['VerifiableCredential', 'ImmaCredential']
-      };
-      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
-      var credObject = jsonDecode(cred);
-      expect(credObject.keys.length, 4);
-      expect(credObject['hashAlg'], 'keccak-256');
-      expect(credObject['type'], 'VerifiableCredential');
-      expect(credObject['@type'].length, 2);
-      expect(credObject['@type'] is List, true);
-      expect(jScheme.validate(credObject['type']), false);
-      expect(jScheme.validate(credObject['@type'][0]), false);
-      expect(jScheme.validate(credObject['@type'][1]), false);
-    });
-
     test('maleformed json-String', () {
       var plaintext = '{"key" : value';
       expect(() => buildPlaintextCredential(plaintext, 'did:ethr:0x123'),
@@ -255,6 +238,82 @@ void main() async {
 
       expect(credObject['key']['value'], value);
       expect(jScheme.validate(credObject['key']), true);
+    });
+
+    group('collect types', () {
+      test('type as  new String', () {
+        var cred = {'type': 'NameAgeCredential', 'name': 'Max', 'age': 12};
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 2);
+        expect(types.contains('NameAgeCredential'), true);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+      });
+
+      test('do not add HashedPlaintextCredential (String)', () {
+        var cred = {
+          'type': 'HashedPlaintextCredential2021',
+          'name': 'Max',
+          'age': 12
+        };
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 1);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+      });
+
+      test('types as  List', () {
+        var cred = {
+          'type': ['NameAgeCredential', 'NameCredential'],
+          'name': 'Max',
+          'age': 12
+        };
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 3);
+        expect(types.contains('NameAgeCredential'), true);
+        expect(types.contains('NameCredential'), true);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+      });
+
+      test('do not add HashedPlaintextCredential2021 (List)', () {
+        var cred = {
+          'type': [
+            'NameAgeCredential',
+            'NameCredential',
+            'HashedPlaintextCredential2021'
+          ],
+          'name': 'Max',
+          'age': 12
+        };
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 3);
+        expect(types.contains('NameAgeCredential'), true);
+        expect(types.contains('NameCredential'), true);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+      });
+
+      test('ignore nested types', () {
+        var cred = {
+          'type': ['NameAgeCredential', 'NameCredential'],
+          'name': 'Max',
+          'age': 12,
+          'address': {'type': 'PostalAddress'}
+        };
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 3);
+        expect(types.contains('NameAgeCredential'), true);
+        expect(types.contains('NameCredential'), true);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+        expect(plaintext['address']['type'], 'PostalAddress');
+      });
     });
   });
 

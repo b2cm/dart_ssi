@@ -40,11 +40,12 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
   'properties': {r'^.*$': _hashedAttributeSchemaMap}
 });
 
-/// Builds a json-Object where every Attribute gets a value, salt and hash from json-Object [credential].
+/// Builds a json-Object where every Attribute gets a value and salt from json-Object [credential].
 ///
 /// E.g.
 /// ```
 /// {
+///   "type" : "NameAgeCredential",
 ///   "name" : "Max",
 ///   "age" : 20
 /// }
@@ -53,22 +54,21 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
 ///```
 ///{
 /// "id": "did:ethr:0x82734",
+/// "type": ["HashedPlaintextCredential2021","NameAgeCredential"],
 /// "hashAlg" : "keccak-256",
 /// "name":
 /// {
 ///   "value":"Max",
-///   "salt":"dc0931a0-60c6-4bc8-a27d-b3fd13e62c63",
-///   "hash":"0xd8925653ed000200d2b491bcabe2ea69f378abb91f056993a6d3e3b28ad4ccc4"
+///   "salt":"dc0931a0-60c6-4bc8-a27d-b3fd13e62c63"
 ///  },
 ///  "age":
 ///   {
 ///   "value":20,
-///   "salt":"3e9bacd3-aa74-42c1-9895-e490e3931a73",
-///   "hash":"0x43bde6fcd11015c6a996206dadd25e149d131c69a7249280bae723c6bad53888"
+///   "salt":"3e9bacd3-aa74-42c1-9895-e490e3931a73"
 ///  }
 /// }
 /// ```
-/// where salt is a Version 4 UUID and hash is the keccak256-hash of salt + value (concatenation).
+/// where salt is a Version 4 UUID.
 /// [credential] could be a string or Map<String, dynamic> representing a valid json-Object.
 String buildPlaintextCredential(dynamic credential, String? holderDid,
     {bool addHashAlg = true}) {
@@ -81,6 +81,28 @@ String buildPlaintextCredential(dynamic credential, String? holderDid,
   if (credMap.containsKey('@context')) {
     finalCred['@context'] = credMap['@context'];
     credMap.remove('@context');
+  }
+
+  if (addHashAlg) {
+    List<String> types = [];
+    types.add('HashedPlaintextCredential2021');
+    if (credMap.containsKey('type') || credMap.containsKey('@type')) {
+      var value = credMap['type'];
+      credMap.remove('type');
+      if (value == null) {
+        value = credMap['@type'];
+        credMap.remove('@type');
+      }
+      if (value is String) {
+        if (!types.contains(value)) types.add(value);
+      } else if (value is List) {
+        value.forEach((element) {
+          if (!types.contains(element)) types.add(element);
+        });
+      } else
+        throw Exception('Unsupported datatype for type key');
+      finalCred['type'] = types;
+    }
   }
 
   if (holderDid != '') {
