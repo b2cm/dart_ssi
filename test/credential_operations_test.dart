@@ -33,8 +33,8 @@ void main() async {
 
     expect(getIssuerDidFromCredential(cred1), 'did:ethr:123456');
     expect(getIssuerDidFromCredential(cred2), 'did:ethr:123456');
-    expect(getIssuerDidFromCredential(cred3), null);
-    expect(getIssuerDidFromCredential(cred4), null);
+    expect(getIssuerDidFromCredential(cred3), '');
+    expect(getIssuerDidFromCredential(cred4), '');
   });
 
   test('test build JWS Header', () {
@@ -48,18 +48,12 @@ void main() async {
   group('build Plaintext Credential', () {
     var hashedAttributeSchema = {
       "type": "object",
-      "required": ["hash", 'salt', 'value'],
+      "required": ['salt', 'value'],
       "properties": {
         "value": {
           "type": ["number", "string", "boolean"]
         },
-        "salt": {"type": "string", 'minLenght': 36, 'maxLenght': 36},
-        "hash": {
-          "type": "string",
-          'minLenght': 66,
-          'maxLenght': 66,
-          'pattern': '0x[0-9A-Fa-f]{64}'
-        }
+        "salt": {"type": "string", 'minLenght': 36, 'maxLenght': 36}
       },
       "additionalProperties": false
     };
@@ -223,23 +217,6 @@ void main() async {
       expect(jScheme.validate(credObject['@context']), false);
     });
 
-    test('ignore type and @type', () {
-      var plaintext = {
-        'type': 'VerifiableCredential',
-        '@type': ['VerifiableCredential', 'ImmaCredential']
-      };
-      var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
-      var credObject = jsonDecode(cred);
-      expect(credObject.keys.length, 4);
-      expect(credObject['hashAlg'], 'keccak-256');
-      expect(credObject['type'], 'VerifiableCredential');
-      expect(credObject['@type'].length, 2);
-      expect(credObject['@type'] is List, true);
-      expect(jScheme.validate(credObject['type']), false);
-      expect(jScheme.validate(credObject['@type'][0]), false);
-      expect(jScheme.validate(credObject['@type'][1]), false);
-    });
-
     test('maleformed json-String', () {
       var plaintext = '{"key" : value';
       expect(() => buildPlaintextCredential(plaintext, 'did:ethr:0x123'),
@@ -261,6 +238,82 @@ void main() async {
 
       expect(credObject['key']['value'], value);
       expect(jScheme.validate(credObject['key']), true);
+    });
+
+    group('collect types', () {
+      test('type as  new String', () {
+        var cred = {'type': 'NameAgeCredential', 'name': 'Max', 'age': 12};
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 2);
+        expect(types.contains('NameAgeCredential'), true);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+      });
+
+      test('do not add HashedPlaintextCredential (String)', () {
+        var cred = {
+          'type': 'HashedPlaintextCredential2021',
+          'name': 'Max',
+          'age': 12
+        };
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 1);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+      });
+
+      test('types as  List', () {
+        var cred = {
+          'type': ['NameAgeCredential', 'NameCredential'],
+          'name': 'Max',
+          'age': 12
+        };
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 3);
+        expect(types.contains('NameAgeCredential'), true);
+        expect(types.contains('NameCredential'), true);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+      });
+
+      test('do not add HashedPlaintextCredential2021 (List)', () {
+        var cred = {
+          'type': [
+            'NameAgeCredential',
+            'NameCredential',
+            'HashedPlaintextCredential2021'
+          ],
+          'name': 'Max',
+          'age': 12
+        };
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 3);
+        expect(types.contains('NameAgeCredential'), true);
+        expect(types.contains('NameCredential'), true);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+      });
+
+      test('ignore nested types', () {
+        var cred = {
+          'type': ['NameAgeCredential', 'NameCredential'],
+          'name': 'Max',
+          'age': 12,
+          'address': {'type': 'PostalAddress'}
+        };
+        Map<String, dynamic> plaintext =
+            jsonDecode(buildPlaintextCredential(cred, 'did:ethr:0x135768'));
+        List<dynamic> types = plaintext['type'];
+        expect(types.length, 3);
+        expect(types.contains('NameAgeCredential'), true);
+        expect(types.contains('NameCredential'), true);
+        expect(types.contains('HashedPlaintextCredential2021'), true);
+        expect(plaintext['address']['type'], 'PostalAddress');
+      });
     });
   });
 
@@ -310,7 +363,7 @@ void main() async {
 
     test('plaintext has normal key-value Object', () {
       var plaintext =
-          '{"id": "did:ethr:0x1234","givenName":{"value":"Max","salt":"d51e87c4-6ab5-4cf0-b932-28f6962c384e","hash":"0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"}}';
+          '{"id": "did:ethr:0x1234","givenName":{"value":"Max","salt":"d51e87c4-6ab5-4cf0-b932-28f6962c384e"}}';
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
@@ -325,15 +378,11 @@ void main() async {
         "courseOfStudies": [
           {
             "value": "Cybercrime/Cybersecurity",
-            "salt": "5ccf63ee-78fa-437c-a302-6c3cd3549fec",
-            "hash":
-                "0x12915d6160b6c9359dc4a0382388012786b8e3cd2351ccfff485683ae0e2fa10"
+            "salt": "5ccf63ee-78fa-437c-a302-6c3cd3549fec"
           },
           {
             "value": "Angewandte Informatik - IT-Sicherheit",
-            "salt": "6040c2d6-3931-4851-960a-93972e53483d",
-            "hash":
-                "0x6994dbf74e9418b87a8c2a5645239a340d6203b8d3792a28fdfaab3d905c27b7"
+            "salt": "6040c2d6-3931-4851-960a-93972e53483d"
           }
         ]
       };
@@ -355,15 +404,11 @@ void main() async {
         "address": {
           "addressLocality": {
             "value": "Mittweida",
-            "salt": "e0d91fc0-ffda-4784-b0bc-077bed54c5c7",
-            "hash":
-                "0xd555aeaa1f0bc42adc3210240c9eeb2e35640cec110aeddd8f77d1762ba6bce1"
+            "salt": "e0d91fc0-ffda-4784-b0bc-077bed54c5c7"
           },
           "postalCode": {
             "value": "09648",
-            "salt": "6977dcb5-f0e7-4158-a8f8-08cdac88d5b4",
-            "hash":
-                "0x68c9b55a1fb3cc542942d2c27978ab34433e171ecd91bf91ba882dfd4e0b08f6"
+            "salt": "6977dcb5-f0e7-4158-a8f8-08cdac88d5b4"
           }
         }
       };
@@ -400,9 +445,7 @@ void main() async {
         "type": "Person",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
@@ -420,9 +463,7 @@ void main() async {
         "@type": "Person",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
@@ -434,29 +475,14 @@ void main() async {
       expect(w3cObj['credentialSubject']['@type'], 'Person');
     });
 
-    test('missing hash', () {
-      var plaintext = {
-        "id": "did:ethr:0x12234",
-        "givenName": {
-          "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-        }
-      };
-      expect(
-          () => buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678'),
-          throwsException);
-    });
-
     group('parameter type', () {
-      test('value VerifiableCredential schould not be added (given as String)',
+      test('value VerifiableCredential should not be added (given as String)',
           () {
         var plaintext = {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -472,9 +498,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -489,9 +513,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -508,9 +530,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -528,9 +548,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -551,9 +569,7 @@ void main() async {
         var plaintext = {
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -580,9 +596,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -600,9 +614,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -619,9 +631,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -640,9 +650,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -661,9 +669,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -684,9 +690,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -705,9 +709,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -725,9 +727,7 @@ void main() async {
           '@context': 23,
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -740,9 +740,7 @@ void main() async {
           '@context': true,
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -755,9 +753,7 @@ void main() async {
           '@context': {'key': 'value'},
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -776,9 +772,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -800,9 +794,7 @@ void main() async {
         "id": "did:ethr:0x12234",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
 
@@ -820,9 +812,7 @@ void main() async {
         "id": "did:ethr:0x12234",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
 
@@ -846,9 +836,7 @@ void main() async {
         "id": "did:ethr:0x12234",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
 
@@ -969,7 +957,7 @@ void main() async {
             () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
             throwsA(predicate((dynamic e) =>
                 e.message ==
-                'Calculated and given Hash in List at list do not match at index 1')));
+                'Calculated and given Hash in List at list do not match')));
       });
 
       test('plaintext object has List of Objects', () {
@@ -1065,8 +1053,8 @@ void main() async {
         var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
         var w3c =
             buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
-        var plaintextMap = jsonDecode(plaintext);
-        plaintextMap['name'] = plaintextMap['name']['hash'];
+        Map<String, dynamic> plaintextMap = jsonDecode(plaintext);
+        plaintextMap.remove('name');
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
       });
 
@@ -1089,7 +1077,9 @@ void main() async {
         var w3c =
             buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
-        plaintextMap['list'][0] = plaintextMap['list'][0]['hash'];
+        var list = plaintextMap['list'] as List<dynamic>;
+        list.removeAt(0);
+        plaintextMap['list'] = list;
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
       });
 
@@ -1103,6 +1093,7 @@ void main() async {
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['list'][0].remove('value');
         plaintextMap['list'][0].remove('salt');
+        print(plaintextMap);
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
       });
     });
@@ -1114,7 +1105,7 @@ void main() async {
         '@context': ['https://schema.org'],
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
 
     test('issuer given only with id', () {
@@ -1141,7 +1132,7 @@ void main() async {
         'issuer': ['did:ethr:0x7648231', 'Hochschule Mittweida'],
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
 
     test('malformed issuer (num)', () {
@@ -1150,7 +1141,7 @@ void main() async {
         'issuer': 123,
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
 
     test('malformed issuer (boolean)', () {
@@ -1159,7 +1150,7 @@ void main() async {
         'issuer': true,
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
 
     test('issuer in other object embedded', () {
@@ -1168,7 +1159,7 @@ void main() async {
         'key': {'issuer': true},
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
   });
 
@@ -1197,7 +1188,7 @@ void main() async {
         'issuer': 'did:ethr:0x8759',
         'credentialSubject': {'age': 12}
       };
-      expect(getHolderDidFromCredential((cred)), null);
+      expect(getHolderDidFromCredential((cred)), '');
     });
 
     test('no id in credential', () {
@@ -1205,7 +1196,7 @@ void main() async {
         '@context': ['https://schema.org'],
         'issuer': 'did:ethr:0x8759'
       };
-      expect(getHolderDidFromCredential((cred)), null);
+      expect(getHolderDidFromCredential((cred)), '');
     });
   });
 
@@ -1620,14 +1611,18 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       Map<String, dynamic> disclosed =
           jsonDecode(discloseValues(plaintext, ['familyName']));
-      expect(disclosed.length, jsonDecode(plaintext).length);
+
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
       Map<String, dynamic> givenName =
           disclosed['givenName'] as Map<String, dynamic>;
-      expect(givenName.keys, ['value', 'salt', 'hash']);
-      Map<String, dynamic> familyname =
-          disclosed['familyName'] as Map<String, dynamic>;
-      expect(familyname.keys, ['hash']);
+      var familyName = disclosed['familyName'];
+
+      expect(givenName.keys, ['value', 'salt']);
+      expect(familyName, null);
     });
+
     test('disclose value in Object', () {
       var cred = {
         'address': {'street': 'Main Street', 'city': 'London'}
@@ -1636,11 +1631,14 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['address.street']));
 
-      Map<String, dynamic> street = disclosed['address']['street'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      var street = disclosed['address']['street'];
       Map<String, dynamic> city = disclosed['address']['city'];
 
-      expect(street.keys, ['hash']);
-      expect(city.keys, ['value', 'salt', 'hash']);
+      expect(street, null);
+      expect(city.keys, ['value', 'salt']);
     });
 
     test('disclose all values in Object (short notation)', () {
@@ -1651,11 +1649,14 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['address']));
 
-      Map<String, dynamic> street = disclosed['address']['street'];
-      Map<String, dynamic> city = disclosed['address']['city'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(street.keys, ['hash']);
-      expect(city.keys, ['hash']);
+      var street = disclosed['address']['street'];
+      var city = disclosed['address']['city'];
+
+      expect(street, null);
+      expect(city, null);
     });
 
     test('disclose all values in Object ', () {
@@ -1667,11 +1668,14 @@ void main() async {
       var disclosed = jsonDecode(
           discloseValues(plaintext, ['address.street', 'address.city']));
 
-      Map<String, dynamic> street = disclosed['address']['street'];
-      Map<String, dynamic> city = disclosed['address']['city'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(street.keys, ['hash']);
-      expect(city.keys, ['hash']);
+      var street = disclosed['address']['street'];
+      var city = disclosed['address']['city'];
+
+      expect(street, null);
+      expect(city, null);
     });
 
     test('disclose value in simple List', () {
@@ -1682,13 +1686,13 @@ void main() async {
       var disclosed =
           jsonDecode(discloseValues(plaintext, ['hobby.0', 'hobby.2']));
 
-      Map<String, dynamic> reiten = disclosed['hobby'][0];
-      Map<String, dynamic> schwimmen = disclosed['hobby'][1];
-      Map<String, dynamic> lesen = disclosed['hobby'][2];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(reiten.keys, ['hash']);
-      expect(lesen.keys, ['hash']);
-      expect(schwimmen.keys, ['value', 'salt', 'hash']);
+      Map<String, dynamic> schwimmen = disclosed['hobby'][0];
+
+      expect(disclosed['hobby'].length, 1);
+      expect(schwimmen.keys, ['value', 'salt']);
     });
 
     test('disclose all values in simple List', () {
@@ -1698,13 +1702,10 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['hobby']));
 
-      Map<String, dynamic> reiten = disclosed['hobby'][0];
-      Map<String, dynamic> schwimmen = disclosed['hobby'][1];
-      Map<String, dynamic> lesen = disclosed['hobby'][2];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(reiten.keys, ['hash']);
-      expect(lesen.keys, ['hash']);
-      expect(schwimmen.keys, ['hash']);
+      expect(disclosed['hobby'].length, 0);
     });
 
     test('disclose values in List with Objects from different Objects', () {
@@ -1719,19 +1720,22 @@ void main() async {
       var disclosed = jsonDecode(discloseValues(
           plaintext, ['friends.0.givenName', 'friends.1.familyName']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      var f0GivenName = disclosed['friends'][0]['givenName'];
       Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
       Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
-      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      var f1familyName = disclosed['friends'][1]['familyName'];
       Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
       Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['value', 'salt', 'hash']);
-      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f1familyName.keys, ['hash']);
-      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+      expect(f0GivenName, null);
+      expect(f0familyName.keys, ['value', 'salt']);
+      expect(f1GivenName.keys, ['value', 'salt']);
+      expect(f1familyName, null);
+      expect(f2GivenName.keys, ['value', 'salt']);
+      expect(f2familyName.keys, ['value', 'salt']);
     });
 
     test('disclose values in List with Objects from same Objects', () {
@@ -1746,20 +1750,23 @@ void main() async {
       var disclosed = jsonDecode(discloseValues(
           plaintext, ['friends.0.givenName', 'friends.0.familyName']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
-      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      expect(disclosed['friends'].length, 3);
+
       Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
       Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
       Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
       Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['hash']);
-      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f1familyName.keys, ['value', 'salt', 'hash']);
-      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+      expect(disclosed['friends'][0].length, 0);
+      expect(f1GivenName.keys, ['value', 'salt']);
+      expect(f1familyName.keys, ['value', 'salt']);
+      expect(f2GivenName.keys, ['value', 'salt']);
+      expect(f2familyName.keys, ['value', 'salt']);
     });
+
     test(
         'disclose values in List with Objects from same Object (short notation)',
         () {
@@ -1773,19 +1780,21 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['friends.0']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
-      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      expect(disclosed['friends'].length, 3);
+
       Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
       Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
       Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
       Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['hash']);
-      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f1familyName.keys, ['value', 'salt', 'hash']);
-      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+      expect(disclosed['friends'][0].length, 0);
+      expect(f1GivenName.keys, ['value', 'salt']);
+      expect(f1familyName.keys, ['value', 'salt']);
+      expect(f2GivenName.keys, ['value', 'salt']);
+      expect(f2familyName.keys, ['value', 'salt']);
     });
 
     test('disclose all values from one Object in List and one from another',
@@ -1801,19 +1810,21 @@ void main() async {
       var disclosed = jsonDecode(
           discloseValues(plaintext, ['friends.0', 'friends.1.familyName']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
-      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      expect(disclosed['friends'].length, 3);
+
       Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
-      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      var f1familyName = disclosed['friends'][1]['familyName'];
       Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
       Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['hash']);
-      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f1familyName.keys, ['hash']);
-      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+      expect(disclosed['friends'][0].length, 0);
+      expect(f1GivenName.keys, ['value', 'salt']);
+      expect(f1familyName, null);
+      expect(f2GivenName.keys, ['value', 'salt']);
+      expect(f2familyName.keys, ['value', 'salt']);
     });
 
     test('disclose all values in List with Objects', () {
@@ -1827,19 +1838,12 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['friends']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
-      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
-      Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
-      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
-      Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
-      Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['hash']);
-      expect(f1GivenName.keys, ['hash']);
-      expect(f1familyName.keys, ['hash']);
-      expect(f2GivenName.keys, ['hash']);
-      expect(f2familyName.keys, ['hash']);
+      expect(disclosed['friends'][0].length, 0);
+      expect(disclosed['friends'][1].length, 0);
+      expect(disclosed['friends'][2].length, 0);
     });
   });
 

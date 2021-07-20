@@ -12,13 +12,11 @@ import 'wallet_store.dart';
 
 final _hashedAttributeSchemaMap = {
   "type": "object",
-  "required": ["hash"],
   "properties": {
     "value": {
       "type": ["number", "string", "boolean"]
     },
-    "salt": {"type": "string"},
-    "hash": {"type": "string"}
+    "salt": {"type": "string"}
   },
   "additionalProperties": false
 };
@@ -27,13 +25,12 @@ final _hashedAttributeSchema =
 
 final _hashedAttributeSchemaStrict = JsonSchema.createSchema({
   "type": "object",
-  "required": ["hash", "salt", "value"],
+  "required": ["salt", "value"],
   "properties": {
     "value": {
       "type": ["number", "string", "boolean"]
     },
-    "salt": {"type": "string"},
-    "hash": {"type": "string"}
+    "salt": {"type": "string"}
   },
   "additionalProperties": false
 });
@@ -43,11 +40,12 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
   'properties': {r'^.*$': _hashedAttributeSchemaMap}
 });
 
-/// Builds a json-Object where every Attribute gets a value, salt and hash from json-Object [credential].
+/// Builds a json-Object where every Attribute gets a value and salt from json-Object [credential].
 ///
 /// E.g.
 /// ```
 /// {
+///   "type" : "NameAgeCredential",
 ///   "name" : "Max",
 ///   "age" : 20
 /// }
@@ -56,27 +54,26 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
 ///```
 ///{
 /// "id": "did:ethr:0x82734",
+/// "type": ["HashedPlaintextCredential2021","NameAgeCredential"],
 /// "hashAlg" : "keccak-256",
 /// "name":
 /// {
 ///   "value":"Max",
-///   "salt":"dc0931a0-60c6-4bc8-a27d-b3fd13e62c63",
-///   "hash":"0xd8925653ed000200d2b491bcabe2ea69f378abb91f056993a6d3e3b28ad4ccc4"
+///   "salt":"dc0931a0-60c6-4bc8-a27d-b3fd13e62c63"
 ///  },
 ///  "age":
 ///   {
 ///   "value":20,
-///   "salt":"3e9bacd3-aa74-42c1-9895-e490e3931a73",
-///   "hash":"0x43bde6fcd11015c6a996206dadd25e149d131c69a7249280bae723c6bad53888"
+///   "salt":"3e9bacd3-aa74-42c1-9895-e490e3931a73"
 ///  }
 /// }
 /// ```
-/// where salt is a Version 4 UUID and hash is the keccak256-hash of salt + value (concatenation).
+/// where salt is a Version 4 UUID.
 /// [credential] could be a string or Map<String, dynamic> representing a valid json-Object.
 String buildPlaintextCredential(dynamic credential, String? holderDid,
     {bool addHashAlg = true}) {
   Map<String, dynamic> credMap = credentialToMap(credential);
-  Map<String, dynamic> finalCred = new Map();
+  Map<String, dynamic> finalCred = {};
 
   if (credMap.containsKey('credentialSubject')) {
     credMap = credMap['credentialSubject'];
@@ -84,6 +81,28 @@ String buildPlaintextCredential(dynamic credential, String? holderDid,
   if (credMap.containsKey('@context')) {
     finalCred['@context'] = credMap['@context'];
     credMap.remove('@context');
+  }
+
+  if (addHashAlg) {
+    List<String> types = [];
+    types.add('HashedPlaintextCredential2021');
+    if (credMap.containsKey('type') || credMap.containsKey('@type')) {
+      var value = credMap['type'];
+      credMap.remove('type');
+      if (value == null) {
+        value = credMap['@type'];
+        credMap.remove('@type');
+      }
+      if (value is String) {
+        if (!types.contains(value)) types.add(value);
+      } else if (value is List) {
+        value.forEach((element) {
+          if (!types.contains(element)) types.add(element);
+        });
+      } else
+        throw Exception('Unsupported datatype for type key');
+      finalCred['type'] = types;
+    }
   }
 
   if (holderDid != '') {
@@ -371,7 +390,7 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
 ///Discloses all values in [valuesToDisclose] of [plaintextCredential].
 ///
 /// [valuesToDisclose] contains the keys of the attributes, that should be disclosed.
-/// Keys in nested object should be separeted with . (point) from the parent-key, like here:
+/// Keys in nested object should be separated with . (point) from the parent-key, like here:
 /// Imagine your plaintext Credential look like this:
 /// ```
 /// {
@@ -445,7 +464,7 @@ String discloseValues(
       if (_hashedAttributeSchemaStrict.validate(value)) {
         // check if key should be disclosed
         if (valuesToDisclose.contains(key)) {
-          result[key] = {'hash': value['hash']};
+          result.remove(key);
         }
       }
       // new Object found
@@ -473,6 +492,7 @@ String discloseValues(
       // array found
       else if (value is List) {
         result[key] = value;
+        int removed = 0;
         List<String> valuesSeen = [];
         valuesToDisclose.forEach((element) {
           if (valuesSeen.contains(element)) {
@@ -489,11 +509,10 @@ String discloseValues(
           //elementwise disclosing
           else if (element.split('.').first == key) {
             int arrayIndex = int.parse(element.split('.')[1]);
-            if (_hashedAttributeSchemaStrict.validate(value[arrayIndex])) {
-              result[key]
-                  [arrayIndex] = result[key][arrayIndex] as Map<String, dynamic>
-                ..remove('value')
-                ..remove('salt');
+            if (_hashedAttributeSchemaStrict
+                .validate(value[arrayIndex - removed])) {
+              result[key].removeAt(arrayIndex - removed);
+              removed++;
             }
             //Object in Array
             else if (_mapOfHashedAttributesSchema.validate(value[arrayIndex])) {
@@ -639,7 +658,11 @@ String getIssuerDidFromCredential(dynamic credential) {
       if (!(issuer is Map))
         return '';
       else {
-        return issuer['id'];
+        var id = issuer['id'];
+        if (id != null)
+          return id;
+        else
+          return '';
       }
     }
   }
@@ -694,17 +717,17 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
   var payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
   var signingInput = '$header.$payload';
   var hash = sha256.convert(ascii.encode(signingInput)).bytes;
-  String? privKeyHex;
+  String? privateKeyHex;
 
-  privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
-  if (privKeyHex == null)
-    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
-  if (privKeyHex == null) throw Exception('Could not find private key');
-  var key = EthPrivateKey.fromHex(privKeyHex);
-  MsgSignature signature = sign(hash as Uint8List, key.privateKey);
-  var sigArray = unsignedIntToBytes(signature.r) +
-      unsignedIntToBytes(signature.s) +
-      [signature.v - 27];
+  privateKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  if (privateKeyHex == null)
+    privateKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+  if (privateKeyHex == null) throw Exception('Could not find private key');
+  var key = EthPrivateKey.fromHex(privateKeyHex);
+  var sigArray = _buildSignatureArray(hash as Uint8List, key);
+  while (sigArray.length != 65) {
+    sigArray = _buildSignatureArray(hash, key);
+  }
 
   if (detached)
     return '$header.'
@@ -752,16 +775,14 @@ Map<String, dynamic> _hashStringOrNum(dynamic value) {
   var uuid = Uuid();
   Map<String, dynamic> hashed = new Map();
   var salt = uuid.v4();
-  var hash = bytesToHex(keccakUtf8(salt + value.toString()), include0x: true);
   hashed.putIfAbsent('value', () => value);
   hashed.putIfAbsent('salt', () => salt);
-  hashed.putIfAbsent('hash', () => hash);
   return hashed;
 }
 
 String _collectHashes(dynamic credential, {String? id}) {
   var credMap = credentialToMap(credential);
-  Map<String, dynamic> hashCred = new Map();
+  Map<String, dynamic> hashCred = {};
   if (id != null) hashCred['id'] = id;
   credMap.forEach((key, value) {
     if (key != '@context') {
@@ -773,7 +794,9 @@ String _collectHashes(dynamic credential, {String? id}) {
         value.forEach((element) {
           if (element is Map<String, dynamic> &&
               _hashedAttributeSchema.validate(element)) {
-            hashList.add(element['hash']);
+            hashList.add(bytesToHex(
+                keccakUtf8('${element['salt']}${element['value']}'),
+                include0x: true));
           } else if (element is Map<String, dynamic> &&
               _mapOfHashedAttributesSchema.validate(element)) {
             hashList.add(jsonDecode(_collectHashes(element)));
@@ -784,7 +807,9 @@ String _collectHashes(dynamic credential, {String? id}) {
         });
       } else if (value is Map<String, dynamic> &&
           _hashedAttributeSchema.validate(value)) {
-        hashCred[key] = value['hash'];
+        hashCred[key] = bytesToHex(
+            keccakUtf8('${value['salt']}${value['value']}'),
+            include0x: true);
       } else if (value is Map<String, dynamic> &&
           _mapOfHashedAttributesSchema.validate(value)) {
         hashCred[key] = jsonDecode(_collectHashes(value));
@@ -796,63 +821,43 @@ String _collectHashes(dynamic credential, {String? id}) {
   return jsonEncode(hashCred);
 }
 
-bool _checkHashes(Map<String, dynamic>? w3c, Map<String, dynamic> plainHash) {
+bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
   plainHash.forEach((key, value) {
     if (!(key == '@context' ||
         key == 'type' ||
         key == '@type' ||
         key == 'id' ||
         key == 'hashAlg')) {
-      if (value is String) {
-        //Nothing was disclosed -> only compare hash
-        if (w3c![key] != value) throw Exception('hashes do not match at $key');
-      } else if (value is Map<String, dynamic>) {
+      if (value is Map<String, dynamic>) {
         if (_hashedAttributeSchemaStrict.validate(value)) {
           //a disclosed value -> rehash and check
           var hash = bytesToHex(
               keccakUtf8(value['salt'] + value['value'].toString()),
               include0x: true);
-          if (hash != value['hash'])
+          if (hash != w3c[key])
             throw Exception(
                 'Given hash and calculated hash do ot match at $key');
         } else if (_mapOfHashedAttributesSchema.validate(value) &&
-            _mapOfHashedAttributesSchema.validate(w3c![key])) {
+            _mapOfHashedAttributesSchema.validate(w3c[key])) {
           // a new Object
           _checkHashes(w3c[key], value);
-        } else if (value.length == 1 && value.containsKey('hash')) {
-          // hash value was left in an object
-          if (w3c![key] != value['hash'])
-            throw Exception('hashes do not match at $key');
-        } else
+        } else if (value.length == 1)
           throw Exception('malformed object with key $key');
       } else if (value is List) {
-        List<dynamic> fromW3c = w3c![key];
-        if (fromW3c.length != value.length)
-          throw Exception('List length at $key do not match');
+        List<dynamic> fromW3c = w3c[key];
         for (int i = 0; i < value.length; i++) {
-          if (value[i] is String) {
-            //we found only strings -> nothing is disclosed
-            if (value[i] != fromW3c[i])
-              throw Exception(
-                  'Hashes in List at $key do not match at index $i');
-          } else if (value[i] is Map<String, dynamic> &&
+          if (value[i] is Map<String, dynamic> &&
               _hashedAttributeSchemaStrict.validate(value[i])) {
             // a disclosed value -> rehash and check
             var hash = bytesToHex(
                 keccakUtf8(value[i]['salt'] + value[i]['value'].toString()),
                 include0x: true);
-            if (hash != fromW3c[i])
+            if (!fromW3c.contains(hash))
               throw Exception(
-                  'Calculated and given Hash in List at $key do not match at '
-                  'index $i');
-          } else if (value[i] is Map<String, dynamic> &&
-              value[i].length == 1 &&
-              value[i].containsKey('hash')) {
-            if (fromW3c[i] != value[i]['hash'])
-              throw Exception('hashes do not match at $key and index $i');
+                  'Calculated and given Hash in List at $key do not match');
           } else if (value[i] is Map<String, dynamic> &&
               _mapOfHashedAttributesSchema.validate(value[i])) {
-            _checkHashes(fromW3c[i], value[i]);
+            if (value[i].length > 0) _checkHashes(fromW3c[i], value[i]);
           } else
             throw Exception('unknown datatype at List $key and index $i');
         }
@@ -878,15 +883,16 @@ Map<String, dynamic> _buildProof(
 
   var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
   var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
-  var privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
-  if (privKeyHex == null)
-    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
-  if (privKeyHex == null) throw Exception('Could not find a private key');
-  var key = EthPrivateKey.fromHex(privKeyHex);
-  MsgSignature signature = sign(hash as Uint8List, key.privateKey);
-  var sigArray = unsignedIntToBytes(signature.r) +
-      unsignedIntToBytes(signature.s) +
-      [signature.v - 27];
+  var privateKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  if (privateKeyHex == null)
+    privateKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+  if (privateKeyHex == null) throw Exception('Could not find a private key');
+  var key = EthPrivateKey.fromHex(privateKeyHex);
+
+  var sigArray = _buildSignatureArray(hash as Uint8List, key);
+  while (sigArray.length != 65) {
+    sigArray = _buildSignatureArray(hash, key);
+  }
   Map<String, dynamic> optionsMap = jsonDecode(pOptions);
   var critical = new Map<String, dynamic>();
   critical['b64'] = false;
@@ -940,6 +946,14 @@ MsgSignature _getSignatureFromJws(String jws) {
   if (sigArray.length != 65) throw Exception('wrong signature-length');
   return new MsgSignature(bytesToUnsignedInt(sigArray.sublist(0, 32)),
       bytesToUnsignedInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
+}
+
+List<int> _buildSignatureArray(Uint8List hash, EthPrivateKey privateKey) {
+  MsgSignature signature = sign(hash, privateKey.privateKey);
+  List<int> sigArray = unsignedIntToBytes(signature.r) +
+      unsignedIntToBytes(signature.s) +
+      [signature.v - 27];
+  return sigArray;
 }
 
 String _addPaddingToBase64(String base64Input) {
