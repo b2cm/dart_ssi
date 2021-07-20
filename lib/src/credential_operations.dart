@@ -695,17 +695,17 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
   var payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
   var signingInput = '$header.$payload';
   var hash = sha256.convert(ascii.encode(signingInput)).bytes;
-  String? privKeyHex;
+  String? privateKeyHex;
 
-  privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
-  if (privKeyHex == null)
-    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
-  if (privKeyHex == null) throw Exception('Could not find private key');
-  var key = EthPrivateKey.fromHex(privKeyHex);
-  MsgSignature signature = sign(hash as Uint8List, key.privateKey);
-  var sigArray = unsignedIntToBytes(signature.r) +
-      unsignedIntToBytes(signature.s) +
-      [signature.v - 27];
+  privateKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  if (privateKeyHex == null)
+    privateKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+  if (privateKeyHex == null) throw Exception('Could not find private key');
+  var key = EthPrivateKey.fromHex(privateKeyHex);
+  var sigArray = _buildSignatureArray(hash as Uint8List, key);
+  while (sigArray.length != 65) {
+    sigArray = _buildSignatureArray(hash, key);
+  }
 
   if (detached)
     return '$header.'
@@ -861,15 +861,16 @@ Map<String, dynamic> _buildProof(
 
   var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
   var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
-  var privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
-  if (privKeyHex == null)
-    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
-  if (privKeyHex == null) throw Exception('Could not find a private key');
-  var key = EthPrivateKey.fromHex(privKeyHex);
-  MsgSignature signature = sign(hash as Uint8List, key.privateKey);
-  var sigArray = unsignedIntToBytes(signature.r) +
-      unsignedIntToBytes(signature.s) +
-      [signature.v - 27];
+  var privateKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  if (privateKeyHex == null)
+    privateKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+  if (privateKeyHex == null) throw Exception('Could not find a private key');
+  var key = EthPrivateKey.fromHex(privateKeyHex);
+
+  var sigArray = _buildSignatureArray(hash as Uint8List, key);
+  while (sigArray.length != 65) {
+    sigArray = _buildSignatureArray(hash, key);
+  }
   Map<String, dynamic> optionsMap = jsonDecode(pOptions);
   var critical = new Map<String, dynamic>();
   critical['b64'] = false;
@@ -923,6 +924,14 @@ MsgSignature _getSignatureFromJws(String jws) {
   if (sigArray.length != 65) throw Exception('wrong signature-length');
   return new MsgSignature(bytesToUnsignedInt(sigArray.sublist(0, 32)),
       bytesToUnsignedInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
+}
+
+List<int> _buildSignatureArray(Uint8List hash, EthPrivateKey privateKey) {
+  MsgSignature signature = sign(hash, privateKey.privateKey);
+  List<int> sigArray = unsignedIntToBytes(signature.r) +
+      unsignedIntToBytes(signature.s) +
+      [signature.v - 27];
+  return sigArray;
 }
 
 String _addPaddingToBase64(String base64Input) {
