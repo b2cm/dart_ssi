@@ -25,13 +25,18 @@ class Credential {
 }
 
 @HiveType(typeId: 1)
+
+/// A connection with an other party (issuer, verifier,...).
 class Connection {
+  /// HD-Path for own key.
   @HiveField(0)
   String hdPath;
 
+  /// Did of the other party.
   @HiveField(1)
   String otherDid;
 
+  /// A nma efor this connection.
   @HiveField(2)
   String name;
 

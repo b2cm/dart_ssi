@@ -583,6 +583,7 @@ class RevocationRegistry {
     var revEventSig = bytesToHex(revokedEvent.signature);
     var deployedBlock = await deployed();
     var logs = await _web3Client.getLogs(FilterOptions(
+        address: _contract.address,
         fromBlock: BlockNum.exact(deployedBlock!.toInt()),
         topics: [
           ['0x${revEventSig.padLeft(64, '0')}'],

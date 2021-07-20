@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the signString function from the flutter_ssi_wallet library, for the Dart programming language.">
+  <title>signString function - flutter_ssi_wallet library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../static-assets/styles.css?v1">
+  <link rel="icon" href="../static-assets/favicon.png?v1">
+
+  
+</head>
+
+
+<body data-base-href="../"
+      data-using-base-href="false">
+
+<div id="overlay-under-drawer"></div>
+
+<header id="title">
+  <button id="sidenav-left-toggle" type="button">&nbsp;</button>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../index.html">flutter_ssi_wallet</a></li>
+    <li><a href="../flutter_ssi_wallet/flutter_ssi_wallet-library.html">flutter_ssi_wallet</a></li>
+    <li class="self-crumb">signString function</li>
+  </ol>
+  <div class="self-name">signString</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+
+<main>
+
+
+  <div id="dartdoc-main-content" class="main-content">
+      <div>
+<h1><span class="kind-function">signString</span> function 
+    <a href="https://dart.dev/null-safety" class="feature feature-null-safety" title="Supports the null safety language feature.">Null safety</a>
+ 
+</h1></div>
+
+    <section class="multi-line-signature">
+        
+
+<span class="returntype"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span>
+<span class="name ">signString</span>(<wbr><ol class="parameter-list"><li><span class="parameter" id="signString-param-wallet"><span class="type-annotation"><a href="../flutter_ssi_wallet/WalletStore-class.html">WalletStore</a></span> <span class="parameter-name">wallet</span>, </span></li>
+<li><span class="parameter" id="signString-param-didToSignWith"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">didToSignWith</span>, </span></li>
+<li><span class="parameter" id="signString-param-toSign"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">toSign</span>, </span></li>
+<li><span class="parameter" id="signString-param-detached">{<span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">detached</span> = <span class="default-value">false</span>, </span></li>
+<li><span class="parameter" id="signString-param-jwsHeader"><span class="type-annotation">dynamic</span> <span class="parameter-name">jwsHeader</span>}</span></li>
+</ol>)
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Signs the given String <code>toSign</code> with key-pair of <code>didToSignWith</code>.</p>
+<p>Returned signature is formatted as jws. If a detached jws (header..signature) should be returned <code>detached</code> must be set to true.
+If no custom <code>jwsHeader</code> is given, the default one is</p>
+<pre class="language-dart"><code>{
+  "alg" : "ES256K-R",
+  "b64" : false,
+  "crit" : ["b64"]
+}
+</code></pre>
+<p>If a custom one should be used, it has to be given in its json representation (dart String or Map) and the value of alg has to be ES256K-R,
+because for now this is the only supported signature algorithm.</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">String signString(WalletStore wallet, String didToSignWith, String toSign,
+    {bool detached = false, dynamic jwsHeader}) {
+  String header;
+  if (jwsHeader != null) {
+    Map&lt;String, dynamic&gt;? headerMap;
+    if (jwsHeader is String)
+      headerMap = jsonDecode(jwsHeader);
+    else
+      headerMap = jwsHeader;
+    if (headerMap![&#39;alg&#39;] != &#39;ES256K-R&#39;)
+      throw Exception(&#39;Unsupported signature algorithm ${headerMap[&#39;alg&#39;]}&#39;);
+    header = _removePaddingFromBase64(
+        base64UrlEncode(utf8.encode(jsonEncode(headerMap))));
+  } else {
+    var critical = new Map&lt;String, dynamic&gt;();
+    critical[&#39;b64&#39;] = false;
+    header = _removePaddingFromBase64(
+        buildJwsHeader(alg: &#39;ES256K-R&#39;, extra: critical));
+  }
+  var payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
+  var signingInput = &#39;$header.$payload&#39;;
+  var hash = sha256.convert(ascii.encode(signingInput)).bytes;
+  String? privKeyHex;
+
+  privKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  if (privKeyHex == null)
+    privKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+  if (privKeyHex == null) throw Exception(&#39;Could not find private key&#39;);
+  var key = EthPrivateKey.fromHex(privKeyHex);
+  MsgSignature signature = sign(hash as Uint8List, key.privateKey);
+  var sigArray = unsignedIntToBytes(signature.r) +
+      unsignedIntToBytes(signature.s) +
+      [signature.v - 27];
+
+  if (detached)
+    return &#39;$header.&#39;
+        &#39;.${_removePaddingFromBase64(base64UrlEncode(sigArray))}&#39;;
+  else
+    return &#39;$header.$payload&#39;
+        &#39;.${_removePaddingFromBase64(base64UrlEncode(sigArray))}&#39;;
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+  <li><a href="../index.html">flutter_ssi_wallet</a></li>
+  <li><a href="../flutter_ssi_wallet/flutter_ssi_wallet-library.html">flutter_ssi_wallet</a></li>
+  <li class="self-crumb">signString function</li>
+</ol>
+
+
+    <h5>flutter_ssi_wallet library</h5>
+    <ol>
+  <li class="section-title"><a href="../flutter_ssi_wallet/flutter_ssi_wallet-library.html#classes">Classes</a></li>
+  <li><a href="../flutter_ssi_wallet/Connection-class.html">Connection</a></li>
+  <li><a href="../flutter_ssi_wallet/ConnectionAdapter-class.html">ConnectionAdapter</a></li>
+  <li><a href="../flutter_ssi_wallet/Credential-class.html">Credential</a></li>
+  <li><a href="../flutter_ssi_wallet/CredentialAdapter-class.html">CredentialAdapter</a></li>
+  <li><a href="../flutter_ssi_wallet/CredentialRequest-class.html">CredentialRequest</a></li>
+  <li><a href="../flutter_ssi_wallet/CredentialResponse-class.html">CredentialResponse</a></li>
+  <li><a href="../flutter_ssi_wallet/Erc1056-class.html">Erc1056</a></li>
+  <li><a href="../flutter_ssi_wallet/RevocationRegistry-class.html">RevocationRegistry</a></li>
+  <li><a href="../flutter_ssi_wallet/WalletStore-class.html">WalletStore</a></li>
+
+
+
+
+
+  <li class="section-title"><a href="../flutter_ssi_wallet/flutter_ssi_wallet-library.html#functions">Functions</a></li>
+  <li><a href="../flutter_ssi_wallet/buildJwsHeader.html">buildJwsHeader</a></li>
+  <li><a href="../flutter_ssi_wallet/buildPlaintextCredential.html">buildPlaintextCredential</a></li>
+  <li><a href="../flutter_ssi_wallet/buildPresentation.html">buildPresentation</a></li>
+  <li><a href="../flutter_ssi_wallet/buildW3cCredentialwithHashes.html">buildW3cCredentialwithHashes</a></li>
+  <li><a href="../flutter_ssi_wallet/compareW3cCredentialAndPlaintext.html">compareW3cCredentialAndPlaintext</a></li>
+  <li><a href="../flutter_ssi_wallet/credentialToMap.html">credentialToMap</a></li>
+  <li><a href="../flutter_ssi_wallet/discloseValues.html">discloseValues</a></li>
+  <li><a href="../flutter_ssi_wallet/getAllJsonPathsOfCredential.html">getAllJsonPathsOfCredential</a></li>
+  <li><a href="../flutter_ssi_wallet/getHolderDidFromCredential.html">getHolderDidFromCredential</a></li>
+  <li><a href="../flutter_ssi_wallet/getIssuerDidFromCredential.html">getIssuerDidFromCredential</a></li>
+  <li><a href="../flutter_ssi_wallet/signCredential.html">signCredential</a></li>
+  <li><a href="../flutter_ssi_wallet/signString.html">signString</a></li>
+  <li><a href="../flutter_ssi_wallet/verifyCredential.html">verifyCredential</a></li>
+  <li><a href="../flutter_ssi_wallet/verifyPresentation.html">verifyPresentation</a></li>
+  <li><a href="../flutter_ssi_wallet/verifyStringSignature.html">verifyStringSignature</a></li>
+
+
+
+</ol>
+
+  </div><!--/.sidebar-offcanvas-left-->
+
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div><!--/.sidebar-offcanvas-->
+
+</main>
+
+<footer>
+  <span class="no-break">
+    flutter_ssi_wallet
+      0.0.1
+  </span>
+
+  
+</footer>
+
+
+
+<script src="../static-assets/highlight.pack.js?v1"></script>
+<script src="../static-assets/script.js?v1"></script>
+
+
+
+</body>
+
+</html>
+

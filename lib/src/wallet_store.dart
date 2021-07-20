@@ -25,11 +25,13 @@ class WalletStore {
   Box<Credential>? _issuingHistory;
   Box<Connection>? _connection;
 
-  ///The Path used to derive keys
+  ///The path used to derive credential keys
   final String standardCredentialPath = 'm/456/0/';
+
+  ///The path used to derive connection keys
   final String standardConnectionPath = 'm/456/1';
 
-  /// Constructs a wallet at file-system path [path]
+  /// Constructs a wallet at file-system path [path].
   WalletStore(this._walletPath) {
     Hive.init(_walletPath);
     _nameExpansion = _walletPath.replaceAll('/', '_');
@@ -111,7 +113,7 @@ class WalletStore {
     return this._keyBox!.get('seed') != null;
   }
 
-  /// Closes Storage Containers
+  /// Closes storage containers.
   Future<void> closeBoxes() async {
     await _keyBox!.close();
     await _credentialBox!.close();
@@ -160,13 +162,13 @@ class WalletStore {
     return getPrivateKeyToCredentialDid(getStandardIssuerDid());
   }
 
-  /// Lists all Credentials.
+  /// Lists all credentials.
   Map<dynamic, Credential> getAllCredentials() {
     var credMap = _credentialBox!.toMap();
     return credMap;
   }
 
-  /// Lists all Connections.
+  /// Lists all connections.
   Map<dynamic, Connection> getAllConnections() {
     var credMap = _connection!.toMap();
     return credMap;
@@ -234,12 +236,12 @@ class WalletStore {
     return _issuingHistory!.toMap();
   }
 
-  /// Returns the last value of the next HD-path.
+  /// Returns the last value of the next HD-path for the credential keys.
   int? getLastIndex() {
     return _keyBox!.get('lastCredentialIndex');
   }
 
-  /// Returns the last value of the next HD-path for the communication keys.
+  /// Returns the last value of the next HD-path for the connection keys.
   int? getLastCommunicationIndex() {
     return _keyBox!.get('lastConnectionIndex');
   }
