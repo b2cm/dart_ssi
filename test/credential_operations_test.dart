@@ -1552,14 +1552,18 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       Map<String, dynamic> disclosed =
           jsonDecode(discloseValues(plaintext, ['familyName']));
-      expect(disclosed.length, jsonDecode(plaintext).length);
+
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
       Map<String, dynamic> givenName =
           disclosed['givenName'] as Map<String, dynamic>;
-      expect(givenName.keys, ['value', 'salt', 'hash']);
-      Map<String, dynamic> familyname =
-          disclosed['familyName'] as Map<String, dynamic>;
-      expect(familyname.keys, ['hash']);
+      var familyName = disclosed['familyName'];
+
+      expect(givenName.keys, ['value', 'salt']);
+      expect(familyName, null);
     });
+
     test('disclose value in Object', () {
       var cred = {
         'address': {'street': 'Main Street', 'city': 'London'}
@@ -1568,11 +1572,14 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['address.street']));
 
-      Map<String, dynamic> street = disclosed['address']['street'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      var street = disclosed['address']['street'];
       Map<String, dynamic> city = disclosed['address']['city'];
 
-      expect(street.keys, ['hash']);
-      expect(city.keys, ['value', 'salt', 'hash']);
+      expect(street, null);
+      expect(city.keys, ['value', 'salt']);
     });
 
     test('disclose all values in Object (short notation)', () {
@@ -1583,11 +1590,14 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['address']));
 
-      Map<String, dynamic> street = disclosed['address']['street'];
-      Map<String, dynamic> city = disclosed['address']['city'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(street.keys, ['hash']);
-      expect(city.keys, ['hash']);
+      var street = disclosed['address']['street'];
+      var city = disclosed['address']['city'];
+
+      expect(street, null);
+      expect(city, null);
     });
 
     test('disclose all values in Object ', () {
@@ -1599,11 +1609,14 @@ void main() async {
       var disclosed = jsonDecode(
           discloseValues(plaintext, ['address.street', 'address.city']));
 
-      Map<String, dynamic> street = disclosed['address']['street'];
-      Map<String, dynamic> city = disclosed['address']['city'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(street.keys, ['hash']);
-      expect(city.keys, ['hash']);
+      var street = disclosed['address']['street'];
+      var city = disclosed['address']['city'];
+
+      expect(street, null);
+      expect(city, null);
     });
 
     test('disclose value in simple List', () {
@@ -1614,13 +1627,13 @@ void main() async {
       var disclosed =
           jsonDecode(discloseValues(plaintext, ['hobby.0', 'hobby.2']));
 
-      Map<String, dynamic> reiten = disclosed['hobby'][0];
-      Map<String, dynamic> schwimmen = disclosed['hobby'][1];
-      Map<String, dynamic> lesen = disclosed['hobby'][2];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(reiten.keys, ['hash']);
-      expect(lesen.keys, ['hash']);
-      expect(schwimmen.keys, ['value', 'salt', 'hash']);
+      Map<String, dynamic> schwimmen = disclosed['hobby'][0];
+
+      expect(disclosed['hobby'].length, 1);
+      expect(schwimmen.keys, ['value', 'salt']);
     });
 
     test('disclose all values in simple List', () {
@@ -1630,13 +1643,10 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['hobby']));
 
-      Map<String, dynamic> reiten = disclosed['hobby'][0];
-      Map<String, dynamic> schwimmen = disclosed['hobby'][1];
-      Map<String, dynamic> lesen = disclosed['hobby'][2];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(reiten.keys, ['hash']);
-      expect(lesen.keys, ['hash']);
-      expect(schwimmen.keys, ['hash']);
+      expect(disclosed['hobby'].length, 0);
     });
 
     test('disclose values in List with Objects from different Objects', () {
@@ -1651,19 +1661,22 @@ void main() async {
       var disclosed = jsonDecode(discloseValues(
           plaintext, ['friends.0.givenName', 'friends.1.familyName']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      var f0GivenName = disclosed['friends'][0]['givenName'];
       Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
       Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
-      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      var f1familyName = disclosed['friends'][1]['familyName'];
       Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
       Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['value', 'salt', 'hash']);
-      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f1familyName.keys, ['hash']);
-      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+      expect(f0GivenName, null);
+      expect(f0familyName.keys, ['value', 'salt']);
+      expect(f1GivenName.keys, ['value', 'salt']);
+      expect(f1familyName, null);
+      expect(f2GivenName.keys, ['value', 'salt']);
+      expect(f2familyName.keys, ['value', 'salt']);
     });
 
     test('disclose values in List with Objects from same Objects', () {
@@ -1678,20 +1691,23 @@ void main() async {
       var disclosed = jsonDecode(discloseValues(
           plaintext, ['friends.0.givenName', 'friends.0.familyName']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
-      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      expect(disclosed['friends'].length, 3);
+
       Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
       Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
       Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
       Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['hash']);
-      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f1familyName.keys, ['value', 'salt', 'hash']);
-      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+      expect(disclosed['friends'][0].length, 0);
+      expect(f1GivenName.keys, ['value', 'salt']);
+      expect(f1familyName.keys, ['value', 'salt']);
+      expect(f2GivenName.keys, ['value', 'salt']);
+      expect(f2familyName.keys, ['value', 'salt']);
     });
+
     test(
         'disclose values in List with Objects from same Object (short notation)',
         () {
@@ -1705,19 +1721,21 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['friends.0']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
-      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      expect(disclosed['friends'].length, 3);
+
       Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
       Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
       Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
       Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['hash']);
-      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f1familyName.keys, ['value', 'salt', 'hash']);
-      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+      expect(disclosed['friends'][0].length, 0);
+      expect(f1GivenName.keys, ['value', 'salt']);
+      expect(f1familyName.keys, ['value', 'salt']);
+      expect(f2GivenName.keys, ['value', 'salt']);
+      expect(f2familyName.keys, ['value', 'salt']);
     });
 
     test('disclose all values from one Object in List and one from another',
@@ -1733,19 +1751,21 @@ void main() async {
       var disclosed = jsonDecode(
           discloseValues(plaintext, ['friends.0', 'friends.1.familyName']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
-      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
+
+      expect(disclosed['friends'].length, 3);
+
       Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
-      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
+      var f1familyName = disclosed['friends'][1]['familyName'];
       Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
       Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['hash']);
-      expect(f1GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f1familyName.keys, ['hash']);
-      expect(f2GivenName.keys, ['value', 'salt', 'hash']);
-      expect(f2familyName.keys, ['value', 'salt', 'hash']);
+      expect(disclosed['friends'][0].length, 0);
+      expect(f1GivenName.keys, ['value', 'salt']);
+      expect(f1familyName, null);
+      expect(f2GivenName.keys, ['value', 'salt']);
+      expect(f2familyName.keys, ['value', 'salt']);
     });
 
     test('disclose all values in List with Objects', () {
@@ -1759,19 +1779,12 @@ void main() async {
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       var disclosed = jsonDecode(discloseValues(plaintext, ['friends']));
 
-      Map<String, dynamic> f0GivenName = disclosed['friends'][0]['givenName'];
-      Map<String, dynamic> f0familyName = disclosed['friends'][0]['familyName'];
-      Map<String, dynamic> f1GivenName = disclosed['friends'][1]['givenName'];
-      Map<String, dynamic> f1familyName = disclosed['friends'][1]['familyName'];
-      Map<String, dynamic> f2GivenName = disclosed['friends'][2]['givenName'];
-      Map<String, dynamic> f2familyName = disclosed['friends'][2]['familyName'];
+      var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x687236892');
+      expect(compareW3cCredentialAndPlaintext(w3c, disclosed), true);
 
-      expect(f0GivenName.keys, ['hash']);
-      expect(f0familyName.keys, ['hash']);
-      expect(f1GivenName.keys, ['hash']);
-      expect(f1familyName.keys, ['hash']);
-      expect(f2GivenName.keys, ['hash']);
-      expect(f2familyName.keys, ['hash']);
+      expect(disclosed['friends'][0].length, 0);
+      expect(disclosed['friends'][1].length, 0);
+      expect(disclosed['friends'][2].length, 0);
     });
   });
 

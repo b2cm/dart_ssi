@@ -368,7 +368,7 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
 ///Discloses all values in [valuesToDisclose] of [plaintextCredential].
 ///
 /// [valuesToDisclose] contains the keys of the attributes, that should be disclosed.
-/// Keys in nested object should be separeted with . (point) from the parent-key, like here:
+/// Keys in nested object should be separated with . (point) from the parent-key, like here:
 /// Imagine your plaintext Credential look like this:
 /// ```
 /// {
@@ -442,7 +442,7 @@ String discloseValues(
       if (_hashedAttributeSchemaStrict.validate(value)) {
         // check if key should be disclosed
         if (valuesToDisclose.contains(key)) {
-          result[key] = {'hash': value['hash']};
+          result.remove(key);
         }
       }
       // new Object found
@@ -470,6 +470,7 @@ String discloseValues(
       // array found
       else if (value is List) {
         result[key] = value;
+        int removed = 0;
         List<String> valuesSeen = [];
         valuesToDisclose.forEach((element) {
           if (valuesSeen.contains(element)) {
@@ -486,11 +487,10 @@ String discloseValues(
           //elementwise disclosing
           else if (element.split('.').first == key) {
             int arrayIndex = int.parse(element.split('.')[1]);
-            if (_hashedAttributeSchemaStrict.validate(value[arrayIndex])) {
-              result[key]
-                  [arrayIndex] = result[key][arrayIndex] as Map<String, dynamic>
-                ..remove('value')
-                ..remove('salt');
+            if (_hashedAttributeSchemaStrict
+                .validate(value[arrayIndex - removed])) {
+              result[key].removeAt(arrayIndex - removed);
+              removed++;
             }
             //Object in Array
             else if (_mapOfHashedAttributesSchema.validate(value[arrayIndex])) {
