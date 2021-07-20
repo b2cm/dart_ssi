@@ -12,13 +12,11 @@ import 'wallet_store.dart';
 
 final _hashedAttributeSchemaMap = {
   "type": "object",
-  "required": ["hash"],
   "properties": {
     "value": {
       "type": ["number", "string", "boolean"]
     },
-    "salt": {"type": "string"},
-    "hash": {"type": "string"}
+    "salt": {"type": "string"}
   },
   "additionalProperties": false
 };
@@ -27,13 +25,12 @@ final _hashedAttributeSchema =
 
 final _hashedAttributeSchemaStrict = JsonSchema.createSchema({
   "type": "object",
-  "required": ["hash", "salt", "value"],
+  "required": ["salt", "value"],
   "properties": {
     "value": {
       "type": ["number", "string", "boolean"]
     },
-    "salt": {"type": "string"},
-    "hash": {"type": "string"}
+    "salt": {"type": "string"}
   },
   "additionalProperties": false
 });
@@ -76,7 +73,7 @@ final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
 String buildPlaintextCredential(dynamic credential, String? holderDid,
     {bool addHashAlg = true}) {
   Map<String, dynamic> credMap = credentialToMap(credential);
-  Map<String, dynamic> finalCred = new Map();
+  Map<String, dynamic> finalCred = {};
 
   if (credMap.containsKey('credentialSubject')) {
     credMap = credMap['credentialSubject'];
@@ -752,16 +749,14 @@ Map<String, dynamic> _hashStringOrNum(dynamic value) {
   var uuid = Uuid();
   Map<String, dynamic> hashed = new Map();
   var salt = uuid.v4();
-  var hash = bytesToHex(keccakUtf8(salt + value.toString()), include0x: true);
   hashed.putIfAbsent('value', () => value);
   hashed.putIfAbsent('salt', () => salt);
-  hashed.putIfAbsent('hash', () => hash);
   return hashed;
 }
 
 String _collectHashes(dynamic credential, {String? id}) {
   var credMap = credentialToMap(credential);
-  Map<String, dynamic> hashCred = new Map();
+  Map<String, dynamic> hashCred = {};
   if (id != null) hashCred['id'] = id;
   credMap.forEach((key, value) {
     if (key != '@context') {
@@ -773,7 +768,9 @@ String _collectHashes(dynamic credential, {String? id}) {
         value.forEach((element) {
           if (element is Map<String, dynamic> &&
               _hashedAttributeSchema.validate(element)) {
-            hashList.add(element['hash']);
+            hashList.add(bytesToHex(
+                keccakUtf8('${element['salt']}${element['value']}'),
+                include0x: true));
           } else if (element is Map<String, dynamic> &&
               _mapOfHashedAttributesSchema.validate(element)) {
             hashList.add(jsonDecode(_collectHashes(element)));
@@ -784,7 +781,9 @@ String _collectHashes(dynamic credential, {String? id}) {
         });
       } else if (value is Map<String, dynamic> &&
           _hashedAttributeSchema.validate(value)) {
-        hashCred[key] = value['hash'];
+        hashCred[key] = bytesToHex(
+            keccakUtf8('${value['salt']}${value['value']}'),
+            include0x: true);
       } else if (value is Map<String, dynamic> &&
           _mapOfHashedAttributesSchema.validate(value)) {
         hashCred[key] = jsonDecode(_collectHashes(value));
@@ -796,7 +795,7 @@ String _collectHashes(dynamic credential, {String? id}) {
   return jsonEncode(hashCred);
 }
 
-bool _checkHashes(Map<String, dynamic>? w3c, Map<String, dynamic> plainHash) {
+bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
   plainHash.forEach((key, value) {
     if (!(key == '@context' ||
         key == 'type' ||
@@ -805,28 +804,24 @@ bool _checkHashes(Map<String, dynamic>? w3c, Map<String, dynamic> plainHash) {
         key == 'hashAlg')) {
       if (value is String) {
         //Nothing was disclosed -> only compare hash
-        if (w3c![key] != value) throw Exception('hashes do not match at $key');
+        if (w3c[key] != value) throw Exception('hashes do not match at $key');
       } else if (value is Map<String, dynamic>) {
         if (_hashedAttributeSchemaStrict.validate(value)) {
           //a disclosed value -> rehash and check
           var hash = bytesToHex(
               keccakUtf8(value['salt'] + value['value'].toString()),
               include0x: true);
-          if (hash != value['hash'])
+          if (hash != w3c[key])
             throw Exception(
                 'Given hash and calculated hash do ot match at $key');
         } else if (_mapOfHashedAttributesSchema.validate(value) &&
-            _mapOfHashedAttributesSchema.validate(w3c![key])) {
+            _mapOfHashedAttributesSchema.validate(w3c[key])) {
           // a new Object
           _checkHashes(w3c[key], value);
-        } else if (value.length == 1 && value.containsKey('hash')) {
-          // hash value was left in an object
-          if (w3c![key] != value['hash'])
-            throw Exception('hashes do not match at $key');
-        } else
+        } else if (value.length == 1)
           throw Exception('malformed object with key $key');
       } else if (value is List) {
-        List<dynamic> fromW3c = w3c![key];
+        List<dynamic> fromW3c = w3c[key];
         if (fromW3c.length != value.length)
           throw Exception('List length at $key do not match');
         for (int i = 0; i < value.length; i++) {
@@ -845,11 +840,6 @@ bool _checkHashes(Map<String, dynamic>? w3c, Map<String, dynamic> plainHash) {
               throw Exception(
                   'Calculated and given Hash in List at $key do not match at '
                   'index $i');
-          } else if (value[i] is Map<String, dynamic> &&
-              value[i].length == 1 &&
-              value[i].containsKey('hash')) {
-            if (fromW3c[i] != value[i]['hash'])
-              throw Exception('hashes do not match at $key and index $i');
           } else if (value[i] is Map<String, dynamic> &&
               _mapOfHashedAttributesSchema.validate(value[i])) {
             _checkHashes(fromW3c[i], value[i]);

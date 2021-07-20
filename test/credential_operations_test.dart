@@ -48,18 +48,12 @@ void main() async {
   group('build Plaintext Credential', () {
     var hashedAttributeSchema = {
       "type": "object",
-      "required": ["hash", 'salt', 'value'],
+      "required": ['salt', 'value'],
       "properties": {
         "value": {
           "type": ["number", "string", "boolean"]
         },
-        "salt": {"type": "string", 'minLenght': 36, 'maxLenght': 36},
-        "hash": {
-          "type": "string",
-          'minLenght': 66,
-          'maxLenght': 66,
-          'pattern': '0x[0-9A-Fa-f]{64}'
-        }
+        "salt": {"type": "string", 'minLenght': 36, 'maxLenght': 36}
       },
       "additionalProperties": false
     };
@@ -310,7 +304,7 @@ void main() async {
 
     test('plaintext has normal key-value Object', () {
       var plaintext =
-          '{"id": "did:ethr:0x1234","givenName":{"value":"Max","salt":"d51e87c4-6ab5-4cf0-b932-28f6962c384e","hash":"0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"}}';
+          '{"id": "did:ethr:0x1234","givenName":{"value":"Max","salt":"d51e87c4-6ab5-4cf0-b932-28f6962c384e"}}';
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
@@ -325,15 +319,11 @@ void main() async {
         "courseOfStudies": [
           {
             "value": "Cybercrime/Cybersecurity",
-            "salt": "5ccf63ee-78fa-437c-a302-6c3cd3549fec",
-            "hash":
-                "0x12915d6160b6c9359dc4a0382388012786b8e3cd2351ccfff485683ae0e2fa10"
+            "salt": "5ccf63ee-78fa-437c-a302-6c3cd3549fec"
           },
           {
             "value": "Angewandte Informatik - IT-Sicherheit",
-            "salt": "6040c2d6-3931-4851-960a-93972e53483d",
-            "hash":
-                "0x6994dbf74e9418b87a8c2a5645239a340d6203b8d3792a28fdfaab3d905c27b7"
+            "salt": "6040c2d6-3931-4851-960a-93972e53483d"
           }
         ]
       };
@@ -355,15 +345,11 @@ void main() async {
         "address": {
           "addressLocality": {
             "value": "Mittweida",
-            "salt": "e0d91fc0-ffda-4784-b0bc-077bed54c5c7",
-            "hash":
-                "0xd555aeaa1f0bc42adc3210240c9eeb2e35640cec110aeddd8f77d1762ba6bce1"
+            "salt": "e0d91fc0-ffda-4784-b0bc-077bed54c5c7"
           },
           "postalCode": {
             "value": "09648",
-            "salt": "6977dcb5-f0e7-4158-a8f8-08cdac88d5b4",
-            "hash":
-                "0x68c9b55a1fb3cc542942d2c27978ab34433e171ecd91bf91ba882dfd4e0b08f6"
+            "salt": "6977dcb5-f0e7-4158-a8f8-08cdac88d5b4"
           }
         }
       };
@@ -400,9 +386,7 @@ void main() async {
         "type": "Person",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
@@ -420,9 +404,7 @@ void main() async {
         "@type": "Person",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
@@ -434,29 +416,14 @@ void main() async {
       expect(w3cObj['credentialSubject']['@type'], 'Person');
     });
 
-    test('missing hash', () {
-      var plaintext = {
-        "id": "did:ethr:0x12234",
-        "givenName": {
-          "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-        }
-      };
-      expect(
-          () => buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678'),
-          throwsException);
-    });
-
     group('parameter type', () {
-      test('value VerifiableCredential schould not be added (given as String)',
+      test('value VerifiableCredential should not be added (given as String)',
           () {
         var plaintext = {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -472,9 +439,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -489,9 +454,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -508,9 +471,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -528,9 +489,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
@@ -551,9 +510,7 @@ void main() async {
         var plaintext = {
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -580,9 +537,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -600,9 +555,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -619,9 +572,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -640,9 +591,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -661,9 +610,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -684,9 +631,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -705,9 +650,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -725,9 +668,7 @@ void main() async {
           '@context': 23,
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -740,9 +681,7 @@ void main() async {
           '@context': true,
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -755,9 +694,7 @@ void main() async {
           '@context': {'key': 'value'},
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -776,9 +713,7 @@ void main() async {
           "id": "did:ethr:0x12234",
           "givenName": {
             "value": "Max",
-            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-            "hash":
-                "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+            "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
           }
         };
 
@@ -800,9 +735,7 @@ void main() async {
         "id": "did:ethr:0x12234",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
 
@@ -820,9 +753,7 @@ void main() async {
         "id": "did:ethr:0x12234",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
 
@@ -846,9 +777,7 @@ void main() async {
         "id": "did:ethr:0x12234",
         "givenName": {
           "value": "Max",
-          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e",
-          "hash":
-              "0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4"
+          "salt": "d51e87c4-6ab5-4cf0-b932-28f6962c384e"
         }
       };
 
@@ -1065,8 +994,8 @@ void main() async {
         var plaintext = buildPlaintextCredential(values, 'did:ethr:0x123456');
         var w3c =
             buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
-        var plaintextMap = jsonDecode(plaintext);
-        plaintextMap['name'] = plaintextMap['name']['hash'];
+        Map<String, dynamic> plaintextMap = jsonDecode(plaintext);
+        plaintextMap.remove('name');
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
       });
 
