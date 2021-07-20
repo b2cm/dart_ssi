@@ -33,8 +33,8 @@ void main() async {
 
     expect(getIssuerDidFromCredential(cred1), 'did:ethr:123456');
     expect(getIssuerDidFromCredential(cred2), 'did:ethr:123456');
-    expect(getIssuerDidFromCredential(cred3), null);
-    expect(getIssuerDidFromCredential(cred4), null);
+    expect(getIssuerDidFromCredential(cred3), '');
+    expect(getIssuerDidFromCredential(cred4), '');
   });
 
   test('test build JWS Header', () {
@@ -898,7 +898,7 @@ void main() async {
             () => compareW3cCredentialAndPlaintext(w3c, plaintextMap),
             throwsA(predicate((dynamic e) =>
                 e.message ==
-                'Calculated and given Hash in List at list do not match at index 1')));
+                'Calculated and given Hash in List at list do not match')));
       });
 
       test('plaintext object has List of Objects', () {
@@ -1018,7 +1018,9 @@ void main() async {
         var w3c =
             buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var plaintextMap = jsonDecode(plaintext);
-        plaintextMap['list'][0] = plaintextMap['list'][0]['hash'];
+        var list = plaintextMap['list'] as List<dynamic>;
+        list.removeAt(0);
+        plaintextMap['list'] = list;
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
       });
 
@@ -1032,6 +1034,7 @@ void main() async {
         var plaintextMap = jsonDecode(plaintext);
         plaintextMap['list'][0].remove('value');
         plaintextMap['list'][0].remove('salt');
+        print(plaintextMap);
         expect(compareW3cCredentialAndPlaintext(w3c, plaintextMap), true);
       });
     });
@@ -1043,7 +1046,7 @@ void main() async {
         '@context': ['https://schema.org'],
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
 
     test('issuer given only with id', () {
@@ -1070,7 +1073,7 @@ void main() async {
         'issuer': ['did:ethr:0x7648231', 'Hochschule Mittweida'],
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
 
     test('malformed issuer (num)', () {
@@ -1079,7 +1082,7 @@ void main() async {
         'issuer': 123,
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
 
     test('malformed issuer (boolean)', () {
@@ -1088,7 +1091,7 @@ void main() async {
         'issuer': true,
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
 
     test('issuer in other object embedded', () {
@@ -1097,7 +1100,7 @@ void main() async {
         'key': {'issuer': true},
         'credentialSubject': {'id': 'did:ethr:0x68797'}
       };
-      expect(getIssuerDidFromCredential(cred), null);
+      expect(getIssuerDidFromCredential(cred), '');
     });
   });
 
@@ -1126,7 +1129,7 @@ void main() async {
         'issuer': 'did:ethr:0x8759',
         'credentialSubject': {'age': 12}
       };
-      expect(getHolderDidFromCredential((cred)), null);
+      expect(getHolderDidFromCredential((cred)), '');
     });
 
     test('no id in credential', () {
@@ -1134,7 +1137,7 @@ void main() async {
         '@context': ['https://schema.org'],
         'issuer': 'did:ethr:0x8759'
       };
-      expect(getHolderDidFromCredential((cred)), null);
+      expect(getHolderDidFromCredential((cred)), '');
     });
   });
 

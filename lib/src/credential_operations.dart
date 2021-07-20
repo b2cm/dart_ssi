@@ -636,7 +636,11 @@ String getIssuerDidFromCredential(dynamic credential) {
       if (!(issuer is Map))
         return '';
       else {
-        return issuer['id'];
+        var id = issuer['id'];
+        if (id != null)
+          return id;
+        else
+          return '';
       }
     }
   }
@@ -802,10 +806,7 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
         key == '@type' ||
         key == 'id' ||
         key == 'hashAlg')) {
-      if (value is String) {
-        //Nothing was disclosed -> only compare hash
-        if (w3c[key] != value) throw Exception('hashes do not match at $key');
-      } else if (value is Map<String, dynamic>) {
+      if (value is Map<String, dynamic>) {
         if (_hashedAttributeSchemaStrict.validate(value)) {
           //a disclosed value -> rehash and check
           var hash = bytesToHex(
@@ -822,27 +823,19 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
           throw Exception('malformed object with key $key');
       } else if (value is List) {
         List<dynamic> fromW3c = w3c[key];
-        if (fromW3c.length != value.length)
-          throw Exception('List length at $key do not match');
         for (int i = 0; i < value.length; i++) {
-          if (value[i] is String) {
-            //we found only strings -> nothing is disclosed
-            if (value[i] != fromW3c[i])
-              throw Exception(
-                  'Hashes in List at $key do not match at index $i');
-          } else if (value[i] is Map<String, dynamic> &&
+          if (value[i] is Map<String, dynamic> &&
               _hashedAttributeSchemaStrict.validate(value[i])) {
             // a disclosed value -> rehash and check
             var hash = bytesToHex(
                 keccakUtf8(value[i]['salt'] + value[i]['value'].toString()),
                 include0x: true);
-            if (hash != fromW3c[i])
+            if (!fromW3c.contains(hash))
               throw Exception(
-                  'Calculated and given Hash in List at $key do not match at '
-                  'index $i');
+                  'Calculated and given Hash in List at $key do not match');
           } else if (value[i] is Map<String, dynamic> &&
               _mapOfHashedAttributesSchema.validate(value[i])) {
-            _checkHashes(fromW3c[i], value[i]);
+            if (value[i].length > 0) _checkHashes(fromW3c[i], value[i]);
           } else
             throw Exception('unknown datatype at List $key and index $i');
         }
