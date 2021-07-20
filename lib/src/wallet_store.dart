@@ -100,7 +100,7 @@ class WalletStore {
       return false;
     else
       return (this._keyBox!.isOpen) &&
-          (_issuingHistory!.isOpen) &&
+          (this._issuingHistory!.isOpen) &&
           (this._credentialBox!.isOpen) &&
           (this._configBox!.isOpen) &&
           (this._connection!.isOpen);
@@ -117,6 +117,7 @@ class WalletStore {
     await _credentialBox!.close();
     await _configBox!.close();
     await _connection!.close();
+    await _issuingHistory!.close();
   }
 
   /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
