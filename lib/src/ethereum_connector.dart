@@ -123,7 +123,7 @@ class Erc1056 {
       String contractName: 'EthereumDIDRegistry',
       //String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'
       //String contractAddress: '0xA46f0bB111fF7186505AB3091b28412d689aF512'
-        String contractAddress: '0xbC0b21f2d696496578c2E4f02648802a89ff9Cb5'
+        String contractAddress: '0x2c197D260551824cc0a286B0bfe019687BDEF482'
       }) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
@@ -201,7 +201,7 @@ class Erc1056 {
     var changeOwnerSignedFunction = _erc1056contract.function(
         'changeOwnerSigned');
 
-    var nonceCredential = await nonce(newDid);
+    var nonceCredential = await nonce(identityDid);
     chainId = 1337;
 
     //Create Hash to sign the message
@@ -220,16 +220,17 @@ class Erc1056 {
     listInt.addAll(contractAddressString.addressBytes);
 
     //----------------------------------------------------------------
+    //0x0000000000000000000000000000000000000000000000000000000000000000
+    //0x0000000000000000000000000000000000000000000000000000000000000001
 
-    //final nonceCredentialInt = writeBigInt(BigInt.from(nonceCredential.toInt()));
     final nonceCredentialInt = _writeBigInt(BigInt.from(nonceCredential!.toInt()));
     var nonceCredentialIntList = new List<int>.from(nonceCredentialInt);
     var nonceCredentialLength = 32 - nonceCredentialIntList.length;
-    Uint8List nonceCredentialClear = Uint8List(nonceCredentialLength);
-    nonceCredentialIntList.addAll(nonceCredentialClear);
-    Uint8List nonceCredentialU8IntList  = Uint8List.fromList(nonceCredentialIntList);
-
-    listInt.addAll(nonceCredentialU8IntList);
+    var nonceCredentialClear = Uint8List(nonceCredentialLength);
+    var nonceCredentialClear2 = new List<int>.from(nonceCredentialClear);
+    nonceCredentialClear2.addAll(nonceCredentialIntList);
+    Uint8List nonceCredentialClear2IntList  = Uint8List.fromList(nonceCredentialClear2);
+    listInt.addAll(nonceCredentialClear2IntList);
 
     //----------------------------------------------------------------
 
@@ -246,6 +247,9 @@ class Erc1056 {
     Uint8List messageHash;
     messageHash = keccak256(listIntFlat);
 
+    var text00 = hex.encode(messageHash);
+    print('messageHashHex   0x$text00');
+
     //Convert the privateKeyFrom
     Uint8List privateKeyUtf8IntFlat  = hexToBytes(privateKeyFrom);
 
@@ -257,7 +261,7 @@ class Erc1056 {
         params: [_didToAddress(identityDid)]
     );
 
-    if( _owner != _didToAddress(identityDid))
+    if( (_owner[0].toString()) != (_didToAddress(identityDid).toString()))
     {
     await web3Client.sendTransaction(
         EthPrivateKey.fromHex(privateKeyFrom),
