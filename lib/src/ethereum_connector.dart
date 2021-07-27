@@ -12,6 +12,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_ssi_wallet/src/ethereum_connector.dart';
 
+import 'package:convert/convert.dart';
+import 'dart:convert';
+
 /// Dart representation of Ethereums ERC-1056 SmartContract.
 class Erc1056 {
   final String abi =
@@ -119,7 +122,8 @@ class Erc1056 {
       {dynamic networkNameOrId = 1,
       String contractName: 'EthereumDIDRegistry',
       //String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'
-      String contractAddress: '0xA46f0bB111fF7186505AB3091b28412d689aF512'
+      //String contractAddress: '0xA46f0bB111fF7186505AB3091b28412d689aF512'
+        String contractAddress: '0xbC0b21f2d696496578c2E4f02648802a89ff9Cb5'
       }) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
@@ -201,7 +205,7 @@ class Erc1056 {
     chainId = 1337;
 
     //Create Hash to sign the message
-    var contractAddressString = contractAddress;
+    var contractAddressString = this.contractAddress;
 
     List<int> listInt = [
       hexToInt('0x19').toInt(),
@@ -215,8 +219,19 @@ class Erc1056 {
 
     listInt.addAll(contractAddressString.addressBytes);
 
-    var nonceCredentialInt = int.parse(nonceCredential.toString());
-    listInt.add(nonceCredentialInt);
+    //----------------------------------------------------------------
+
+    //final nonceCredentialInt = writeBigInt(BigInt.from(nonceCredential.toInt()));
+    final nonceCredentialInt = _writeBigInt(BigInt.from(nonceCredential!.toInt()));
+    var nonceCredentialIntList = new List<int>.from(nonceCredentialInt);
+    var nonceCredentialLength = 32 - nonceCredentialIntList.length;
+    Uint8List nonceCredentialClear = Uint8List(nonceCredentialLength);
+    nonceCredentialIntList.addAll(nonceCredentialClear);
+    Uint8List nonceCredentialU8IntList  = Uint8List.fromList(nonceCredentialIntList);
+
+    listInt.addAll(nonceCredentialU8IntList);
+
+    //----------------------------------------------------------------
 
     listInt.addAll(_didToAddress(identityDid).addressBytes);
 
@@ -224,6 +239,7 @@ class Erc1056 {
     List<int> stringChangeOwnerInt = utf8.encode(stringChangeOwner);
     listInt.addAll(stringChangeOwnerInt);
 
+    //listInt.addAll(_didToAddress(newDid).addressBytes);
     listInt.addAll(_didToAddress(newDid).addressBytes);
     Uint8List listIntFlat  = Uint8List.fromList(listInt);
 
@@ -231,17 +247,38 @@ class Erc1056 {
     messageHash = keccak256(listIntFlat);
 
     //Convert the privateKeyFrom
-    var privateKeyUtf8 = Utf8Encoder().convert(privateKeyFrom, 64);
+    Uint8List privateKeyUtf8IntFlat  = hexToBytes(privateKeyFrom);
+
+    var changeOwnerFunction = _erc1056contract.function('changeOwner');
+
+    var _owner = await web3Client.call(
+        contract: _erc1056contract,
+        function: _erc1056contract.function('owners'),
+        params: [_didToAddress(identityDid)]
+    );
+
+    if( _owner != _didToAddress(identityDid))
+    {
+    await web3Client.sendTransaction(
+        EthPrivateKey.fromHex(privateKeyFrom),
+        Transaction.callContract(
+            contract: _erc1056contract,
+            function: changeOwnerFunction,
+            parameters: [_didToAddress(identityDid), _didToAddress(identityDid)]),
+        chainId: chainId);
+    }
 
     //Sign the message
-    MsgSignature messageSignature = sign(messageHash, privateKeyUtf8);
+    MsgSignature messageSignature = sign(messageHash, privateKeyUtf8IntFlat);
 
     Uint8List pubKey_privateKeyBytesToPublic;
-    pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKeyUtf8);
+    pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKeyUtf8IntFlat);
+
+    Uint8List ecRecover_PuK = ecRecover(messageHash, messageSignature);
+    Uint8List ecRecover_Add = publicKeyToAddress(ecRecover_PuK);
 
     bool isValidSignatureBool = isValidSignature(
     messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
-
     if (isValidSignatureBool == true)
       {
         //Convert the raw messages (v, r and s)
@@ -258,11 +295,10 @@ class Erc1056 {
              msgV, //messageSignature.v,
              msgR, //messageSignature.r,
              msgS, //messageSignature.s,
-             _didToAddress(spenderDid),
+             _didToAddress(newDid), //_didToAddress(spenderDid),
            ]);
        await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeySpender), tx,
            chainId: chainId);
-
      }
      else {
      }
@@ -387,7 +423,7 @@ class Erc1056 {
     return changedBlock.first as BigInt?;
   }
 
-  Future nonce(String identityDid) async {
+  Future<BigInt?> nonce(String identityDid) async {
     if (!_matchesExpectedDid(identityDid))
       throw Exception(
           'Information about $identityDid do not belong to this network');
@@ -735,4 +771,15 @@ class RevocationRegistry {
 EthereumAddress _didToAddress(String did) {
   var splitted = did.split(':');
   return EthereumAddress.fromHex(splitted.last);
+}
+
+Uint8List _writeBigInt(BigInt number) {
+  int bytes = (number.bitLength + 7) >> 3;
+  var b256 = new BigInt.from(256);
+  var result = new Uint8List(bytes);
+  for (int i = 0; i < bytes; i++) {
+    result[i] = number.remainder(b256).toInt();
+    number = number >> 8;
+  }
+  return result;
 }
