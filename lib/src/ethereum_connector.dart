@@ -227,10 +227,10 @@ class Erc1056 {
     var nonceCredentialIntList = new List<int>.from(nonceCredentialInt);
     var nonceCredentialLength = 32 - nonceCredentialIntList.length;
     var nonceCredentialClear = Uint8List(nonceCredentialLength);
-    var nonceCredentialClear2 = new List<int>.from(nonceCredentialClear);
-    nonceCredentialClear2.addAll(nonceCredentialIntList);
-    Uint8List nonceCredentialClear2IntList  = Uint8List.fromList(nonceCredentialClear2);
-    listInt.addAll(nonceCredentialClear2IntList);
+    var nonceCredentialList = new List<int>.from(nonceCredentialClear);
+    nonceCredentialList.addAll(nonceCredentialIntList);
+    Uint8List nonceCredentialListInt  = Uint8List.fromList(nonceCredentialList);
+    listInt.addAll(nonceCredentialListInt);
 
     //----------------------------------------------------------------
 
@@ -246,9 +246,6 @@ class Erc1056 {
 
     Uint8List messageHash;
     messageHash = keccak256(listIntFlat);
-
-    var text00 = hex.encode(messageHash);
-    print('messageHashHex   0x$text00');
 
     //Convert the privateKeyFrom
     Uint8List privateKeyUtf8IntFlat  = hexToBytes(privateKeyFrom);
