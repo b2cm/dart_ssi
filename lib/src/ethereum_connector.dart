@@ -199,20 +199,17 @@ class Erc1056 {
     List<int> listInt = [
       hexToInt('0x19').toInt(),
       hexToInt('0x0').toInt()
-      //contractAddressString.addressBytes
-      //hexToBytes(nonceCredential.toString(16)),
-      //_didToAddress(identityDid).addressBytes,
-      //'changeOwner',
-      //_didToAddress(newDid).addressBytes
     ];
 
     listInt.addAll(contractAddressString.addressBytes);
 
     Uint8List nonceCredentialInt = unsignedIntToBytes(BigInt.from(nonceCredential!.toInt()));
     var nonceCredentialLength = 32 - nonceCredentialInt.length;
+
     var nonceCredentialClear = Uint8List(nonceCredentialLength);
     var nonceCredentialList = new List<int>.from(nonceCredentialClear);
     nonceCredentialList.addAll(nonceCredentialInt);
+
     Uint8List nonceCredentialListInt  = Uint8List.fromList(nonceCredentialList);
     listInt.addAll(nonceCredentialListInt);
 
@@ -231,25 +228,6 @@ class Erc1056 {
 
     //Convert the privateKeyFrom
     Uint8List privateKeyUtf8IntFlat  = hexToBytes(privateKeyFrom);
-
-    var changeOwnerFunction = _erc1056contract.function('changeOwner');
-
-    var _owner = await web3Client.call(
-        contract: _erc1056contract,
-        function: _erc1056contract.function('owners'),
-        params: [_didToAddress(identityDid)]
-    );
-
-    if( (_owner[0].toString()) != (_didToAddress(identityDid).toString()))
-    {
-    await web3Client.sendTransaction(
-        EthPrivateKey.fromHex(privateKeyFrom),
-        Transaction.callContract(
-            contract: _erc1056contract,
-            function: changeOwnerFunction,
-            parameters: [_didToAddress(identityDid), _didToAddress(identityDid)]),
-        chainId: chainId);
-    }
 
     //Sign the message
     MsgSignature messageSignature = sign(messageHash, privateKeyUtf8IntFlat);
