@@ -121,9 +121,7 @@ class Erc1056 {
   Erc1056(String rpcUrl,
       {dynamic networkNameOrId = 1,
       String contractName: 'EthereumDIDRegistry',
-      //String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'
-      //String contractAddress: '0xA46f0bB111fF7186505AB3091b28412d689aF512'
-        String contractAddress: '0x2c197D260551824cc0a286B0bfe019687BDEF482'
+      String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'
       }) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
@@ -190,19 +188,11 @@ class Erc1056 {
       String spenderDid, //String addressSpender,
       String privateKeySpender,
       ) async {
-    /*
-    if (!_matchesExpectedDid(identityDid))
-      throw Exception(
-          'Information about $identityDid do not belong to this network');
-    if (!_matchesExpectedDid(newDid))
-      throw Exception(
-          'Information about $newDid do not belong to this network');
-*/
+
     var changeOwnerSignedFunction = _erc1056contract.function(
         'changeOwnerSigned');
 
     var nonceCredential = await nonce(identityDid);
-    chainId = 1337;
 
     //Create Hash to sign the message
     var contractAddressString = this.contractAddress;
@@ -219,20 +209,13 @@ class Erc1056 {
 
     listInt.addAll(contractAddressString.addressBytes);
 
-    //----------------------------------------------------------------
-    //0x0000000000000000000000000000000000000000000000000000000000000000
-    //0x0000000000000000000000000000000000000000000000000000000000000001
-
-    final nonceCredentialInt = _writeBigInt(BigInt.from(nonceCredential!.toInt()));
-    var nonceCredentialIntList = new List<int>.from(nonceCredentialInt);
-    var nonceCredentialLength = 32 - nonceCredentialIntList.length;
+    Uint8List nonceCredentialInt = unsignedIntToBytes(BigInt.from(nonceCredential!.toInt()));
+    var nonceCredentialLength = 32 - nonceCredentialInt.length;
     var nonceCredentialClear = Uint8List(nonceCredentialLength);
     var nonceCredentialList = new List<int>.from(nonceCredentialClear);
-    nonceCredentialList.addAll(nonceCredentialIntList);
+    nonceCredentialList.addAll(nonceCredentialInt);
     Uint8List nonceCredentialListInt  = Uint8List.fromList(nonceCredentialList);
     listInt.addAll(nonceCredentialListInt);
-
-    //----------------------------------------------------------------
 
     listInt.addAll(_didToAddress(identityDid).addressBytes);
 
@@ -303,7 +286,6 @@ class Erc1056 {
      }
      else {
      }
-
   }
 
   Future<void> setAttribute(
@@ -772,15 +754,4 @@ class RevocationRegistry {
 EthereumAddress _didToAddress(String did) {
   var splitted = did.split(':');
   return EthereumAddress.fromHex(splitted.last);
-}
-
-Uint8List _writeBigInt(BigInt number) {
-  int bytes = (number.bitLength + 7) >> 3;
-  var b256 = new BigInt.from(256);
-  var result = new Uint8List(bytes);
-  for (int i = 0; i < bytes; i++) {
-    result[i] = number.remainder(b256).toInt();
-    number = number >> 8;
-  }
-  return result;
 }
