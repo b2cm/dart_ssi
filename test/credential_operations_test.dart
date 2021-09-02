@@ -1593,7 +1593,7 @@ void main() async {
       await w.openBoxes('password');
       w.initialize();
       var did = await w.getNextCredentialDID();
-      var jws = signString(w, did, toSign);
+      var jws = signStringOrJson(w, did, toSign);
 
       var verified = await verifyStringSignature(jws, did,
           erc1056: erc1056, toSign: toSign);
@@ -1915,7 +1915,7 @@ void main() async {
     test('sign String', () async {
       var toSign = 'test';
       var didToSignWith = await wallet.getNextConnectionDID();
-      var jws = signString(wallet, didToSignWith, toSign);
+      var jws = signStringOrJson(wallet, didToSignWith, toSign);
       var checked =
           await verifyStringSignature(jws, didToSignWith, erc1056: ercWithId);
       expect(checked, true);
