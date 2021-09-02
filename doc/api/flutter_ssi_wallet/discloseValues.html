@@ -62,7 +62,7 @@
 <section class="desc markdown">
   <p>Discloses all values in <code>valuesToDisclose</code> of <code>plaintextCredential</code>.</p>
 <p><code>valuesToDisclose</code> contains the keys of the attributes, that should be disclosed.
-Keys in nested object should be separeted with . (point) from the parent-key, like here:
+Keys in nested object should be separated with . (point) from the parent-key, like here:
 Imagine your plaintext Credential look like this:</p>
 <pre class="language-dart"><code>{
   "@context": [
@@ -140,7 +140,7 @@ could be given as follows: arrayKey.arrayIndex e.g. friends.1. ArrayIndex starts
       if (_hashedAttributeSchemaStrict.validate(value)) {
         &#47;&#47; check if key should be disclosed
         if (valuesToDisclose.contains(key)) {
-          result[key] = {&#39;hash&#39;: value[&#39;hash&#39;]};
+          result.remove(key);
         }
       }
       &#47;&#47; new Object found
@@ -168,6 +168,7 @@ could be given as follows: arrayKey.arrayIndex e.g. friends.1. ArrayIndex starts
       &#47;&#47; array found
       else if (value is List) {
         result[key] = value;
+        int removed = 0;
         List&lt;String&gt; valuesSeen = [];
         valuesToDisclose.forEach((element) {
           if (valuesSeen.contains(element)) {
@@ -184,11 +185,10 @@ could be given as follows: arrayKey.arrayIndex e.g. friends.1. ArrayIndex starts
           &#47;&#47;elementwise disclosing
           else if (element.split(&#39;.&#39;).first == key) {
             int arrayIndex = int.parse(element.split(&#39;.&#39;)[1]);
-            if (_hashedAttributeSchemaStrict.validate(value[arrayIndex])) {
-              result[key]
-                  [arrayIndex] = result[key][arrayIndex] as Map&lt;String, dynamic&gt;
-                ..remove(&#39;value&#39;)
-                ..remove(&#39;salt&#39;);
+            if (_hashedAttributeSchemaStrict
+                .validate(value[arrayIndex - removed])) {
+              result[key].removeAt(arrayIndex - removed);
+              removed++;
             }
             &#47;&#47;Object in Array
             else if (_mapOfHashedAttributesSchema.validate(value[arrayIndex])) {
@@ -269,10 +269,11 @@ could be given as follows: arrayKey.arrayIndex e.g. friends.1. ArrayIndex starts
   <li><a href="../flutter_ssi_wallet/credentialToMap.html">credentialToMap</a></li>
   <li><a href="../flutter_ssi_wallet/discloseValues.html">discloseValues</a></li>
   <li><a href="../flutter_ssi_wallet/getAllJsonPathsOfCredential.html">getAllJsonPathsOfCredential</a></li>
+  <li><a href="../flutter_ssi_wallet/getDidFromSignature.html">getDidFromSignature</a></li>
   <li><a href="../flutter_ssi_wallet/getHolderDidFromCredential.html">getHolderDidFromCredential</a></li>
   <li><a href="../flutter_ssi_wallet/getIssuerDidFromCredential.html">getIssuerDidFromCredential</a></li>
   <li><a href="../flutter_ssi_wallet/signCredential.html">signCredential</a></li>
-  <li><a href="../flutter_ssi_wallet/signString.html">signString</a></li>
+  <li><a href="../flutter_ssi_wallet/signStringOrJson.html">signStringOrJson</a></li>
   <li><a href="../flutter_ssi_wallet/verifyCredential.html">verifyCredential</a></li>
   <li><a href="../flutter_ssi_wallet/verifyPresentation.html">verifyPresentation</a></li>
   <li><a href="../flutter_ssi_wallet/verifyStringSignature.html">verifyStringSignature</a></li>

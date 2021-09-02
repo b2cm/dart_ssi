@@ -159,7 +159,7 @@
 
 </dt>
 <dd>
-  Builds a json-Object where every Attribute gets a value, salt and hash from json-Object <code>credential</code>. <a href="../flutter_ssi_wallet/buildPlaintextCredential.html">[...]</a>
+  Builds a json-Object where every Attribute gets a value and salt from json-Object <code>credential</code>. <a href="../flutter_ssi_wallet/buildPlaintextCredential.html">[...]</a>
   
 
 </dd>
@@ -243,6 +243,19 @@ plaintext-credential <code>credential</code> contains. <a href="../flutter_ssi_w
 
 </dd>
 
+        <dt id="getDidFromSignature" class="callable">
+  <span class="name"><a href="../flutter_ssi_wallet/getDidFromSignature.html">getDidFromSignature</a></span><span class="signature">(<wbr><span class="parameter" id="getDidFromSignature-param-jws"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">jws</span>, </span><span class="parameter" id="getDidFromSignature-param-toSign">{<span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">toSign</span>, </span><span class="parameter" id="getDidFromSignature-param-erc1056"><span class="type-annotation"><a href="../flutter_ssi_wallet/Erc1056-class.html">Erc1056</a>?</span> <span class="parameter-name">erc1056</span>}</span>)
+    <span class="returntype parameter">&#8594; <a href="https://api.flutter.dev/flutter/dart-async/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Extracts the did used for signing <code>jws</code>. <a href="../flutter_ssi_wallet/getDidFromSignature.html">[...]</a>
+  
+
+</dd>
+
         <dt id="getHolderDidFromCredential" class="callable">
   <span class="name"><a href="../flutter_ssi_wallet/getHolderDidFromCredential.html">getHolderDidFromCredential</a></span><span class="signature">(<wbr><span class="parameter" id="getHolderDidFromCredential-param-credential"><span class="type-annotation">dynamic</span> <span class="parameter-name">credential</span></span>)
     <span class="returntype parameter">&#8594; <a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span>
@@ -282,15 +295,15 @@ plaintext-credential <code>credential</code> contains. <a href="../flutter_ssi_w
 
 </dd>
 
-        <dt id="signString" class="callable">
-  <span class="name"><a href="../flutter_ssi_wallet/signString.html">signString</a></span><span class="signature">(<wbr><span class="parameter" id="signString-param-wallet"><span class="type-annotation"><a href="../flutter_ssi_wallet/WalletStore-class.html">WalletStore</a></span> <span class="parameter-name">wallet</span>, </span><span class="parameter" id="signString-param-didToSignWith"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">didToSignWith</span>, </span><span class="parameter" id="signString-param-toSign"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">toSign</span>, </span><span class="parameter" id="signString-param-detached">{<span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">detached</span> = <span class="default-value">false</span>, </span><span class="parameter" id="signString-param-jwsHeader"><span class="type-annotation">dynamic</span> <span class="parameter-name">jwsHeader</span>}</span>)
+        <dt id="signStringOrJson" class="callable">
+  <span class="name"><a href="../flutter_ssi_wallet/signStringOrJson.html">signStringOrJson</a></span><span class="signature">(<wbr><span class="parameter" id="signStringOrJson-param-wallet"><span class="type-annotation"><a href="../flutter_ssi_wallet/WalletStore-class.html">WalletStore</a></span> <span class="parameter-name">wallet</span>, </span><span class="parameter" id="signStringOrJson-param-didToSignWith"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">didToSignWith</span>, </span><span class="parameter" id="signStringOrJson-param-toSign"><span class="type-annotation">dynamic</span> <span class="parameter-name">toSign</span>, </span><span class="parameter" id="signStringOrJson-param-detached">{<span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">detached</span> = <span class="default-value">false</span>, </span><span class="parameter" id="signStringOrJson-param-jwsHeader"><span class="type-annotation">dynamic</span> <span class="parameter-name">jwsHeader</span>}</span>)
     <span class="returntype parameter">&#8594; <a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span>
   </span>
   
 
 </dt>
 <dd>
-  Signs the given String <code>toSign</code> with key-pair of <code>didToSignWith</code>. <a href="../flutter_ssi_wallet/signString.html">[...]</a>
+  Signs the given String (normal or Json-Object) or Json-Object (Dart Map&lt;String, dynamic&gt;) <code>toSign</code> with key-pair of <code>didToSignWith</code>. <a href="../flutter_ssi_wallet/signStringOrJson.html">[...]</a>
   
 
 </dd>
@@ -322,14 +335,14 @@ plaintext-credential <code>credential</code> contains. <a href="../flutter_ssi_w
 </dd>
 
         <dt id="verifyStringSignature" class="callable">
-  <span class="name"><a href="../flutter_ssi_wallet/verifyStringSignature.html">verifyStringSignature</a></span><span class="signature">(<wbr><span class="parameter" id="verifyStringSignature-param-jws"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">jws</span>, </span><span class="parameter" id="verifyStringSignature-param-expectedDid"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">expectedDid</span>, </span><span class="parameter" id="verifyStringSignature-param-toSign">{<span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">toSign</span>, </span><span class="parameter" id="verifyStringSignature-param-erc1056"><span class="type-annotation"><a href="../flutter_ssi_wallet/Erc1056-class.html">Erc1056</a>?</span> <span class="parameter-name">erc1056</span>}</span>)
+  <span class="name"><a href="../flutter_ssi_wallet/verifyStringSignature.html">verifyStringSignature</a></span><span class="signature">(<wbr><span class="parameter" id="verifyStringSignature-param-jws"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">jws</span>, </span><span class="parameter" id="verifyStringSignature-param-expectedDid"><span class="type-annotation"><a href="https://api.flutter.dev/flutter/dart-core/String-class.html">String</a></span> <span class="parameter-name">expectedDid</span>, </span><span class="parameter" id="verifyStringSignature-param-toSign">{<span class="type-annotation">dynamic</span> <span class="parameter-name">toSign</span>, </span><span class="parameter" id="verifyStringSignature-param-erc1056"><span class="type-annotation"><a href="../flutter_ssi_wallet/Erc1056-class.html">Erc1056</a>?</span> <span class="parameter-name">erc1056</span>}</span>)
     <span class="returntype parameter">&#8594; <a href="https://api.flutter.dev/flutter/dart-async/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.flutter.dev/flutter/dart-core/bool-class.html">bool</a></span>&gt;</span></span>
   </span>
   
 
 </dt>
 <dd>
-  Verifies the signature in <code>jws</code>. If a detached jws is given the signed string must be given separately as <code>toSign</code>. 
+  Verifies the signature in <code>jws</code>. <a href="../flutter_ssi_wallet/verifyStringSignature.html">[...]</a>
   
 
 </dd>
@@ -390,10 +403,11 @@ plaintext-credential <code>credential</code> contains. <a href="../flutter_ssi_w
   <li><a href="../flutter_ssi_wallet/credentialToMap.html">credentialToMap</a></li>
   <li><a href="../flutter_ssi_wallet/discloseValues.html">discloseValues</a></li>
   <li><a href="../flutter_ssi_wallet/getAllJsonPathsOfCredential.html">getAllJsonPathsOfCredential</a></li>
+  <li><a href="../flutter_ssi_wallet/getDidFromSignature.html">getDidFromSignature</a></li>
   <li><a href="../flutter_ssi_wallet/getHolderDidFromCredential.html">getHolderDidFromCredential</a></li>
   <li><a href="../flutter_ssi_wallet/getIssuerDidFromCredential.html">getIssuerDidFromCredential</a></li>
   <li><a href="../flutter_ssi_wallet/signCredential.html">signCredential</a></li>
-  <li><a href="../flutter_ssi_wallet/signString.html">signString</a></li>
+  <li><a href="../flutter_ssi_wallet/signStringOrJson.html">signStringOrJson</a></li>
   <li><a href="../flutter_ssi_wallet/verifyCredential.html">verifyCredential</a></li>
   <li><a href="../flutter_ssi_wallet/verifyPresentation.html">verifyPresentation</a></li>
   <li><a href="../flutter_ssi_wallet/verifyStringSignature.html">verifyStringSignature</a></li>

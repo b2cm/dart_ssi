@@ -1541,7 +1541,7 @@ void main() async {
           tx);
       var newDid = await holder.getNextCredentialDID();
       await erc1056.changeOwner(
-          holder.getPrivateKeyToCredentialDid(didCred1)!, didCred1!, newDid);
+          holder.getPrivateKeyForCredentialDid(didCred1)!, didCred1!, newDid);
 
       var newPath = holder.getCredential(newDid)!.hdPath;
       holder.storeCredential('', '', newPath, credDid: didCred1);

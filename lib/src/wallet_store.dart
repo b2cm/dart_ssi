@@ -159,7 +159,7 @@ class WalletStore {
 
   /// Returns the private key for issuing credentials.
   String? getStandardIssuerPrivateKey() {
-    return getPrivateKeyToCredentialDid(getStandardIssuerDid());
+    return getPrivateKeyForCredentialDid(getStandardIssuerDid());
   }
 
   /// Lists all credentials.
@@ -318,7 +318,7 @@ class WalletStore {
   }
 
   /// Returns the private key as hex-String associated with [did].
-  String? getPrivateKeyToCredentialDid(String? did) {
+  String? getPrivateKeyForCredentialDid(String? did) {
     var cred = getCredential(did);
     if (cred == null) return null;
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
@@ -327,7 +327,7 @@ class WalletStore {
   }
 
   /// Returns the private key as hex-String associated with [did].
-  String? getPrivateKeyToConnectionDid(String? did) {
+  String? getPrivateKeyForConnectionDid(String? did) {
     var com = getConnection(did);
     if (com == null) return null;
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
