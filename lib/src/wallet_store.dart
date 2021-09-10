@@ -40,12 +40,10 @@ class WalletStore {
       _nameExpansion =
           '${split[split.length - 3]}${split[split.length - 2]}${split[split.length - 1]}';
     }
-    try {
+    if (!Hive.isAdapterRegistered(CredentialAdapter().typeId))
       Hive.registerAdapter(CredentialAdapter());
+    if (!Hive.isAdapterRegistered(ConnectionAdapter().typeId))
       Hive.registerAdapter(ConnectionAdapter());
-    } on HiveError catch (e) {
-      print(e);
-    }
   }
 
   /// Opens storage containers optional encrypted with [password]
@@ -55,42 +53,41 @@ class WalletStore {
       var generator = new PBKDF2(hash: sha256);
       var aesKey = generator.generateKey(password, "salt", 1000, 32);
       //only values are encrypted, keys are stored in plaintext
-      this._keyBox = await Hive.openBox('keyBox_$_nameExpansion',
+      _keyBox = await Hive.openBox('keyBox_$_nameExpansion',
           path: _walletPath, encryptionCipher: HiveAesCipher(aesKey));
-      this._credentialBox = await Hive.openBox<Credential>(
+      _credentialBox = await Hive.openBox<Credential>(
           'credentialBox_$_nameExpansion',
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
-      this._configBox = await Hive.openBox('configBox_$_nameExpansion',
+      _configBox = await Hive.openBox('configBox_$_nameExpansion',
           path: _walletPath, encryptionCipher: HiveAesCipher(aesKey));
-      this._issuingHistory = await Hive.openBox<Credential>(
+      _issuingHistory = await Hive.openBox<Credential>(
           'issuingHistory_$_nameExpansion',
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
-      this._connection = await Hive.openBox<Connection>(
+      _connection = await Hive.openBox<Connection>(
           'connections_$_nameExpansion',
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
     } else {
-      this._keyBox =
-          await Hive.openBox('keyBox_$_nameExpansion', path: _walletPath);
-      this._credentialBox = await Hive.openBox<Credential>(
+      _keyBox = await Hive.openBox('keyBox_$_nameExpansion', path: _walletPath);
+      _credentialBox = await Hive.openBox<Credential>(
           'credentialBox_$_nameExpansion',
           path: _walletPath);
-      this._configBox =
+      _configBox =
           await Hive.openBox('configBox_$_nameExpansion', path: _walletPath);
-      this._issuingHistory = await Hive.openBox<Credential>(
+      _issuingHistory = await Hive.openBox<Credential>(
           'issuingHistory_$_nameExpansion',
           path: _walletPath);
-      this._connection = await Hive.openBox<Connection>(
+      _connection = await Hive.openBox<Connection>(
           'connections_$_nameExpansion',
           path: _walletPath);
     }
-    return this._keyBox != null &&
-        this._issuingHistory != null &&
-        this._credentialBox != null &&
-        this._configBox != null &&
-        this._connection != null;
+    return _keyBox != null &&
+        _issuingHistory != null &&
+        _credentialBox != null &&
+        _configBox != null &&
+        _connection != null;
   }
 
   bool isWalletOpen() {
@@ -101,16 +98,16 @@ class WalletStore {
         _connection == null)
       return false;
     else
-      return (this._keyBox!.isOpen) &&
-          (this._issuingHistory!.isOpen) &&
-          (this._credentialBox!.isOpen) &&
-          (this._configBox!.isOpen) &&
-          (this._connection!.isOpen);
+      return (_keyBox!.isOpen) &&
+          (_issuingHistory!.isOpen) &&
+          (_credentialBox!.isOpen) &&
+          (_configBox!.isOpen) &&
+          (_connection!.isOpen);
   }
 
   //Checks whether the wallet is initialized with master-seed.
   bool isInitialized() {
-    return this._keyBox!.get('seed') != null;
+    return _keyBox!.get('seed') != null;
   }
 
   /// Closes storage containers.
@@ -134,10 +131,10 @@ class WalletStore {
     }
     var seed = mnemonicToSeed(mne!);
 
-    this._keyBox!.put('seed', seed);
-    this._keyBox!.put('lastCredentialIndex', 0);
-    this._keyBox!.put('lastConnectionIndex', 0);
-    this._configBox!.put('network', network);
+    _keyBox!.put('seed', seed);
+    _keyBox!.put('lastCredentialIndex', 0);
+    _keyBox!.put('lastConnectionIndex', 0);
+    _configBox!.put('network', network);
 
     return mne;
   }
@@ -176,12 +173,12 @@ class WalletStore {
 
   /// Returns the credential associated with [did].
   Credential? getCredential(String? did) {
-    return this._credentialBox!.get(did);
+    return _credentialBox!.get(did);
   }
 
   /// Returns the connection associated with [did].
   Connection? getConnection(String? did) {
-    return this._connection!.get(did);
+    return _connection!.get(did);
   }
 
   /// Stores a credential permanently.
@@ -199,7 +196,7 @@ class WalletStore {
     else
       did = credDid;
     var tmp = new Credential(hdPath!, w3cCred!, plaintextCred!);
-    await this._credentialBox!.put(did, tmp);
+    await _credentialBox!.put(did, tmp);
   }
 
   /// Stores a Connection permanently.
@@ -216,7 +213,15 @@ class WalletStore {
     else
       did = comDid;
     var tmp = new Connection(hdPath!, otherDid, name);
-    await this._connection!.put(did, tmp);
+    await _connection!.put(did, tmp);
+  }
+
+  Future<void> deleteCredential(String credentialDid) async {
+    await _keyBox!.delete(credentialDid);
+  }
+
+  Future<void> deleteConnection(String connectionDid) async {
+    await _connection!.delete(connectionDid);
   }
 
   /// Stores a credential issued to [holderDid].
