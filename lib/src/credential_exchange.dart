@@ -12,6 +12,8 @@ class CredentialRequest {
 
   String? _domain;
 
+  Map<String, dynamic>? _domainSpecificExtension;
+
   bool? _isAppLink;
 
   String _type = 'CredentialRequest';
@@ -23,7 +25,10 @@ class CredentialRequest {
   String _selectiveDisclosureType = 'HashedPlaintextCredential2021';
 
   CredentialRequest(this._credentialTypes, this._location, this._challenge,
-      [this._requiredProperties, this._isAppLink = true, this._domain]);
+      [this._requiredProperties,
+      this._isAppLink = true,
+      this._domain,
+      this._domainSpecificExtension]);
 
   /// Searches base64URL encoded Response from [queryParameters] and decodes it.
   ///
@@ -62,6 +67,14 @@ class CredentialRequest {
       prop.forEach((key, value) {
         _requiredProperties![key] = value as List<dynamic>;
       });
+    }
+
+    if (_domain != null) {
+      json.remove('type');
+      json.remove('accept');
+      json.remove('challenge');
+      json.remove('domain');
+      if (json.length > 0) _domainSpecificExtension = json;
     }
   }
 
@@ -106,6 +119,10 @@ class CredentialRequest {
     json['challenge'] = _challenge;
     if (_domain != null) {
       json['domain'] = _domain;
+      if (_domainSpecificExtension != null &&
+          _domainSpecificExtension!.length > 0) {
+        json.addAll(_domainSpecificExtension!);
+      }
     }
 
     return json;
@@ -125,6 +142,9 @@ class CredentialRequest {
 
   /// URI to announce domain specific fields.
   String? get domain => _domain;
+
+  /// Json-Object with additional key-values pairs for one domain
+  Map<String, dynamic>? get domainSpecificExtension => _domainSpecificExtension;
 
   /// Whether [_location] should be interpreted as App-Link or not.
   bool? get isAppLink => _isAppLink;
