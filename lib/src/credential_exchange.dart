@@ -84,6 +84,7 @@ class CredentialRequest {
     return 'iwce=${base64UrlEncode(utf8.encode(jsonEncode(json)))}';
   }
 
+  /// String encoded json-representation of a credential request
   @override
   String toString() {
     return jsonEncode(_toJson());
@@ -139,6 +140,10 @@ class CredentialRequest {
 
   /// Long random String /String representation of number that has to be included in the Verifiable presentation the response contains.
   String? get challenge => _challenge;
+
+  set challenge(String? value) {
+    _challenge = value;
+  }
 
   /// URI to announce domain specific fields.
   String? get domain => _domain;
@@ -211,6 +216,7 @@ class CredentialResponse {
     return json;
   }
 
+  /// String encoded json-representation of a credential response
   @override
   String toString() {
     return jsonEncode(_toJson());
