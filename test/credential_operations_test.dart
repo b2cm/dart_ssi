@@ -1934,7 +1934,8 @@ void main() async {
     });
 
     tearDown(() {
-      new Directory('other').delete(recursive: true);
+      if (Directory('other').existsSync())
+        Directory('other').delete(recursive: true);
     });
   });
 }
