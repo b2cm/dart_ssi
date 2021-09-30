@@ -1541,7 +1541,7 @@ void main() async {
           tx);
       var newDid = await holder.getNextCredentialDID();
       await erc1056.changeOwner(
-          holder.getPrivateKeyToCredentialDid(didCred1)!, didCred1!, newDid);
+          holder.getPrivateKeyForCredentialDid(didCred1)!, didCred1!, newDid);
 
       var newPath = holder.getCredential(newDid)!.hdPath;
       holder.storeCredential('', '', newPath, credDid: didCred1);
@@ -1593,7 +1593,7 @@ void main() async {
       await w.openBoxes('password');
       w.initialize();
       var did = await w.getNextCredentialDID();
-      var jws = signString(w, did, toSign);
+      var jws = signStringOrJson(w, did, toSign);
 
       var verified = await verifyStringSignature(jws, did,
           erc1056: erc1056, toSign: toSign);
@@ -1915,7 +1915,7 @@ void main() async {
     test('sign String', () async {
       var toSign = 'test';
       var didToSignWith = await wallet.getNextConnectionDID();
-      var jws = signString(wallet, didToSignWith, toSign);
+      var jws = signStringOrJson(wallet, didToSignWith, toSign);
       var checked =
           await verifyStringSignature(jws, didToSignWith, erc1056: ercWithId);
       expect(checked, true);

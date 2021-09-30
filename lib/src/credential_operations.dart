@@ -682,7 +682,7 @@ String getHolderDidFromCredential(dynamic credential) {
     return '';
 }
 
-/// Signs the given String [toSign] with key-pair of [didToSignWith].
+/// Signs the given String (normal or Json-Object) or Json-Object (Dart Map<String, dynamic>) [toSign] with key-pair of [didToSignWith].
 ///
 /// Returned signature is formatted as jws. If a detached jws (header..signature) should be returned [detached] must be set to true.
 /// If no custom [jwsHeader] is given, the default one is
@@ -695,7 +695,8 @@ String getHolderDidFromCredential(dynamic credential) {
 /// ```
 /// If a custom one should be used, it has to be given in its json representation (dart String or Map) and the value of alg has to be ES256K-R,
 /// because for now this is the only supported signature algorithm.
-String signString(WalletStore wallet, String didToSignWith, String toSign,
+String signStringOrJson(
+    WalletStore wallet, String didToSignWith, dynamic toSign,
     {bool detached = false, dynamic jwsHeader}) {
   String header;
   if (jwsHeader != null) {
@@ -714,14 +715,25 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
     header = _removePaddingFromBase64(
         buildJwsHeader(alg: 'ES256K-R', extra: critical));
   }
-  var payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
+
+  String signable = '';
+  if (toSign is String) {
+    signable = toSign;
+  } else if (toSign is Map<String, dynamic>) {
+    signable = jsonEncode(toSign);
+  } else {
+    throw Exception('Unexpected Datatype ${toSign.runtimeType} for toSign');
+  }
+
+  var payload =
+      _removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
   var signingInput = '$header.$payload';
   var hash = sha256.convert(ascii.encode(signingInput)).bytes;
   String? privateKeyHex;
 
-  privateKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  privateKeyHex = wallet.getPrivateKeyForCredentialDid(didToSignWith);
   if (privateKeyHex == null)
-    privateKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+    privateKeyHex = wallet.getPrivateKeyForConnectionDid(didToSignWith);
   if (privateKeyHex == null) throw Exception('Could not find private key');
   var key = EthPrivateKey.fromHex(privateKeyHex);
   var sigArray = _buildSignatureArray(hash as Uint8List, key);
@@ -737,8 +749,11 @@ String signString(WalletStore wallet, String didToSignWith, String toSign,
         '.${_removePaddingFromBase64(base64UrlEncode(sigArray))}';
 }
 
-/// Verifies the signature in [jws]. If a detached jws is given the signed string must be given separately as [toSign].
-Future<bool> verifyStringSignature(String jws, String expectedDid,
+/// Extracts the did used for signing [jws].
+///
+/// If a detached jws is given the signed string must be given separately as [toSign].
+/// [toSign] could be a String or a json-object (Dart Map).
+Future<String> getDidFromSignature(String jws,
     {String? toSign, Erc1056? erc1056}) async {
   var splitted = jws.split('.');
   if (splitted.length != 3) throw Exception('Malformed JWS');
@@ -749,6 +764,44 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
   else if (toSign != null)
     payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
   else
+    throw Exception('No payload given');
+  var signingInput = '${splitted[0]}.$payload';
+  var hashToSign = sha256.convert(ascii.encode(signingInput)).bytes;
+  var pubKey = ecRecover(hashToSign as Uint8List, signature);
+
+  var did = 'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
+  if (erc1056 != null) {
+    var expectedDid = await erc1056.identityOwner(did);
+    if (expectedDid != did) {
+      throw Exception('Did of Signature do not match with ERC1056 entry');
+    }
+  }
+  return did;
+}
+
+/// Verifies the signature in [jws].
+///
+/// If a detached jws is given the signed string must be given separately as [toSign].
+/// [toSign] could be a String or a json-object (Dart Map).
+Future<bool> verifyStringSignature(String jws, String expectedDid,
+    {dynamic? toSign, Erc1056? erc1056}) async {
+  var splitted = jws.split('.');
+  if (splitted.length != 3) throw Exception('Malformed JWS');
+  var signature = _getSignatureFromJws(jws);
+  String payload;
+  if (splitted[1] != '')
+    payload = splitted[1];
+  else if (toSign != null) {
+    String signable = '';
+    if (toSign is String) {
+      signable = toSign;
+    } else if (toSign is Map<String, dynamic>) {
+      signable = jsonEncode(toSign);
+    } else {
+      throw Exception('Unexpected Datatype ${toSign.runtimeType} for toSign');
+    }
+    payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
+  } else
     throw Exception('No payload given');
   var signingInput = '${splitted[0]}.$payload';
   var hashToSign = sha256.convert(ascii.encode(signingInput)).bytes;
@@ -883,9 +936,9 @@ Map<String, dynamic> _buildProof(
 
   var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
   var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
-  var privateKeyHex = wallet.getPrivateKeyToCredentialDid(didToSignWith);
+  var privateKeyHex = wallet.getPrivateKeyForCredentialDid(didToSignWith);
   if (privateKeyHex == null)
-    privateKeyHex = wallet.getPrivateKeyToConnectionDid(didToSignWith);
+    privateKeyHex = wallet.getPrivateKeyForConnectionDid(didToSignWith);
   if (privateKeyHex == null) throw Exception('Could not find a private key');
   var key = EthPrivateKey.fromHex(privateKeyHex);
 
