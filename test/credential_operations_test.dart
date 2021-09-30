@@ -1329,14 +1329,14 @@ void main() async {
           true);
 
       var tx = Transaction(
-          from: EthereumAddress.fromHex(ganacheDid5.substring(9)),
+          from: EthereumAddress.fromHex(ganacheDid6.substring(9)),
           to: EthereumAddress.fromHex(
               wallet.getStandardIssuerDid()!.substring(9)),
           value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1));
 
       await web3.sendTransaction(
           EthPrivateKey.fromHex(
-              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4')),
+              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5')),
           tx);
 
       await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey()!,
@@ -1531,13 +1531,13 @@ void main() async {
       var web3 = Web3Client(rpcUrl, Client());
 
       var tx = Transaction(
-          from: EthereumAddress.fromHex(ganacheDid5.substring(9)),
+          from: EthereumAddress.fromHex(ganacheDid6.substring(9)),
           to: EthereumAddress.fromHex(didCred1!.substring(9)),
           value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1));
 
       await web3.sendTransaction(
           EthPrivateKey.fromHex(
-              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4')),
+              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5')),
           tx);
       var newDid = await holder.getNextCredentialDID();
       await erc1056.changeOwner(

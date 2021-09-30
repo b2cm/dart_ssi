@@ -1003,9 +1003,17 @@ MsgSignature _getSignatureFromJws(String jws) {
 
 List<int> _buildSignatureArray(Uint8List hash, EthPrivateKey privateKey) {
   MsgSignature signature = sign(hash, privateKey.privateKey);
-  List<int> sigArray = unsignedIntToBytes(signature.r) +
-      unsignedIntToBytes(signature.s) +
-      [signature.v - 27];
+  List<int> rList = unsignedIntToBytes(signature.r);
+  if (rList.length < 32) {
+    List<int> rPad = List.filled(32 - rList.length, 0);
+    rList = rPad + rList;
+  }
+  List<int> sList = unsignedIntToBytes(signature.s);
+  if (sList.length < 32) {
+    List<int> sPad = List.filled(32 - sList.length, 0);
+    sList = sPad + sList;
+  }
+  List<int> sigArray = rList + sList + [signature.v - 27];
   return sigArray;
 }
 
