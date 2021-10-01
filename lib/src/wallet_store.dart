@@ -161,17 +161,13 @@ class WalletStore {
 
   /// Lists all credentials.
   Map<dynamic, Credential> getAllCredentials() {
-    Map<dynamic, Credential> credMap = {};
-    if(_credentialBox != null)
-      credMap = _credentialBox!.toMap();
+    var credMap = _credentialBox!.toMap();
     return credMap;
   }
 
   /// Lists all connections.
   Map<dynamic, Connection> getAllConnections() {
-    Map<dynamic, Connection> connMap = {};
-    if(_connection != null)
-      connMap = _connection!.toMap();
+    var connMap = _connection!.toMap();
     return connMap;
   }
 
