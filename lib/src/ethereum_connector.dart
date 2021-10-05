@@ -181,6 +181,14 @@ class Erc1056 {
         chainId: chainId);
   }
 
+  MsgSignature changeOwnerSignedSignature(){
+
+  }
+
+  Future<void> changeOwnerSignedTransaction() async {
+
+  }
+
   Future<void> changeOwnerSigned( //Credentials cred,
       String privateKeyFrom,
       String identityDid, //String addressFrom,
