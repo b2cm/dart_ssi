@@ -217,7 +217,7 @@ class WalletStore {
   }
 
   Future<void> deleteCredential(String credentialDid) async {
-    await _keyBox!.delete(credentialDid);
+    await _credentialBox!.delete(credentialDid);
   }
 
   Future<void> deleteConnection(String connectionDid) async {
