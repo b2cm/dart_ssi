@@ -1,6 +1,6 @@
 import 'package:bip39/bip39.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   test('init wallet with new seed', () async {

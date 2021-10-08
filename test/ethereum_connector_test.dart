@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_ssi_wallet/src/ethereum_connector.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:web3dart/crypto.dart';
 
 void main() async {
