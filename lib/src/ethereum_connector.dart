@@ -3,17 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+//import 'package:flutter/gestures.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/json_rpc.dart';
 import 'package:web3dart/web3dart.dart';
-
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
-import 'package:flutter_ssi_wallet/src/ethereum_connector.dart';
-
-import 'package:convert/convert.dart';
-import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 /// Dart representation of Ethereums ERC-1056 SmartContract.
 class Erc1056 {
@@ -121,8 +116,7 @@ class Erc1056 {
   Erc1056(String rpcUrl,
       {dynamic networkNameOrId = 1,
       String contractName: 'EthereumDIDRegistry',
-      String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'
-      }) {
+      String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'}) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
     _utf8 = Utf8Codec(allowMalformed: true);
@@ -181,21 +175,30 @@ class Erc1056 {
         chainId: chainId);
   }
 
-  MsgSignature changeOwnerSignedSignature(){
-
-  }
-
-  Future<void> changeOwnerSignedTransaction() async {
-
-  }
-
   Future<void> changeOwnerSigned( //Credentials cred,
       String privateKeyFrom,
       String identityDid, //String addressFrom,
       String newDid, //String addressTo,
       String spenderDid, //String addressSpender,
-      String privateKeySpender,
       ) async {
+
+    //Collect all Datas and Sign Signature
+    MsgSignature messageSignature = await changeOwnerSignedSignature(
+        privateKeyFrom,
+        identityDid,
+        newDid,
+      );
+
+    //Sign Transaction (Call Server)
+    await changeOwnerSignedTransaction(messageSignature, identityDid, newDid);
+  }
+
+  Future<MsgSignature> changeOwnerSignedSignature(
+      String privateKeyFrom,
+      String identityDid, //String addressFrom,
+      String newDid, //String addressTo,
+      ) async
+  {
 
     var changeOwnerSignedFunction = _erc1056contract.function(
         'changeOwnerSigned');
@@ -241,37 +244,89 @@ class Erc1056 {
     //Sign the message
     MsgSignature messageSignature = sign(messageHash, privateKeyUtf8IntFlat);
 
-    Uint8List pubKey_privateKeyBytesToPublic;
-    pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKeyUtf8IntFlat);
+    //await changeOwnerSignedTransaction(identityDid, newDid, messageHash, privateKeyUtf8IntFlat);
+    return messageSignature;
+  }
 
-    Uint8List ecRecover_PuK = ecRecover(messageHash, messageSignature);
-    Uint8List ecRecover_Add = publicKeyToAddress(ecRecover_PuK);
+  Future<void> changeOwnerSignedTransaction(
+      MsgSignature messageSignature,
+      String identityDid,
+      String newDid,
+      ) async
+  {
 
-    bool isValidSignatureBool = isValidSignature(
-    messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
-    if (isValidSignatureBool == true)
-      {
-        //Convert the raw messages (v, r and s)
-         BigInt msgV    = BigInt.from(messageSignature.v);
-         Uint8List msgR = unsignedIntToBytes(messageSignature.r);
-         Uint8List msgS = unsignedIntToBytes(messageSignature.s);
+    //Uint8List pubKey_privateKeyBytesToPublic;
+    //pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKeyUtf8IntFlat);
 
-       //Call of the changeOwnerSignedFunction with the raw data
-       Transaction tx = Transaction.callContract(
-           contract: _erc1056contract,
-           function: changeOwnerSignedFunction,
-           parameters: [
-             _didToAddress(identityDid),
-             msgV, //messageSignature.v,
-             msgR, //messageSignature.r,
-             msgS, //messageSignature.s,
-             _didToAddress(newDid), //_didToAddress(spenderDid),
-           ]);
-       await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeySpender), tx,
-           chainId: chainId);
-     }
-     else {
-     }
+    //Uint8List ecRecover_PuK = ecRecover(messageHash, messageSignature);
+    //Uint8List ecRecover_Add = publicKeyToAddress(ecRecover_PuK);
+
+    //bool isValidSignatureBool = isValidSignature(
+    //    messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
+    //if (isValidSignatureBool == true)
+    //{
+      //Convert the raw messages (v, r and s)
+      BigInt msgV    = BigInt.from(messageSignature.v);
+      Uint8List msgR = unsignedIntToBytes(messageSignature.r);
+      Uint8List msgS = unsignedIntToBytes(messageSignature.s);
+
+      print("Aufruf Server");
+
+      //Server Aufruf
+      //Call with the necessary information, which is still to be adapted
+      //192.168.2.102   192.168.178.102   192.168.0.28
+
+      var url = 'http://192.168.0.28:4040/getChangeOwnerSigned?';
+      var client = http.Client();
+      var req = http.Request('POST', Uri.parse(url));
+
+      //Convert BigInt to String
+      var msgV_string = msgV.toString();
+
+      var body = {
+        'msgV': msgV_string,
+        'msgR': msgR,
+        'msgS': msgS,
+        'identityDid': identityDid,
+        'newDid': newDid,
+      };
+      req.body = jsonEncode(body);
+
+      await client.send(req)
+          .then((response) {
+        //print("Response status: ${response.statusCode}");
+        //print("Response body: ${response.contentLength}");
+        //print(response.headers);
+        //print(response.request);
+        if(response.statusCode == 200) {
+          print("Der Owner konnte erfolgreich geändert werden");
+        }
+        else {
+          print("Nicht Erfolgreich");
+        }
+      })
+          .catchError((e) {
+        print(e);
+        print(" ");
+        if(e is SocketException){
+          return throw Exception("Server ist nicht erreichbar");
+        }
+        else if(e is HttpException){
+          return throw Exception("No Service Found");
+        }
+        else if(e is FormatException){
+          return throw Exception("Falsches Datenformat");
+        }
+        else {
+          return throw Exception("Unhandled exception: ${e.toString()}");
+        }
+      });
+      client.close();
+    //}
+    //else {
+    //}
+
+
   }
 
   Future<void> setAttribute(
@@ -402,7 +457,7 @@ class Erc1056 {
         function: nonceFunction,
         params: [_didToAddress(identityDid)]);
 
-    return nonceValue.first;
+    return nonceValue.first as BigInt?;
   }
 
   ///Collects all data from contract log for [identityDid].
