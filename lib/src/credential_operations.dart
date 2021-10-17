@@ -145,10 +145,11 @@ String buildPlaintextCredential(dynamic credential, String? holderDid,
 ///
 /// [revocationRegistryAddress] is a valid Ethereum-Address of a SmartContract capable of showing the revocation Status of the credential.
 String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
-    {dynamic type,
-    dynamic context,
-    dynamic issuerInformation,
-    String? revocationRegistryAddress}) {
+    { dynamic type,
+      dynamic context,
+      dynamic issuerInformation,
+      DateTime? validUntil,
+      String? revocationRegistryAddress}) {
   var plaintextMap = credentialToMap(credential);
   var hashCred = _collectHashes(credential, id: plaintextMap['id']);
 
@@ -210,6 +211,10 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
     'issuanceDate': DateTime.now().toUtc().toIso8601String()
   };
 
+  if (validUntil != null) {
+    w3cCred['expirationDate'] = validUntil.toIso8601String();
+  }
+
   if (revocationRegistryAddress != null) {
     var credStatus = {
       'id': revocationRegistryAddress,
@@ -220,7 +225,6 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
 
   return jsonEncode(w3cCred);
 }
-
 /// Checks weather a W3C-Credential containing all attribute hashes belongs to a Plaintext Credential or not.
 bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
   var w3cMap = credentialToMap(w3cCred);
