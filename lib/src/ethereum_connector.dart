@@ -116,7 +116,7 @@ class Erc1056 {
   Erc1056(String rpcUrl,
       {dynamic networkNameOrId = 1,
       String contractName: 'EthereumDIDRegistry',
-      String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'}) {
+      String contractAddress: '0xaa2268bf8273b607eA4eBB27917dBCCCc9B7121a'}) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
     _utf8 = Utf8Codec(allowMalformed: true);
@@ -175,7 +175,7 @@ class Erc1056 {
         chainId: chainId);
   }
 
-  Future<void> changeOwnerSigned( //Credentials cred,
+  Future<void> changeOwnerSigned(
       String privateKeyFrom,
       String identityDid, //String addressFrom,
       String newDid, //String addressTo,
@@ -199,9 +199,6 @@ class Erc1056 {
       String newDid, //String addressTo,
       ) async
   {
-
-    var changeOwnerSignedFunction = _erc1056contract.function(
-        'changeOwnerSigned');
 
     var nonceCredential = await nonce(identityDid);
 
@@ -276,7 +273,7 @@ class Erc1056 {
       //Call with the necessary information, which is still to be adapted
       //192.168.2.102   192.168.178.102   192.168.0.28
 
-      var url = 'http://192.168.0.28:4040/getChangeOwnerSigned?';
+      var url = 'http://192.168.178.102:4040/getChangeOwnerSigned?';
       var client = http.Client();
       var req = http.Request('POST', Uri.parse(url));
 
@@ -294,10 +291,6 @@ class Erc1056 {
 
       await client.send(req)
           .then((response) {
-        //print("Response status: ${response.statusCode}");
-        //print("Response body: ${response.contentLength}");
-        //print(response.headers);
-        //print(response.request);
         if(response.statusCode == 200) {
           print("Der Owner konnte erfolgreich geändert werden");
         }
@@ -322,10 +315,6 @@ class Erc1056 {
         }
       });
       client.close();
-    //}
-    //else {
-    //}
-
 
   }
 
