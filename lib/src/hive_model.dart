@@ -46,3 +46,24 @@ class Connection {
   String toString() =>
       'Connection with $otherDid uses Path $hdPath und (user)name $name.';
 }
+
+@HiveType(typeId: 2)
+class ExchangeHistoryEntry {
+  @HiveField(0)
+  DateTime timestamp;
+
+  /// Description of the action done with the credential (Present, issue ...)
+  @HiveField(1)
+  String action;
+
+  /// Did/name/url of party the credential was presented to
+  @HiveField(2)
+  String otherParty;
+
+  ExchangeHistoryEntry(this.timestamp, this.action, this.otherParty);
+
+  @override
+  String toString() {
+    return 'ExchangeHistoryEntry{timestamp: $timestamp, action: $action, otherParty: $otherParty}';
+  }
+}

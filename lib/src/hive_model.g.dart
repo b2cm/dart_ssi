@@ -85,3 +85,43 @@ class ConnectionAdapter extends TypeAdapter<Connection> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class ExchangeHistoryEntryAdapter extends TypeAdapter<ExchangeHistoryEntry> {
+  @override
+  final int typeId = 2;
+
+  @override
+  ExchangeHistoryEntry read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return ExchangeHistoryEntry(
+      fields[0] as DateTime,
+      fields[1] as String,
+      fields[2] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ExchangeHistoryEntry obj) {
+    writer
+      ..writeByte(3)
+      ..writeByte(0)
+      ..write(obj.timestamp)
+      ..writeByte(1)
+      ..write(obj.action)
+      ..writeByte(2)
+      ..write(obj.otherParty);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ExchangeHistoryEntryAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

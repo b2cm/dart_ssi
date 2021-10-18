@@ -24,6 +24,7 @@ class WalletStore {
   Box? _configBox;
   Box<Credential>? _issuingHistory;
   Box<Connection>? _connection;
+  Box<List<ExchangeHistoryEntry>>? _exchangeHistory;
 
   ///The path used to derive credential keys
   final String standardCredentialPath = 'm/456/0/';
@@ -44,6 +45,8 @@ class WalletStore {
       Hive.registerAdapter(CredentialAdapter());
     if (!Hive.isAdapterRegistered(ConnectionAdapter().typeId))
       Hive.registerAdapter(ConnectionAdapter());
+    if (Hive.isAdapterRegistered(ExchangeHistoryEntryAdapter().typeId))
+      Hive.registerAdapter(ExchangeHistoryEntryAdapter());
   }
 
   /// Opens storage containers optional encrypted with [password]
@@ -69,6 +72,10 @@ class WalletStore {
           'connections_$_nameExpansion',
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
+      _exchangeHistory = await Hive.openBox<List<ExchangeHistoryEntry>>(
+          'connections_$_nameExpansion',
+          path: _walletPath,
+          encryptionCipher: HiveAesCipher(aesKey));
     } else {
       _keyBox = await Hive.openBox('keyBox_$_nameExpansion', path: _walletPath);
       _credentialBox = await Hive.openBox<Credential>(
@@ -82,12 +89,16 @@ class WalletStore {
       _connection = await Hive.openBox<Connection>(
           'connections_$_nameExpansion',
           path: _walletPath);
+      _exchangeHistory = await Hive.openBox<List<ExchangeHistoryEntry>>(
+          'connections_$_nameExpansion',
+          path: _walletPath);
     }
     return _keyBox != null &&
         _issuingHistory != null &&
         _credentialBox != null &&
         _configBox != null &&
-        _connection != null;
+        _connection != null &&
+        _exchangeHistory != null;
   }
 
   bool isWalletOpen() {
@@ -95,6 +106,7 @@ class WalletStore {
         _issuingHistory == null ||
         _credentialBox == null ||
         _configBox == null ||
+        _exchangeHistory == null ||
         _connection == null)
       return false;
     else
@@ -102,6 +114,7 @@ class WalletStore {
           (_issuingHistory!.isOpen) &&
           (_credentialBox!.isOpen) &&
           (_configBox!.isOpen) &&
+          (_exchangeHistory!.isOpen) &&
           (_connection!.isOpen);
   }
 
@@ -117,6 +130,7 @@ class WalletStore {
     await _configBox!.close();
     await _connection!.close();
     await _issuingHistory!.close();
+    await _exchangeHistory!.close();
   }
 
   /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
@@ -181,6 +195,12 @@ class WalletStore {
     return _connection!.get(did);
   }
 
+  /// Returns the Exchange History associated with a credential identified by [credentialDid].
+  List<ExchangeHistoryEntry>? getExchangeHistoryEntriesForCredential(
+      String credentialDid) {
+    return _exchangeHistory!.get(credentialDid);
+  }
+
   /// Stores a credential permanently.
   ///
   /// What should be stored consists of three parts
@@ -216,6 +236,21 @@ class WalletStore {
     await _connection!.put(did, tmp);
   }
 
+  /// Put a new Entry to Exchange history of a credential identified by [credentialDid].
+  Future<void> storeExchangeHistoryEntry(String credentialDid,
+      DateTime timestamp, String action, String otherParty) async {
+    var existingHistoryEntries = _exchangeHistory!.get(credentialDid);
+    if (existingHistoryEntries == null) {
+      List<ExchangeHistoryEntry> historyEntries = [];
+      historyEntries.add(ExchangeHistoryEntry(timestamp, action, otherParty));
+      await _exchangeHistory!.put(credentialDid, historyEntries);
+    } else {
+      existingHistoryEntries
+          .add(ExchangeHistoryEntry(timestamp, action, otherParty));
+      await _exchangeHistory!.put(credentialDid, existingHistoryEntries);
+    }
+  }
+
   Future<void> deleteCredential(String credentialDid) async {
     await _credentialBox!.delete(credentialDid);
   }
@@ -226,6 +261,10 @@ class WalletStore {
 
   Future<void> deleteConfigEntry(String key) async {
     await _configBox!.delete(key);
+  }
+
+  Future<void> deleteExchangeHistory(String credentialDid) async {
+    await _exchangeHistory!.delete(credentialDid);
   }
 
   /// Stores a credential issued to [holderDid].
