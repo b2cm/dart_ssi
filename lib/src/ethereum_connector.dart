@@ -116,7 +116,7 @@ class Erc1056 {
   Erc1056(String rpcUrl,
       {dynamic networkNameOrId = 1,
       String contractName: 'EthereumDIDRegistry',
-      String contractAddress: '0xaa2268bf8273b607eA4eBB27917dBCCCc9B7121a'}) {
+      String contractAddress: '0xCD2f90Ed33bBFA7ddA5464D4f0e73A13b072225d'}) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
     _utf8 = Utf8Codec(allowMalformed: true);
@@ -295,7 +295,7 @@ class Erc1056 {
           print("Der Owner konnte erfolgreich geändert werden");
         }
         else {
-          print("Nicht Erfolgreich");
+          print("Der Owner konnte nicht geändert werden");
         }
       })
           .catchError((e) {
