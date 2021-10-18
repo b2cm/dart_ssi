@@ -224,6 +224,10 @@ class WalletStore {
     await _connection!.delete(connectionDid);
   }
 
+  Future<void> deleteConfigEntry(String key) async {
+    await _configBox!.delete(key);
+  }
+
   /// Stores a credential issued to [holderDid].
   void toIssuingHistory(
       String holderDid, String plaintextCredential, String w3cCredential) {
