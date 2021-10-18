@@ -8,7 +8,6 @@ import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/json_rpc.dart';
 import 'package:web3dart/web3dart.dart';
-import 'package:http/http.dart' as http;
 
 /// Dart representation of Ethereums ERC-1056 SmartContract.
 class Erc1056 {
@@ -116,7 +115,7 @@ class Erc1056 {
   Erc1056(String rpcUrl,
       {dynamic networkNameOrId = 1,
       String contractName: 'EthereumDIDRegistry',
-      String contractAddress: '0xCD2f90Ed33bBFA7ddA5464D4f0e73A13b072225d'}) {
+      String contractAddress: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'}) {
     this.contractAddress = EthereumAddress.fromHex(contractAddress);
 
     _utf8 = Utf8Codec(allowMalformed: true);
@@ -176,50 +175,45 @@ class Erc1056 {
   }
 
   Future<void> changeOwnerSigned(
-      String privateKeyFrom,
-      String identityDid, //String addressFrom,
-      String newDid, //String addressTo,
-      String spenderDid, //String addressSpender,
-      ) async {
-
+    String privateKeyFrom,
+    String identityDid, //String addressFrom,
+    String newDid, //String addressTo,
+    String spenderDid, //String addressSpender,
+  ) async {
     //Collect all Datas and Sign Signature
     MsgSignature messageSignature = await changeOwnerSignedSignature(
-        privateKeyFrom,
-        identityDid,
-        newDid,
-      );
+      privateKeyFrom,
+      identityDid,
+      newDid,
+    );
 
-    //Sign Transaction (Call Server)
+    //Sign Transaction
     await changeOwnerSignedTransaction(messageSignature, identityDid, newDid);
   }
 
   Future<MsgSignature> changeOwnerSignedSignature(
-      String privateKeyFrom,
-      String identityDid, //String addressFrom,
-      String newDid, //String addressTo,
-      ) async
-  {
-
+    String privateKeyFrom,
+    String identityDid, //String addressFrom,
+    String newDid, //String addressTo,
+  ) async {
     var nonceCredential = await nonce(identityDid);
 
     //Create Hash to sign the message
     var contractAddressString = this.contractAddress;
 
-    List<int> listInt = [
-      hexToInt('0x19').toInt(),
-      hexToInt('0x0').toInt()
-    ];
+    List<int> listInt = [hexToInt('0x19').toInt(), hexToInt('0x0').toInt()];
 
     listInt.addAll(contractAddressString.addressBytes);
 
-    Uint8List nonceCredentialInt = unsignedIntToBytes(BigInt.from(nonceCredential!.toInt()));
+    Uint8List nonceCredentialInt =
+        unsignedIntToBytes(BigInt.from(nonceCredential!.toInt()));
     var nonceCredentialLength = 32 - nonceCredentialInt.length;
 
     var nonceCredentialClear = Uint8List(nonceCredentialLength);
     var nonceCredentialList = new List<int>.from(nonceCredentialClear);
     nonceCredentialList.addAll(nonceCredentialInt);
 
-    Uint8List nonceCredentialListInt  = Uint8List.fromList(nonceCredentialList);
+    Uint8List nonceCredentialListInt = Uint8List.fromList(nonceCredentialList);
     listInt.addAll(nonceCredentialListInt);
 
     listInt.addAll(_didToAddress(identityDid).addressBytes);
@@ -230,13 +224,13 @@ class Erc1056 {
 
     //listInt.addAll(_didToAddress(newDid).addressBytes);
     listInt.addAll(_didToAddress(newDid).addressBytes);
-    Uint8List listIntFlat  = Uint8List.fromList(listInt);
+    Uint8List listIntFlat = Uint8List.fromList(listInt);
 
     Uint8List messageHash;
     messageHash = keccak256(listIntFlat);
 
     //Convert the privateKeyFrom
-    Uint8List privateKeyUtf8IntFlat  = hexToBytes(privateKeyFrom);
+    Uint8List privateKeyUtf8IntFlat = hexToBytes(privateKeyFrom);
 
     //Sign the message
     MsgSignature messageSignature = sign(messageHash, privateKeyUtf8IntFlat);
@@ -246,76 +240,13 @@ class Erc1056 {
   }
 
   Future<void> changeOwnerSignedTransaction(
-      MsgSignature messageSignature,
-      String identityDid,
-      String newDid,
-      ) async
-  {
-
-    //Uint8List pubKey_privateKeyBytesToPublic;
-    //pubKey_privateKeyBytesToPublic = privateKeyBytesToPublic(privateKeyUtf8IntFlat);
-
-    //Uint8List ecRecover_PuK = ecRecover(messageHash, messageSignature);
-    //Uint8List ecRecover_Add = publicKeyToAddress(ecRecover_PuK);
-
-    //bool isValidSignatureBool = isValidSignature(
-    //    messageHash, messageSignature, pubKey_privateKeyBytesToPublic);
-    //if (isValidSignatureBool == true)
-    //{
-      //Convert the raw messages (v, r and s)
-      BigInt msgV    = BigInt.from(messageSignature.v);
-      Uint8List msgR = unsignedIntToBytes(messageSignature.r);
-      Uint8List msgS = unsignedIntToBytes(messageSignature.s);
-
-      print("Aufruf Server");
-
-      //Server Aufruf
-      //Call with the necessary information, which is still to be adapted
-      //192.168.2.102   192.168.178.102   192.168.0.28
-
-      var url = 'http://192.168.178.102:4040/getChangeOwnerSigned?';
-      var client = http.Client();
-      var req = http.Request('POST', Uri.parse(url));
-
-      //Convert BigInt to String
-      var msgV_string = msgV.toString();
-
-      var body = {
-        'msgV': msgV_string,
-        'msgR': msgR,
-        'msgS': msgS,
-        'identityDid': identityDid,
-        'newDid': newDid,
-      };
-      req.body = jsonEncode(body);
-
-      await client.send(req)
-          .then((response) {
-        if(response.statusCode == 200) {
-          print("Der Owner konnte erfolgreich geändert werden");
-        }
-        else {
-          print("Der Owner konnte nicht geändert werden");
-        }
-      })
-          .catchError((e) {
-        print(e);
-        print(" ");
-        if(e is SocketException){
-          return throw Exception("Server ist nicht erreichbar");
-        }
-        else if(e is HttpException){
-          return throw Exception("No Service Found");
-        }
-        else if(e is FormatException){
-          return throw Exception("Falsches Datenformat");
-        }
-        else {
-          return throw Exception("Unhandled exception: ${e.toString()}");
-        }
-      });
-      client.close();
-
+    MsgSignature messageSignature,
+    String identityDid,
+    String newDid,
+  ) async {
+    //This Function should send a Transaction to Ethereum directly.
+    // It should NOT call any Server.
+    //The Server should USE this function.
   }
 
   Future<void> setAttribute(
