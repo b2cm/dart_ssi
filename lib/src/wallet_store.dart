@@ -45,7 +45,7 @@ class WalletStore {
       Hive.registerAdapter(CredentialAdapter());
     if (!Hive.isAdapterRegistered(ConnectionAdapter().typeId))
       Hive.registerAdapter(ConnectionAdapter());
-    if (Hive.isAdapterRegistered(ExchangeHistoryEntryAdapter().typeId))
+    if (!Hive.isAdapterRegistered(ExchangeHistoryEntryAdapter().typeId))
       Hive.registerAdapter(ExchangeHistoryEntryAdapter());
   }
 
@@ -73,7 +73,7 @@ class WalletStore {
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
       _exchangeHistory = await Hive.openBox<List<ExchangeHistoryEntry>>(
-          'connections_$_nameExpansion',
+          'exchangeHistory_$_nameExpansion',
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
     } else {
@@ -90,7 +90,7 @@ class WalletStore {
           'connections_$_nameExpansion',
           path: _walletPath);
       _exchangeHistory = await Hive.openBox<List<ExchangeHistoryEntry>>(
-          'connections_$_nameExpansion',
+          'exchangeHistory_$_nameExpansion',
           path: _walletPath);
     }
     return _keyBox != null &&

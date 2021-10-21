@@ -33,7 +33,7 @@ void main() async {
   // Here it is only shown that the holder authenticate himself with the issuer.
   var challenge = Uuid().v4();
 
-  var jws = signString(holder, did, challenge);
+  var jws = signStringOrJson(holder, did, challenge);
 
   print(await verifyStringSignature(jws, did, erc1056: erc1056));
 }
