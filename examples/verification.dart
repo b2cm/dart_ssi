@@ -43,6 +43,11 @@ main() async {
 
   //Holder sends both to verifier
 
+  //Holder stores History of Exchanges
+  holder.storeExchangeHistoryEntry(
+      keyList.first, DateTime.now(), 'present', 'firstVerifier');
+  print(holder.getExchangeHistoryEntriesForCredential(keyList.first));
+
   //Verifier looks, if presentation is correct
   print(
       'Presentation correct?: ${await verifyPresentation(presentation, challenge, erc1056: erc1056, rpcUrl: rpcUrl)}');
