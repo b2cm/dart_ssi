@@ -24,7 +24,7 @@ class WalletStore {
   Box? _configBox;
   Box<Credential>? _issuingHistory;
   Box<Connection>? _connection;
-  Box<List<ExchangeHistoryEntry>>? _exchangeHistory;
+  Box<List<dynamic>>? _exchangeHistory;
 
   ///The path used to derive credential keys
   final String standardCredentialPath = 'm/456/0/';
@@ -72,7 +72,7 @@ class WalletStore {
           'connections_$_nameExpansion',
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
-      _exchangeHistory = await Hive.openBox<List<ExchangeHistoryEntry>>(
+      _exchangeHistory = await Hive.openBox<List<dynamic>>(
           'exchangeHistory_$_nameExpansion',
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
@@ -89,7 +89,7 @@ class WalletStore {
       _connection = await Hive.openBox<Connection>(
           'connections_$_nameExpansion',
           path: _walletPath);
-      _exchangeHistory = await Hive.openBox<List<ExchangeHistoryEntry>>(
+      _exchangeHistory = await Hive.openBox<List<dynamic>>(
           'exchangeHistory_$_nameExpansion',
           path: _walletPath);
     }
@@ -198,7 +198,7 @@ class WalletStore {
   /// Returns the Exchange History associated with a credential identified by [credentialDid].
   List<ExchangeHistoryEntry>? getExchangeHistoryEntriesForCredential(
       String credentialDid) {
-    return _exchangeHistory!.get(credentialDid);
+    return _exchangeHistory!.get(credentialDid)?.cast<ExchangeHistoryEntry>();
   }
 
   /// Stores a credential permanently.
@@ -238,16 +238,19 @@ class WalletStore {
 
   /// Put a new Entry to Exchange history of a credential identified by [credentialDid].
   Future<void> storeExchangeHistoryEntry(String credentialDid,
-      DateTime timestamp, String action, String otherParty) async {
-    var existingHistoryEntries = _exchangeHistory!.get(credentialDid);
+      DateTime timestamp, String action, String otherParty,
+      [List<String>? shownAttributes]) async {
+    List<ExchangeHistoryEntry>? existingHistoryEntries =
+        getExchangeHistoryEntriesForCredential(credentialDid);
+    var tmp = ExchangeHistoryEntry(
+        timestamp, action, otherParty, shownAttributes ?? []);
     if (existingHistoryEntries == null) {
-      List<ExchangeHistoryEntry> historyEntries = [];
-      historyEntries.add(ExchangeHistoryEntry(timestamp, action, otherParty));
-      await _exchangeHistory!.put(credentialDid, historyEntries);
+      print('no entries');
+
+      await _exchangeHistory!.put(credentialDid, [tmp]);
     } else {
-      existingHistoryEntries
-          .add(ExchangeHistoryEntry(timestamp, action, otherParty));
-      await _exchangeHistory!.put(credentialDid, existingHistoryEntries);
+      await _exchangeHistory!
+          .put(credentialDid, [tmp] + existingHistoryEntries);
     }
   }
 

@@ -44,8 +44,12 @@ main() async {
   //Holder sends both to verifier
 
   //Holder stores History of Exchanges
-  holder.storeExchangeHistoryEntry(
-      keyList.first, DateTime.now(), 'present', 'firstVerifier');
+  await holder.storeExchangeHistoryEntry(
+      keyList.first,
+      DateTime.now(),
+      'present',
+      'firstVerifier',
+      ['student.identifier', 'organization.legalName', 'organization.address']);
   print(holder.getExchangeHistoryEntriesForCredential(keyList.first));
 
   //Verifier looks, if presentation is correct

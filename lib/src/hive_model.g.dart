@@ -100,19 +100,22 @@ class ExchangeHistoryEntryAdapter extends TypeAdapter<ExchangeHistoryEntry> {
       fields[0] as DateTime,
       fields[1] as String,
       fields[2] as String,
+      (fields[3] as List).cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, ExchangeHistoryEntry obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.timestamp)
       ..writeByte(1)
       ..write(obj.action)
       ..writeByte(2)
-      ..write(obj.otherParty);
+      ..write(obj.otherParty)
+      ..writeByte(3)
+      ..write(obj.shownAttributes);
   }
 
   @override

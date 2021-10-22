@@ -60,10 +60,15 @@ class ExchangeHistoryEntry {
   @HiveField(2)
   String otherParty;
 
-  ExchangeHistoryEntry(this.timestamp, this.action, this.otherParty);
+  /// Credential attributes that were shown
+  @HiveField(3)
+  List<String> shownAttributes;
+
+  ExchangeHistoryEntry(
+      this.timestamp, this.action, this.otherParty, this.shownAttributes);
 
   @override
   String toString() {
-    return 'ExchangeHistoryEntry{timestamp: $timestamp, action: $action, otherParty: $otherParty}';
+    return 'ExchangeHistoryEntry{timestamp: $timestamp, action: $action, otherParty: $otherParty, shownAttributes: $shownAttributes}';
   }
 }
