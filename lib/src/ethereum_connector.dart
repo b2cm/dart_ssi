@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
+import 'package:web3dart/json_rpc.dart';
 import 'package:web3dart/web3dart.dart';
 
 /// Dart representation of Ethereums ERC-1056 SmartContract.
@@ -516,10 +517,12 @@ class RevocationRegistry {
   late Web3Client _web3Client;
   late DeployedContract _contract;
   late int _chainId;
+  late JsonRPC _rpc;
 
   RevocationRegistry(String rpcUrl, {String? contractAddress, chainId = 1}) {
     _web3Client = Web3Client(rpcUrl, Client());
     _chainId = chainId;
+    _rpc = JsonRPC(rpcUrl, Client());
 
     if (contractAddress != null) {
       _contract = DeployedContract(
@@ -591,6 +594,31 @@ class RevocationRegistry {
         ]));
 
     return logs.isNotEmpty;
+  }
+
+  Future<DateTime> revocationTimestamp(String credentialDid) async {
+    var revokedEvent = _contract.event('RevokedEvent');
+    var revEventSig = bytesToHex(revokedEvent.signature);
+    var deployedBlock = await deployed();
+    var logs = await _web3Client.getLogs(FilterOptions(
+        address: _contract.address,
+        fromBlock: BlockNum.exact(deployedBlock!.toInt()),
+        topics: [
+          ['0x${revEventSig.padLeft(64, '0')}'],
+          ['0x${_didToAddress(credentialDid).hexNo0x.padLeft(64, '0')}']
+        ]));
+
+    if (logs.isNotEmpty) {
+      var firstLog = logs.first;
+      var res = await _rpc.call('eth_getBlockByNumber', [
+        bytesToHex(intToBytes(BigInt.from(firstLog.blockNum!)),
+            include0x: true),
+        false
+      ]);
+      return DateTime.fromMillisecondsSinceEpoch(
+          hexToDartInt(res.result['timestamp']) * 1000);
+    } else
+      throw Exception('Credential was not revoked');
   }
 
   Future<void> changeOwner(String privateKeyFrom, String didNewOwner) async {
