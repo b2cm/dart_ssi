@@ -12,6 +12,7 @@ void main() async {
 
   var erc1056 = Erc1056(rpcUrl,
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+  var revocationRegistry = RevocationRegistry(rpcUrl);
 
   //init issuer
   var issuer = new WalletStore('example/issuer');
@@ -104,7 +105,7 @@ void main() async {
 
   //Holder checks signature
   print(
-      'Is my credential correct? : ${await verifyCredential(signedImma, erc1056: erc1056, rpcUrl: rpcUrl)}');
+      'Is my credential correct? : ${await verifyCredential(signedImma, erc1056: erc1056, revocationRegistry: revocationRegistry)}');
   //Holder stores Credential in wallet
   await holder.storeCredential(
       signedImma, plaintextCred, holder.getCredential(immaDid)!.hdPath);

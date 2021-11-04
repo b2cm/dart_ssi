@@ -13,6 +13,7 @@ void main() async {
 
   var erc1056 = Erc1056(rpcUrl,
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+  var revocationRegistry = RevocationRegistry(rpcUrl);
 
   //init issuer
   var issuer = new WalletStore('example/issuer');
@@ -107,11 +108,11 @@ void main() async {
 
   //Holder checks signature
   print(
-      'Is name-credential credential correct? : ${await verifyCredential(signedName, erc1056: erc1056, rpcUrl: rpcUrl)}');
+      'Is name-credential credential correct? : ${await verifyCredential(signedName, erc1056: erc1056, revocationRegistry: revocationRegistry)}');
   print(
-      'Is drivers-license-credential credential correct? : ${await verifyCredential(signedDriversLicense, erc1056: erc1056, rpcUrl: rpcUrl)}');
+      'Is drivers-license-credential credential correct? : ${await verifyCredential(signedDriversLicense, erc1056: erc1056, revocationRegistry: revocationRegistry)}');
   print(
-      'Is email-credential credential correct? : ${await verifyCredential(signedEmail, erc1056: erc1056, rpcUrl: rpcUrl)}');
+      'Is email-credential credential correct? : ${await verifyCredential(signedEmail, erc1056: erc1056, revocationRegistry: revocationRegistry)}');
   //Holder stores Credential in wallet
   await holder.storeCredential(
       signedName, plaintextName, holder.getCredential(nameDid)!.hdPath);
@@ -156,12 +157,12 @@ void main() async {
       .writeAsString(presentationThree);
 
   print(
-      'Is Presentation one correct?: ${await verifyPresentation(presentationOne, challenge1, erc1056: erc1056, rpcUrl: rpcUrl)}');
+      'Is Presentation one correct?: ${await verifyPresentation(presentationOne, challenge1, erc1056: erc1056, revocationRegistry: revocationRegistry)}');
   print(
-      'Is Presentation two correct?: ${await verifyPresentation(presentationTwo, challenge2, erc1056: erc1056, rpcUrl: rpcUrl)}');
+      'Is Presentation two correct?: ${await verifyPresentation(presentationTwo, challenge2, erc1056: erc1056, revocationRegistry: revocationRegistry)}');
   //here the comparison with the containing disclosed credentials is done while checking presentation
   print(
-      'Is Presentation three correct?: ${await verifyPresentation(presentationThree, challenge3, erc1056: erc1056, rpcUrl: rpcUrl)}');
+      'Is Presentation three correct?: ${await verifyPresentation(presentationThree, challenge3, erc1056: erc1056, revocationRegistry: revocationRegistry)}');
 
   print(
       'Do W3C-Credential and Plaintext match?: ${compareW3cCredentialAndPlaintext(signedName, disclosedName)}');

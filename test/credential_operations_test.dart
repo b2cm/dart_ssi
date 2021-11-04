@@ -9,9 +9,12 @@ import 'package:uuid/uuid.dart';
 import 'package:web3dart/web3dart.dart';
 
 void main() async {
-  const String rpcUrl = 'http://127.0.0.1:7545';
+  // const String rpcUrl = 'http://127.0.0.1:7545';
+  const String rpcUrl = 'https://credentials.hs-mittweida.de:33005';
+
   var erc1056 = Erc1056(rpcUrl,
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+  var revocationRegistry = RevocationRegistry(rpcUrl);
   var ganacheAccounts = new WalletStore('ganache');
   await ganacheAccounts.openBoxes('ganache');
   ganacheAccounts.initialize(
@@ -1230,7 +1233,7 @@ void main() async {
       expect(signedMap['proof'].containsKey('created'), true);
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, rpcUrl: rpcUrl),
+          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
     });
 
@@ -1248,7 +1251,7 @@ void main() async {
       expect(signedMap['proof'].containsKey('created'), true);
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, rpcUrl: rpcUrl),
+          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 
@@ -1267,14 +1270,14 @@ void main() async {
       signedMap['proof']['created'] = DateTime.now().toUtc().toIso8601String();
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, rpcUrl: rpcUrl),
+          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 
     test('call verify without proof', () {
       expect(
           () async =>
-              await verifyCredential(w3c, erc1056: erc1056, rpcUrl: rpcUrl),
+              await verifyCredential(w3c, erc1056: erc1056, revocationRegistry: revocationRegistry),
           throwsA(
               predicate((dynamic e) => e.message == 'no proof section found')));
     });
@@ -1292,7 +1295,7 @@ void main() async {
 
         //before revocation
         var verified =
-            await verifyCredential(signed, erc1056: erc1056, rpcUrl: rpcUrl);
+            await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry);
         expect(verified, true);
 
         //revocation
@@ -1302,7 +1305,7 @@ void main() async {
         //after revocation
         expect(
             () async => await verifyCredential(signed,
-                erc1056: erc1056, rpcUrl: rpcUrl),
+                erc1056: erc1056, revocationRegistry: revocationRegistry),
             throwsA(predicate(
                 (dynamic e) => e.message == 'Credential was revoked')));
       });
@@ -1315,7 +1318,7 @@ void main() async {
 
         expect(
             () async => await verifyCredential(signed,
-                erc1056: erc1056, rpcUrl: rpcUrl),
+                erc1056: erc1056, revocationRegistry: revocationRegistry),
             throwsA(predicate((dynamic e) =>
                 e.message == 'Unknown Status-method : RevocationList2020')));
       });
@@ -1325,7 +1328,7 @@ void main() async {
       var web3 = Web3Client(rpcUrl, Client());
 
       var signed = signCredential(wallet, w3c);
-      expect(await verifyCredential(signed, erc1056: erc1056, rpcUrl: rpcUrl),
+      expect(await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
 
       var tx = Transaction(
@@ -1342,7 +1345,7 @@ void main() async {
       await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey()!,
           wallet.getStandardIssuerDid()!, await wallet.getNextCredentialDID());
 
-      expect(await verifyCredential(signed, erc1056: erc1056, rpcUrl: rpcUrl),
+      expect(await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 
@@ -1437,7 +1440,7 @@ void main() async {
       expect(verificationMethods.contains(didCred3), true);
       expect(
           await verifyPresentation(presentation, challenge,
-              erc1056: erc1056, rpcUrl: rpcUrl),
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
     });
 
@@ -1451,7 +1454,7 @@ void main() async {
 
       expect(
           () async => await verifyPresentation(presMap, challenge,
-              erc1056: erc1056, rpcUrl: rpcUrl),
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           throwsA(predicate(
               (dynamic e) => e.message == 'Challenge does not match')));
     });
@@ -1467,7 +1470,7 @@ void main() async {
 
       expect(
           () async => await verifyPresentation(presMap, challenge,
-              erc1056: erc1056, rpcUrl: rpcUrl),
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           throwsA(predicate((dynamic e) =>
               e.message ==
               'Proof for did:ethr:0xC3d188C872e25c0370Ff3D2aA7268e2e13D11fe9 could not been verified')));
@@ -1483,7 +1486,7 @@ void main() async {
 
       expect(
           () async => await verifyPresentation(presMap, challenge,
-              erc1056: erc1056, rpcUrl: rpcUrl),
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           throwsA(predicate(
               (dynamic e) => e.message == 'There are dids without a proof')));
     });
@@ -1499,7 +1502,7 @@ void main() async {
       expect(proofs.length, 4);
       expect(
           await verifyPresentation(presentation, challenge,
-              erc1056: erc1056, rpcUrl: rpcUrl),
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
     });
 
@@ -1514,7 +1517,7 @@ void main() async {
 
       expect(
           () async => await verifyPresentation(presMap, challenge,
-              erc1056: erc1056, rpcUrl: rpcUrl),
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           throwsA(predicate((dynamic e) =>
               e.message == 'A credential could not been verified')));
     });
@@ -1525,7 +1528,7 @@ void main() async {
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       expect(
           await verifyPresentation(presentation1, challenge,
-              erc1056: erc1056, rpcUrl: rpcUrl),
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
 
       var web3 = Web3Client(rpcUrl, Client());
@@ -1549,7 +1552,7 @@ void main() async {
           buildPresentation([signed1, signed2, signed3], holder, challenge);
       expect(
           await verifyPresentation(presentation2, challenge,
-              erc1056: erc1056, rpcUrl: rpcUrl),
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
     });
 

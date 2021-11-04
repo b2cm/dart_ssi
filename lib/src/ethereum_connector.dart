@@ -514,20 +514,26 @@ class RevocationRegistry {
   String _bytecode =
       '608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555043600181905550610396806100676000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c806374a8f103146100515780638da5cb5b14610095578063a6f9dae1146100c9578063f905c15a1461010d575b600080fd5b6100936004803603602081101561006757600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919050505061012b565b005b61009d610232565b604051808273ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b61010b600480360360208110156100df57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610256565b005b61011561035a565b6040518082815260200191505060405180910390f35b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146101ec576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260088152602001807f6e6f206f776e657200000000000000000000000000000000000000000000000081525060200191505060405180910390fd5b8073ffffffffffffffffffffffffffffffffffffffff167fa4e30c0434a0fd06abd5093463a1a4a0e8886a6b803f82bc06e56d799668099960405160405180910390a250565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614610317576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260088152602001807f6e6f206f776e657200000000000000000000000000000000000000000000000081525060200191505060405180910390fd5b806000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b6001548156fea2646970667358221220d3b1720f8ebb198a64a353f3ba110eb4f71210c4af5b56dee1be962355aade1b64736f6c63430007050033';
 
-  late Web3Client _web3Client;
+  late Web3Client web3Client;
   late DeployedContract _contract;
+
+  set contract(String contractAddress) {
+    _contract = DeployedContract(
+        ContractAbi.fromJson(_abi, 'RevocationRegistry'),
+        EthereumAddress.fromHex(contractAddress));
+  }
+
+
   late int _chainId;
   late JsonRPC _rpc;
 
   RevocationRegistry(String rpcUrl, {String? contractAddress, chainId = 1}) {
-    _web3Client = Web3Client(rpcUrl, Client());
+    web3Client = Web3Client(rpcUrl, Client());
     _chainId = chainId;
     _rpc = JsonRPC(rpcUrl, Client());
 
     if (contractAddress != null) {
-      _contract = DeployedContract(
-          ContractAbi.fromJson(_abi, 'RevocationRegistry'),
-          EthereumAddress.fromHex(contractAddress));
+      setContract(contractAddress);
     }
   }
 
@@ -540,19 +546,19 @@ class RevocationRegistry {
         gasPrice: EtherAmount.fromUnitAndValue(EtherUnit.gwei, 20),
         maxGas: 474455);
 
-    var res = await _web3Client.sendTransaction(creds, tx, chainId: _chainId);
+    var res = await web3Client.sendTransaction(creds, tx, chainId: _chainId);
     if (res == '') {
       return '';
     }
     var receipt;
     try {
-      receipt = await _web3Client.getTransactionReceipt(res);
+      receipt = await web3Client.getTransactionReceipt(res);
     } catch (e) {}
 
     while (receipt == null) {
       sleep(Duration(seconds: 1));
       try {
-        receipt = await _web3Client.getTransactionReceipt(res);
+        receipt = await web3Client.getTransactionReceipt(res);
       } catch (e) {}
     }
 
@@ -568,14 +574,14 @@ class RevocationRegistry {
         contract: _contract,
         function: revokeFunction,
         parameters: [_didToAddress(credDidToRevoke)]);
-    await _web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx,
+    await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx,
         chainId: _chainId);
   }
 
   /// Returns the block number of the block in which the contract was deployed.
   Future<BigInt?> deployed() async {
     var deployedFunction = _contract.function('deployed');
-    var res = await _web3Client
+    var res = await web3Client
         .call(contract: _contract, function: deployedFunction, params: []);
 
     return res.first as BigInt?;
@@ -585,7 +591,7 @@ class RevocationRegistry {
     var revokedEvent = _contract.event('RevokedEvent');
     var revEventSig = bytesToHex(revokedEvent.signature);
     var deployedBlock = await deployed();
-    var logs = await _web3Client.getLogs(FilterOptions(
+    var logs = await web3Client.getLogs(FilterOptions(
         address: _contract.address,
         fromBlock: BlockNum.exact(deployedBlock!.toInt()),
         topics: [
@@ -600,7 +606,7 @@ class RevocationRegistry {
     var revokedEvent = _contract.event('RevokedEvent');
     var revEventSig = bytesToHex(revokedEvent.signature);
     var deployedBlock = await deployed();
-    var logs = await _web3Client.getLogs(FilterOptions(
+    var logs = await web3Client.getLogs(FilterOptions(
         address: _contract.address,
         fromBlock: BlockNum.exact(deployedBlock!.toInt()),
         topics: [
@@ -627,8 +633,14 @@ class RevocationRegistry {
         contract: _contract,
         function: changeOwnerFunction,
         parameters: [_didToAddress(didNewOwner)]);
-    await _web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx,
+    await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx,
         chainId: _chainId);
+  }
+
+  void setContract(String contractAddress) {
+    _contract = DeployedContract(
+        ContractAbi.fromJson(_abi, 'RevocationRegistry'),
+        EthereumAddress.fromHex(contractAddress));
   }
 }
 
