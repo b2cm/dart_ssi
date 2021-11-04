@@ -309,6 +309,10 @@ void main() async {
       isRevoked = await rev
           .isRevoked('did:ethr:0x3B974dC1107e45cDDf1174B810960A7212562Ae4');
       expect(isRevoked, true);
+
+      var timestamp = await rev.revocationTimestamp(
+          'did:ethr:0x3B974dC1107e45cDDf1174B810960A7212562Ae4');
+      print(timestamp);
     });
 
     test('change Owner', () async {
