@@ -123,6 +123,17 @@ class WalletStore {
     return _keyBox!.get('seed') != null;
   }
 
+  Map<String, Box?> getBoxes() {
+    Map<String, Box> boxes = {
+      "keyBox": _keyBox!,
+      "credentialBox": _credentialBox!,
+      "configBox": _configBox!,
+      "connection": _connection!,
+      "issuingHistory": _issuingHistory!,
+    };
+    return boxes;
+  }
+
   /// Closes storage containers.
   Future<void> closeBoxes() async {
     await _keyBox!.close();
