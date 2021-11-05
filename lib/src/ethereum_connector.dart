@@ -516,14 +516,6 @@ class RevocationRegistry {
 
   late Web3Client web3Client;
   late DeployedContract _contract;
-
-  set contract(String contractAddress) {
-    _contract = DeployedContract(
-        ContractAbi.fromJson(_abi, 'RevocationRegistry'),
-        EthereumAddress.fromHex(contractAddress));
-  }
-
-
   late int _chainId;
   late JsonRPC _rpc;
 
