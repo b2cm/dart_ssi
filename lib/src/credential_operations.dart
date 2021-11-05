@@ -260,21 +260,20 @@ String signCredential(WalletStore wallet, dynamic credential) {
 ///
 /// If [rpcUrl] is given and the credential contains a `credentialStatus` property, the revocation status is checked.
 Future<bool> verifyCredential(dynamic credential,
-    {Erc1056? erc1056, String? rpcUrl}) async {
+    {Erc1056? erc1056, RevocationRegistry? revocationRegistry}) async {
   Map<String, dynamic> credMap = credentialToMap(credential);
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
   }
-  if (rpcUrl != null) {
+  if (revocationRegistry != null) {
     if (credMap.containsKey('credentialStatus')) {
       var credStatus = credMap['credentialStatus'];
       if (credStatus['type'] != 'EthereumRevocationList')
         throw Exception('Unknown Status-method : ${credStatus['type']}');
-      var revRegistry =
-          RevocationRegistry(rpcUrl, contractAddress: credStatus['id']);
+      revocationRegistry.setContract(credStatus['id']);
       var revoked =
-          await revRegistry.isRevoked(getHolderDidFromCredential(credMap));
-      if (revoked) throw Exception('Credential was revoked');
+          await revocationRegistry.isRevoked(getHolderDidFromCredential(credMap));
+      if (revoked) throw RevokedException('Credential was revoked');
     }
   }
 
@@ -284,6 +283,11 @@ Future<bool> verifyCredential(dynamic credential,
   var issuerDid = getIssuerDidFromCredential(credential);
   if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
   return _verifyProof(proof, credHash as Uint8List, issuerDid);
+}
+
+class RevokedException implements Exception {
+  String cause;
+  RevokedException(this.cause);
 }
 
 /// Builds a presentation for [credentials].
@@ -345,7 +349,7 @@ String buildPresentation(
 ///
 /// It uses erc1056 to look up the current owner of the dids a proof is given in [presentation].
 Future<bool> verifyPresentation(dynamic presentation, String challenge,
-    {Erc1056? erc1056, String? rpcUrl}) async {
+    {Erc1056? erc1056, RevocationRegistry? revocationRegistry}) async {
   var presentationMap = credentialToMap(presentation);
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
@@ -356,7 +360,7 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   List<String> holderDids = [];
   await Future.forEach(credentials, (dynamic element) async {
     bool verified =
-        await verifyCredential(element, erc1056: erc1056, rpcUrl: rpcUrl);
+        await verifyCredential(element, erc1056: erc1056, revocationRegistry: revocationRegistry);
     if (!verified)
       throw Exception('A credential could not been verified');
     else {

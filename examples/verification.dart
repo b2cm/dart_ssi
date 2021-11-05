@@ -11,6 +11,7 @@ main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
   var erc1056 = Erc1056(rpcUrl,
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
+  var revocationRegistry = RevocationRegistry(rpcUrl);
 
   //init Holder Wallet
   var holder = new WalletStore('example/holder');
@@ -54,7 +55,7 @@ main() async {
 
   //Verifier looks, if presentation is correct
   print(
-      'Presentation correct?: ${await verifyPresentation(presentation, challenge, erc1056: erc1056, rpcUrl: rpcUrl)}');
+      'Presentation correct?: ${await verifyPresentation(presentation, challenge, erc1056: erc1056, revocationRegistry: revocationRegistry)}');
 
   //Verifier checks, if plaintext Credential belongs to the Credential
   // in the presentation
