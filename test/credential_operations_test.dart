@@ -9,8 +9,8 @@ import 'package:uuid/uuid.dart';
 import 'package:web3dart/web3dart.dart';
 
 void main() async {
-  // const String rpcUrl = 'http://127.0.0.1:7545';
-  const String rpcUrl = 'https://credentials.hs-mittweida.de:33005';
+  const String rpcUrl = 'http://127.0.0.1:7545';
+  //const String rpcUrl = 'https://credentials.hs-mittweida.de:33005';
 
   var erc1056 = Erc1056(rpcUrl,
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');

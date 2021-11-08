@@ -286,8 +286,8 @@ Future<bool> verifyCredential(dynamic credential,
 }
 
 class RevokedException implements Exception {
-  String cause;
-  RevokedException(this.cause);
+  String message;
+  RevokedException(this.message);
 }
 
 /// Builds a presentation for [credentials].

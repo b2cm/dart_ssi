@@ -37,7 +37,7 @@ class CredentialRequest {
     if (!queryParameters.containsKey('iwce'))
       throw FormatException('Could not find expected query parameter');
     Map<String, dynamic> json =
-        jsonDecode(utf8.decode(base64Decode(queryParameters['iwce'])));
+        jsonDecode(utf8.decode(base64Decode(Base64Codec().normalize(queryParameters['iwce']))));
     if (json['type'] != _type)
       throw FormatException('Unsupported Request Type');
 
@@ -186,7 +186,7 @@ class CredentialResponse {
     if (!queryParameters.containsKey('iwce'))
       throw FormatException('Could not find expected query parameter');
     Map<String, dynamic> json =
-        jsonDecode(utf8.decode(base64Decode(queryParameters['iwce'])));
+        jsonDecode(utf8.decode(base64Decode(Base64Codec().normalize(queryParameters['iwce']))));
     if (json['type'] != _type)
       throw FormatException('Unsupported Response-Type');
     _verifiablePresentation = json['verifiablePresentation'];
