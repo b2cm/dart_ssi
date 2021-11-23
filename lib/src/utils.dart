@@ -10,7 +10,6 @@ Future<CertificateInformation?> getCertificateInfoFromUrl(String url) async {
   if (!url.startsWith(RegExp('https', caseSensitive: false))) {
     url = url.replaceAll(RegExp('http', caseSensitive: false), 'https');
   }
-  print(url);
   try {
     var client = await HttpClient()
         .getUrl(Uri.parse(url))
