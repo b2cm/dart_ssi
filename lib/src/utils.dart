@@ -1,6 +1,40 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:asn1lib/asn1lib.dart';
+
+import 'credential_operations.dart';
+
+Future<List<String>> getDidFromDidConfiguration(String url) async {
+  List<String> didsInConfig = [];
+  var uri = Uri.parse(url);
+  print('https://${uri.host}/.well-known/did-configuration');
+  try {
+    var client = await HttpClient()
+        .getUrl(Uri.parse('https://${uri.host}/.well-known/did-configuration'))
+        .timeout(Duration(seconds: 30));
+    var res = await client.close();
+    if (res.statusCode == 200) {
+      var contents = StringBuffer();
+      await for (var data in res.transform(utf8.decoder)) {
+        contents.write(data);
+      }
+      var entries = jsonDecode(contents.toString());
+      List<dynamic> dids = entries['entries'];
+      await Future.forEach(dids, (dynamic element) async {
+        var jwt = element['jwt'];
+        var did = element['did'];
+        print(did);
+        var verified = await verifyStringSignature(jwt, did);
+        print(verified);
+        if (verified) didsInConfig.add(did);
+      });
+    }
+  } catch (e) {
+    throw Exception('Error occurred during fetch of did-configuration: $e');
+  }
+  return didsInConfig;
+}
 
 /// Request TLS Certificate of [url] and extract important information from it.
 Future<CertificateInformation?> getCertificateInfoFromUrl(String url) async {
@@ -30,6 +64,9 @@ class CertificateInformation {
   String? subjectCommonName;
   String? subjectOrganization;
   List<String>? subjectAlternativeNames;
+  String? issuerOrganization;
+  String? issuerCommonName;
+  String? issuerCountry;
   X509Certificate? rawCert;
   bool isEvCert = false;
 
@@ -80,6 +117,10 @@ class CertificateInformation {
     subjectCommonName = splittedSubject['CN'];
     subjectOrganization = splittedSubject['O'];
     subjectAlternativeNames = _getSubjectAlternativeNames();
+    var splittedIssuer = _splitSubject(rawCert!.issuer);
+    issuerCommonName = splittedIssuer['CN'];
+    issuerOrganization = splittedIssuer['O'];
+    issuerCountry = splittedIssuer['C'];
     var extractedEvOids = _extractEvOids();
     if (extractedEvOids.length > 0) {
       extractedEvOids.forEach((element) {
