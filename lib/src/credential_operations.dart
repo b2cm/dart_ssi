@@ -145,11 +145,11 @@ String buildPlaintextCredential(dynamic credential, String? holderDid,
 ///
 /// [revocationRegistryAddress] is a valid Ethereum-Address of a SmartContract capable of showing the revocation Status of the credential.
 String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
-    { dynamic type,
-      dynamic context,
-      dynamic issuerInformation,
-      DateTime? validUntil,
-      String? revocationRegistryAddress}) {
+    {dynamic type,
+    dynamic context,
+    dynamic issuerInformation,
+    DateTime? validUntil,
+    String? revocationRegistryAddress}) {
   var plaintextMap = credentialToMap(credential);
   var hashCred = _collectHashes(credential, id: plaintextMap['id']);
 
@@ -225,6 +225,7 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
 
   return jsonEncode(w3cCred);
 }
+
 /// Checks weather a W3C-Credential containing all attribute hashes belongs to a Plaintext Credential or not.
 bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
   var w3cMap = credentialToMap(w3cCred);
@@ -271,8 +272,8 @@ Future<bool> verifyCredential(dynamic credential,
       if (credStatus['type'] != 'EthereumRevocationList')
         throw Exception('Unknown Status-method : ${credStatus['type']}');
       revocationRegistry.setContract(credStatus['id']);
-      var revoked =
-          await revocationRegistry.isRevoked(getHolderDidFromCredential(credMap));
+      var revoked = await revocationRegistry
+          .isRevoked(getHolderDidFromCredential(credMap));
       if (revoked) throw RevokedException('Credential was revoked');
     }
   }
@@ -280,6 +281,7 @@ Future<bool> verifyCredential(dynamic credential,
   Map<String, dynamic> proof = credMap['proof'];
   credMap.remove('proof');
   var credHash = sha256.convert(utf8.encode(jsonEncode(credMap))).bytes;
+  credMap['proof'] = proof;
   var issuerDid = getIssuerDidFromCredential(credential);
   if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
   return _verifyProof(proof, credHash as Uint8List, issuerDid);
@@ -355,12 +357,12 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   presentationMap.remove('proof');
   var presentationHash =
       sha256.convert(utf8.encode(jsonEncode(presentationMap))).bytes;
-
+  presentationMap['proof'] = proofs;
   var credentials = presentationMap['verifiableCredential'] as List;
   List<String> holderDids = [];
   await Future.forEach(credentials, (dynamic element) async {
-    bool verified =
-        await verifyCredential(element, erc1056: erc1056, revocationRegistry: revocationRegistry);
+    bool verified = await verifyCredential(element,
+        erc1056: erc1056, revocationRegistry: revocationRegistry);
     if (!verified)
       throw Exception('A credential could not been verified');
     else {
@@ -966,15 +968,21 @@ Map<String, dynamic> _buildProof(
 bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
   var signature = _getSignatureFromJws(proof['jws']);
 
-  proof.remove('jws');
   if (proof['type'] != 'EcdsaSecp256k1RecoverySignature2020')
     throw Exception('Proof type ${proof['type']} is not supported');
+
+  var jws = proof.remove('jws');
   var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
   var hashToSign = sha256.convert(proofHash + hash).bytes;
 
+  proof['jws'] = jws;
+
   var pubKey = ecRecover(hashToSign as Uint8List, signature);
 
-  return EthereumAddress.fromPublicKey(pubKey).hexEip55 == did.split(':').last;
+  var givenAddress = EthereumAddress.fromHex(did.split(':').last);
+
+  return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
+      givenAddress.hexEip55;
 }
 
 String _buildProofOptions(
