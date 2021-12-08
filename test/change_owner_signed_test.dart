@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_ssi_wallet/src/ethereum_connector.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/scaffolding.dart';
 import 'package:web3dart/credentials.dart';
 import 'package:web3dart/crypto.dart';
 
@@ -83,13 +83,13 @@ void main() async {
       */
 
       //Call with the necessary information, which is still to be adapted
-      await erc1056.changeOwnerSigned(
-          privateKeyFrom,
-          ganacheDid5, //addressFrom,
-          ganacheDid6, //addressTo,
-          ganacheDid7, //addressSpender,
-          privateKeySpender,
-          );
+      // await erc1056.changeOwnerSigned(
+      //     privateKeyFrom,
+      //     ganacheDid5, //addressFrom,
+      //     ganacheDid6, //addressTo,
+      //     ganacheDid7, //addressSpender,
+      //     privateKeySpender,
+      //     );
 
     });
   });

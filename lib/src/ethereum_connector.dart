@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 //import 'package:flutter/gestures.dart';
+import 'package:hex/hex.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/json_rpc.dart';
@@ -104,6 +105,8 @@ class Erc1056 {
     5: 'goerli',
     42: 'kovan'
   };
+
+  get numbersToNames => _numbersToNames;
   final _namesToNumbers = {
     'mainnet': 1,
     'ropsten': 3,
@@ -174,80 +177,58 @@ class Erc1056 {
         chainId: chainId);
   }
 
-  Future<void> changeOwnerSigned(
+  Future<String> changeOwnerSigned(
     String privateKeyFrom,
-    String identityDid, //String addressFrom,
-    String newDid, //String addressTo,
-    String spenderDid, //String addressSpender,
-  ) async {
-    //Collect all Datas and Sign Signature
-    MsgSignature messageSignature = await changeOwnerSignedSignature(
-      privateKeyFrom,
-      identityDid,
-      newDid,
-    );
-
-    //Sign Transaction
-    await changeOwnerSignedTransaction(messageSignature, identityDid, newDid);
-  }
-
-  Future<MsgSignature> changeOwnerSignedSignature(
-    String privateKeyFrom,
-    String identityDid, //String addressFrom,
-    String newDid, //String addressTo,
-  ) async {
-    var nonceCredential = await nonce(identityDid);
-
-    //Create Hash to sign the message
-    var contractAddressString = this.contractAddress;
-
-    List<int> listInt = [hexToInt('0x19').toInt(), hexToInt('0x0').toInt()];
-
-    listInt.addAll(contractAddressString.addressBytes);
-
-    Uint8List nonceCredentialInt =
-        unsignedIntToBytes(BigInt.from(nonceCredential!.toInt()));
-    var nonceCredentialLength = 32 - nonceCredentialInt.length;
-
-    var nonceCredentialClear = Uint8List(nonceCredentialLength);
-    var nonceCredentialList = new List<int>.from(nonceCredentialClear);
-    nonceCredentialList.addAll(nonceCredentialInt);
-
-    Uint8List nonceCredentialListInt = Uint8List.fromList(nonceCredentialList);
-    listInt.addAll(nonceCredentialListInt);
-
-    listInt.addAll(_didToAddress(identityDid).addressBytes);
-
-    var stringChangeOwner = 'changeOwner';
-    List<int> stringChangeOwnerInt = utf8.encode(stringChangeOwner);
-    listInt.addAll(stringChangeOwnerInt);
-
-    //listInt.addAll(_didToAddress(newDid).addressBytes);
-    listInt.addAll(_didToAddress(newDid).addressBytes);
-    Uint8List listIntFlat = Uint8List.fromList(listInt);
-
-    Uint8List messageHash;
-    messageHash = keccak256(listIntFlat);
-
-    //Convert the privateKeyFrom
-    Uint8List privateKeyUtf8IntFlat = hexToBytes(privateKeyFrom);
-
-    //Sign the message
-    MsgSignature messageSignature = sign(messageHash, privateKeyUtf8IntFlat);
-
-    //await changeOwnerSignedTransaction(identityDid, newDid, messageHash, privateKeyUtf8IntFlat);
-    return messageSignature;
-  }
-
-  Future<void> changeOwnerSignedTransaction(
-    MsgSignature messageSignature,
     String identityDid,
     String newDid,
+    MsgSignature signature
   ) async {
-    //This Function should send a Transaction to Ethereum directly.
-    // It should NOT call any Server.
-    //The Server should USE this function.
+
+    var changeOwnerSignedFunction = _erc1056contract.function('changeOwnerSigned');
+
+    var txHash = await web3Client.sendTransaction(
+        EthPrivateKey.fromHex(privateKeyFrom),
+        Transaction.callContract(
+            contract: _erc1056contract,
+            function: changeOwnerSignedFunction,
+            parameters: [
+              _didToAddress(identityDid),
+              BigInt.from(signature.v),
+              unsignedIntToBytes(signature.r),
+              unsignedIntToBytes(signature.s),
+              _didToAddress(newDid),
+            ],
+            // maxGas: 76853
+        ),
+        chainId: chainId);
+    return txHash;
   }
+
+  Future<MsgSignature> signOwnerChange(
+      String privateKeyFrom,
+      String identityDid,
+      String newDid,
+      ) async {
+
+    var privateKey = EthPrivateKey.fromHex(privateKeyFrom).privateKey;
+    var nonceToSign = await nonce(await identityOwner(identityDid));
+    var paddedNonce = nonceToSign!.toRadixString(16).padLeft(64, '0');
+
+    List<int> message = [];
+    message.addAll(hexToBytes("0x19"));
+    message.addAll(hexToBytes("0x00"));
+    message.addAll(contractAddress.addressBytes);
+    message.addAll(hexToBytes(paddedNonce));
+    message.addAll(_didToAddress(identityDid).addressBytes);
+    message.addAll("changeOwner".codeUnits);
+    message.addAll(_didToAddress(newDid).addressBytes);
+
+    var messageHash = keccak256(Uint8List.fromList(message));
+    MsgSignature signature = sign(messageHash, privateKey);
+
+    return signature;
+  }
+
 
   Future<void> setAttribute(
       String privateKeyFrom, String identityDid, String name, String value,
@@ -569,6 +550,8 @@ class Erc1056 {
     else
       return 'did:ethr:$networkName:${address.hexEip55}';
   }
+
+  get namesToNumbers => _namesToNumbers;
 }
 
 /// Represents an ethereum-smartcontract to revoke credentials.
