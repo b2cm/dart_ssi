@@ -229,6 +229,15 @@ class Erc1056 {
     return signature;
   }
 
+  Future<BigInt> estimateChangeOwner(String identityDid, String newDid) {
+    var changeOwnerFunction = erc1056contract.function('changeOwner');
+    var tx = Transaction.callContract(
+        contract: erc1056contract,
+        function: changeOwnerFunction,
+        parameters: [_didToAddress(identityDid), _didToAddress(newDid)]);
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
 
   Future<void> setAttribute(
       String privateKeyFrom, String identityDid, String name, String value,
@@ -253,6 +262,25 @@ class Erc1056 {
         chainId: chainId);
   }
 
+  Future<BigInt> estimateSetAttribute(
+      String identityDid, String name, String value,
+      [int validity = 86400]) {
+    var setAttributeFunction = erc1056contract.function('setAttribute');
+    var valueList = Uint8List.fromList(utf8.encode(value));
+    Transaction tx = Transaction.callContract(
+        contract: erc1056contract,
+        function: setAttributeFunction,
+        parameters: [
+          _didToAddress(identityDid),
+          _to32ByteUtf8(name),
+          valueList,
+          BigInt.from(validity)
+        ]);
+
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
+
   Future<void> revokeAttribute(String privateKeyFrom, String identityDid,
       String name, String value) async {
     if (!_matchesExpectedDid(identityDid))
@@ -269,6 +297,21 @@ class Erc1056 {
 
     await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx,
         chainId: chainId);
+  }
+
+  Future<BigInt> estimateRevokeAttribute(
+      String identityDid, String name, String value) {
+    var revokeAttributeFunction = erc1056contract.function('revokeAttribute');
+    var nameList = _to32ByteUtf8(name);
+    var valueList = Uint8List.fromList(utf8.encode(value));
+
+    Transaction tx = Transaction.callContract(
+        contract: erc1056contract,
+        function: revokeAttributeFunction,
+        parameters: [_didToAddress(identityDid), nameList, valueList]);
+
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
   }
 
   Future<void> addDelegate(String privateKeyFrom, String identityDid,
@@ -293,6 +336,24 @@ class Erc1056 {
         chainId: chainId);
   }
 
+  Future<BigInt> estimateAddDelegate(
+      String identityDid, String delegateType, String delegateDid,
+      [int validity = 86400]) {
+    var addDelegateFunction = erc1056contract.function('addDelegate');
+    Transaction tx = Transaction.callContract(
+        contract: erc1056contract,
+        function: addDelegateFunction,
+        parameters: [
+          _didToAddress(identityDid),
+          _to32ByteUtf8(delegateType),
+          _didToAddress(delegateDid),
+          BigInt.from(validity)
+        ]);
+
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
+
   Future<void> revokeDelegate(String privateKeyFrom, String identityDid,
       String delegateType, String delegateDid) async {
     if (!_matchesExpectedDid(identityDid))
@@ -315,7 +376,23 @@ class Erc1056 {
         chainId: chainId);
   }
 
-  Future<bool?> validDelegate(
+  Future<BigInt> estimateRevokeDelegate(
+      String identityDid, String delegateType, String delegateDid) {
+    var revokeDelegateFunction = erc1056contract.function('revokeDelegate');
+    Transaction tx = Transaction.callContract(
+        contract: erc1056contract,
+        function: revokeDelegateFunction,
+        parameters: [
+          _didToAddress(identityDid),
+          _to32ByteUtf8(delegateType),
+          _didToAddress(delegateDid)
+        ]);
+
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
+
+  Future<bool> validDelegate(
       String identityDid, String delegateType, String delegateDid) async {
     if (!_matchesExpectedDid(identityDid))
       throw Exception(
@@ -619,6 +696,11 @@ class RevocationRegistry {
     return receipt.contractAddress!.hexEip55;
   }
 
+  Future<BigInt> estimateGasDeploy(String from) async {
+    return _web3Client.estimateGas(
+        data: hexToBytes(_bytecode), sender: EthereumAddress.fromHex(from));
+  }
+
   Future<void> revoke(String privateKeyFrom, String credDidToRevoke) async {
     var revokeFunction = _contract.function('revoke');
     var tx = Transaction.callContract(
@@ -627,6 +709,18 @@ class RevocationRegistry {
         parameters: [_didToAddress(credDidToRevoke)]);
     await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx,
         chainId: _chainId);
+  }
+
+  Future<BigInt> estimateRevoke(String fromAddress, String credDidToRevoke) {
+    var revokeFunction = _contract.function('revoke');
+    var tx = Transaction.callContract(
+        contract: _contract,
+        function: revokeFunction,
+        parameters: [_didToAddress(credDidToRevoke)]);
+    return _web3Client.estimateGas(
+        sender: EthereumAddress.fromHex(fromAddress),
+        data: tx.data,
+        to: _contract.address);
   }
 
   /// Returns the block number of the block in which the contract was deployed.
@@ -692,6 +786,18 @@ class RevocationRegistry {
     _contract = DeployedContract(
         ContractAbi.fromJson(_abi, 'RevocationRegistry'),
         EthereumAddress.fromHex(contractAddress));
+  }
+
+  Future<BigInt> estimateChangeOwner(String from, String didNewOwner) {
+    var changeOwnerFunction = _contract.function('changeOwner');
+    var tx = Transaction.callContract(
+        contract: _contract,
+        function: changeOwnerFunction,
+        parameters: [_didToAddress(didNewOwner)]);
+    return _web3Client.estimateGas(
+        sender: EthereumAddress.fromHex(from),
+        data: tx.data,
+        to: _contract.address);
   }
 }
 

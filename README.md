@@ -1,4 +1,7 @@
-# flutter_ssi_wallet
+This Branch contains a script to estimate the execution-costs of the used SmartContracts 
+(ERC1056 and the Revocation-Contract) in euro. The script is called cost_estimation.dart and
+could be found in the examples directory.
+Run it with `dart examples/cost_estimation.dart`.
 
 Dart Package for SSI Wallet. This Package contains classes and functions for storing verifiable credentials
 and relating key-pairs; issue, verify and revoke credentials and presentations and interact with a erc1056 smartContract.
