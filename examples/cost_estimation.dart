@@ -42,7 +42,7 @@ void main() async {
       endpoint);
 
   var etherscanRes = jsonDecode((await http.get(
-          'https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=D48K393D61FXFZX6CRZSDUC2DVTS26N6SH'))
+          Uri.parse('https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=D48K393D61FXFZX6CRZSDUC2DVTS26N6SH')))
       .body);
   var safeGasPrice = EtherAmount.fromUnitAndValue(
           EtherUnit.gwei, etherscanRes['result']['SafeGasPrice'])
@@ -55,7 +55,7 @@ void main() async {
       .getValueInUnit(EtherUnit.ether);
 
   var cryptoCmpRes = jsonDecode((await http.get(
-          'https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=EUR'))
+          Uri.parse('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=EUR')))
       .body);
   var ethEur = cryptoCmpRes['EUR'];
 
