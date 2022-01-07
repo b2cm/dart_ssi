@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+//import 'package:flutter/gestures.dart';
+import 'package:hex/hex.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/json_rpc.dart';
@@ -103,6 +105,8 @@ class Erc1056 {
     5: 'goerli',
     42: 'kovan'
   };
+
+  get numbersToNames => _numbersToNames;
   final _namesToNumbers = {
     'mainnet': 1,
     'ropsten': 3,
@@ -173,6 +177,88 @@ class Erc1056 {
         chainId: chainId);
   }
 
+  Future<String> changeOwnerSigned(
+    String privateKeyFrom,
+    String identityDid,
+    String newDid,
+    MsgSignature signature
+  ) async {
+
+    var changeOwnerSignedFunction = _erc1056contract.function('changeOwnerSigned');
+
+    var txHash = await web3Client.sendTransaction(
+        EthPrivateKey.fromHex(privateKeyFrom),
+        Transaction.callContract(
+            contract: _erc1056contract,
+            function: changeOwnerSignedFunction,
+            parameters: [
+              _didToAddress(identityDid),
+              BigInt.from(signature.v),
+              unsignedIntToBytes(signature.r),
+              unsignedIntToBytes(signature.s),
+              _didToAddress(newDid),
+            ],
+            // maxGas: 76853
+        ),
+        chainId: chainId);
+    return txHash;
+  }
+
+  Future<MsgSignature> signOwnerChange(
+      String privateKeyFrom,
+      String identityDid,
+      String newDid,
+      ) async {
+
+    var privateKey = EthPrivateKey.fromHex(privateKeyFrom).privateKey;
+    var nonceToSign = await nonce(await identityOwner(identityDid));
+    var paddedNonce = nonceToSign!.toRadixString(16).padLeft(64, '0');
+
+    List<int> message = [];
+    message.addAll(hexToBytes("0x19"));
+    message.addAll(hexToBytes("0x00"));
+    message.addAll(contractAddress.addressBytes);
+    message.addAll(hexToBytes(paddedNonce));
+    message.addAll(_didToAddress(identityDid).addressBytes);
+    message.addAll("changeOwner".codeUnits);
+    message.addAll(_didToAddress(newDid).addressBytes);
+
+    var messageHash = keccak256(Uint8List.fromList(message));
+    MsgSignature signature = sign(messageHash, privateKey);
+
+    return signature;
+  }
+
+  Future<BigInt> estimateChangeOwner(String identityDid, String newDid) {
+    var changeOwnerFunction = _erc1056contract.function('changeOwner');
+    var tx = Transaction.callContract(
+        contract: _erc1056contract,
+        function: changeOwnerFunction,
+        parameters: [_didToAddress(identityDid), _didToAddress(newDid)]);
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
+
+  Future<BigInt> estimateChangeOwnerSigned(
+      String identityDid, String newDid, MsgSignature signature) {
+    var changeOwnerSignedFunction =
+        _erc1056contract.function('changeOwnerSigned');
+    var tx = Transaction.callContract(
+      contract: _erc1056contract,
+      function: changeOwnerSignedFunction,
+      parameters: [
+        _didToAddress(identityDid),
+        BigInt.from(signature.v),
+        unsignedIntToBytes(signature.r),
+        unsignedIntToBytes(signature.s),
+        _didToAddress(newDid),
+      ],
+      // maxGas: 76853
+    );
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
+
   Future<void> setAttribute(
       String privateKeyFrom, String identityDid, String name, String value,
       {int validity: 86400}) async {
@@ -196,6 +282,25 @@ class Erc1056 {
         chainId: chainId);
   }
 
+  Future<BigInt> estimateSetAttribute(
+      String identityDid, String name, String value,
+      [int validity = 86400]) {
+    var setAttributeFunction = _erc1056contract.function('setAttribute');
+    var valueList = Uint8List.fromList(utf8.encode(value));
+    Transaction tx = Transaction.callContract(
+        contract: _erc1056contract,
+        function: setAttributeFunction,
+        parameters: [
+          _didToAddress(identityDid),
+          _to32ByteUtf8(name),
+          valueList,
+          BigInt.from(validity)
+        ]);
+
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
+
   Future<void> revokeAttribute(String privateKeyFrom, String identityDid,
       String name, String value) async {
     if (!_matchesExpectedDid(identityDid))
@@ -212,6 +317,21 @@ class Erc1056 {
 
     await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx,
         chainId: chainId);
+  }
+
+  Future<BigInt> estimateRevokeAttribute(
+      String identityDid, String name, String value) {
+    var revokeAttributeFunction = _erc1056contract.function('revokeAttribute');
+    var nameList = _to32ByteUtf8(name);
+    var valueList = Uint8List.fromList(utf8.encode(value));
+
+    Transaction tx = Transaction.callContract(
+        contract: _erc1056contract,
+        function: revokeAttributeFunction,
+        parameters: [_didToAddress(identityDid), nameList, valueList]);
+
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
   }
 
   Future<void> addDelegate(String privateKeyFrom, String identityDid,
@@ -236,6 +356,24 @@ class Erc1056 {
         chainId: chainId);
   }
 
+  Future<BigInt> estimateAddDelegate(
+      String identityDid, String delegateType, String delegateDid,
+      [int validity = 86400]) {
+    var addDelegateFunction = _erc1056contract.function('addDelegate');
+    Transaction tx = Transaction.callContract(
+        contract: _erc1056contract,
+        function: addDelegateFunction,
+        parameters: [
+          _didToAddress(identityDid),
+          _to32ByteUtf8(delegateType),
+          _didToAddress(delegateDid),
+          BigInt.from(validity)
+        ]);
+
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
+
   Future<void> revokeDelegate(String privateKeyFrom, String identityDid,
       String delegateType, String delegateDid) async {
     if (!_matchesExpectedDid(identityDid))
@@ -258,7 +396,23 @@ class Erc1056 {
         chainId: chainId);
   }
 
-  Future<bool?> validDelegate(
+  Future<BigInt> estimateRevokeDelegate(
+      String identityDid, String delegateType, String delegateDid) {
+    var revokeDelegateFunction = _erc1056contract.function('revokeDelegate');
+    Transaction tx = Transaction.callContract(
+        contract: _erc1056contract,
+        function: revokeDelegateFunction,
+        parameters: [
+          _didToAddress(identityDid),
+          _to32ByteUtf8(delegateType),
+          _didToAddress(delegateDid)
+        ]);
+
+    return web3Client.estimateGas(
+        sender: _didToAddress(identityDid), data: tx.data, to: contractAddress);
+  }
+
+  Future<bool>? validDelegate(
       String identityDid, String delegateType, String delegateDid) async {
     if (!_matchesExpectedDid(identityDid))
       throw Exception(
@@ -276,7 +430,7 @@ class Erc1056 {
           _didToAddress(delegateDid)
         ]);
 
-    return valid.first as bool?;
+    return valid.first as bool;
   }
 
   Future<BigInt?> changed(String identityDid) async {
@@ -493,6 +647,8 @@ class Erc1056 {
     else
       return 'did:ethr:$networkName:${address.hexEip55}';
   }
+
+  get namesToNumbers => _namesToNumbers;
 }
 
 /// Represents an ethereum-smartcontract to revoke credentials.
@@ -560,6 +716,11 @@ class RevocationRegistry {
     return receipt.contractAddress!.hexEip55;
   }
 
+  Future<BigInt> estimateGasDeploy(String from) async {
+    return web3Client.estimateGas(
+        data: hexToBytes(_bytecode), sender: EthereumAddress.fromHex(from));
+  }
+
   Future<void> revoke(String privateKeyFrom, String credDidToRevoke) async {
     var revokeFunction = _contract.function('revoke');
     var tx = Transaction.callContract(
@@ -568,6 +729,18 @@ class RevocationRegistry {
         parameters: [_didToAddress(credDidToRevoke)]);
     await web3Client.sendTransaction(EthPrivateKey.fromHex(privateKeyFrom), tx,
         chainId: _chainId);
+  }
+
+  Future<BigInt> estimateRevoke(String fromAddress, String credDidToRevoke) {
+    var revokeFunction = _contract.function('revoke');
+    var tx = Transaction.callContract(
+        contract: _contract,
+        function: revokeFunction,
+        parameters: [_didToAddress(credDidToRevoke)]);
+    return web3Client.estimateGas(
+        sender: EthereumAddress.fromHex(fromAddress),
+        data: tx.data,
+        to: _contract.address);
   }
 
   /// Returns the block number of the block in which the contract was deployed.
@@ -633,6 +806,18 @@ class RevocationRegistry {
     _contract = DeployedContract(
         ContractAbi.fromJson(_abi, 'RevocationRegistry'),
         EthereumAddress.fromHex(contractAddress));
+  }
+
+  Future<BigInt> estimateChangeOwner(String from, String didNewOwner) {
+    var changeOwnerFunction = _contract.function('changeOwner');
+    var tx = Transaction.callContract(
+        contract: _contract,
+        function: changeOwnerFunction,
+        parameters: [_didToAddress(didNewOwner)]);
+    return web3Client.estimateGas(
+        sender: EthereumAddress.fromHex(from),
+        data: tx.data,
+        to: _contract.address);
   }
 }
 
