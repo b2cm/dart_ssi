@@ -1,7 +1,5 @@
 library flutter_ssi_wallet;
 
-import 'dart:typed_data';
-
 import 'package:bip32/bip32.dart';
 import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';

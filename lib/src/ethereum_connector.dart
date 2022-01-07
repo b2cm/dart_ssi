@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-//import 'package:flutter/gestures.dart';
-import 'package:hex/hex.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/json_rpc.dart';
@@ -177,39 +175,34 @@ class Erc1056 {
         chainId: chainId);
   }
 
-  Future<String> changeOwnerSigned(
-    String privateKeyFrom,
-    String identityDid,
-    String newDid,
-    MsgSignature signature
-  ) async {
-
-    var changeOwnerSignedFunction = _erc1056contract.function('changeOwnerSigned');
+  Future<String> changeOwnerSigned(String privateKeyFrom, String identityDid,
+      String newDid, MsgSignature signature) async {
+    var changeOwnerSignedFunction =
+        _erc1056contract.function('changeOwnerSigned');
 
     var txHash = await web3Client.sendTransaction(
         EthPrivateKey.fromHex(privateKeyFrom),
         Transaction.callContract(
-            contract: _erc1056contract,
-            function: changeOwnerSignedFunction,
-            parameters: [
-              _didToAddress(identityDid),
-              BigInt.from(signature.v),
-              unsignedIntToBytes(signature.r),
-              unsignedIntToBytes(signature.s),
-              _didToAddress(newDid),
-            ],
-            // maxGas: 76853
+          contract: _erc1056contract,
+          function: changeOwnerSignedFunction,
+          parameters: [
+            _didToAddress(identityDid),
+            BigInt.from(signature.v),
+            unsignedIntToBytes(signature.r),
+            unsignedIntToBytes(signature.s),
+            _didToAddress(newDid),
+          ],
+          // maxGas: 76853
         ),
         chainId: chainId);
     return txHash;
   }
 
   Future<MsgSignature> signOwnerChange(
-      String privateKeyFrom,
-      String identityDid,
-      String newDid,
-      ) async {
-
+    String privateKeyFrom,
+    String identityDid,
+    String newDid,
+  ) async {
     var privateKey = EthPrivateKey.fromHex(privateKeyFrom).privateKey;
     var nonceToSign = await nonce(await identityOwner(identityDid));
     var paddedNonce = nonceToSign!.toRadixString(16).padLeft(64, '0');
