@@ -781,6 +781,11 @@ Future<String> getDidFromSignature(String jws,
 
   var did = 'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   if (erc1056 != null) {
+    if (erc1056.networkName != 'mainnet') {
+      did = 'did:ethr:${erc1056.networkName}:${EthereumAddress
+          .fromPublicKey(pubKey)
+          .hexEip55}';
+    }
     var expectedDid = await erc1056.identityOwner(did);
     if (expectedDid != did) {
       throw Exception('Did of Signature do not match with ERC1056 entry');
