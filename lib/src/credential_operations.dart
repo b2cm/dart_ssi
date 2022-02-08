@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
+import 'package:dart_web3/credentials.dart';
+import 'package:dart_web3/crypto.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
-import 'package:web3dart/credentials.dart';
-import 'package:web3dart/crypto.dart';
 
+import 'ethereum_connector.dart';
 import 'wallet_store.dart';
 
 final _hashedAttributeSchemaMap = {
@@ -782,9 +782,8 @@ Future<String> getDidFromSignature(String jws,
   var did = 'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   if (erc1056 != null) {
     if (erc1056.networkName != 'mainnet') {
-      did = 'did:ethr:${erc1056.networkName}:${EthereumAddress
-          .fromPublicKey(pubKey)
-          .hexEip55}';
+      did =
+          'did:ethr:${erc1056.networkName}:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
     }
     var expectedDid = await erc1056.identityOwner(did);
     if (expectedDid != did) {

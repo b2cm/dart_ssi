@@ -3,13 +3,13 @@ library flutter_ssi_wallet;
 import 'package:bip32/bip32.dart';
 import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';
-import 'package:flutter_ssi_wallet/src/private_util.dart';
+import 'package:dart_web3/credentials.dart';
+import 'package:dart_web3/crypto.dart';
 import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
-import 'package:web3dart/credentials.dart';
-import 'package:web3dart/crypto.dart';
 
 import 'hive_model.dart';
+import 'private_util.dart';
 
 /// A wallet storing credentials and keys permanently using Hive.
 ///

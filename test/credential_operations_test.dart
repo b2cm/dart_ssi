@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dart_web3/dart_web3.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:http/http.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
-import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
@@ -1233,7 +1233,8 @@ void main() async {
       expect(signedMap['proof'].containsKey('created'), true);
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
+          await verifyCredential(signedMap,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
     });
 
@@ -1251,7 +1252,8 @@ void main() async {
       expect(signedMap['proof'].containsKey('created'), true);
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
+          await verifyCredential(signedMap,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 
@@ -1270,14 +1272,15 @@ void main() async {
       signedMap['proof']['created'] = DateTime.now().toUtc().toIso8601String();
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
+          await verifyCredential(signedMap,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 
     test('call verify without proof', () {
       expect(
-          () async =>
-              await verifyCredential(w3c, erc1056: erc1056, revocationRegistry: revocationRegistry),
+          () async => await verifyCredential(w3c,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           throwsA(
               predicate((dynamic e) => e.message == 'no proof section found')));
     });
@@ -1294,8 +1297,8 @@ void main() async {
         var signed = signCredential(ganacheAccounts, w3cCred);
 
         //before revocation
-        var verified =
-            await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry);
+        var verified = await verifyCredential(signed,
+            erc1056: erc1056, revocationRegistry: revocationRegistry);
         expect(verified, true);
 
         //revocation
@@ -1328,7 +1331,9 @@ void main() async {
       var web3 = Web3Client(rpcUrl, Client());
 
       var signed = signCredential(wallet, w3c);
-      expect(await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry),
+      expect(
+          await verifyCredential(signed,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
 
       var tx = Transaction(
@@ -1345,7 +1350,9 @@ void main() async {
       await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey()!,
           wallet.getStandardIssuerDid()!, await wallet.getNextCredentialDID());
 
-      expect(await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry),
+      expect(
+          await verifyCredential(signed,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 

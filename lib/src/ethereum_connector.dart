@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dart_web3/crypto.dart';
+import 'package:dart_web3/dart_web3.dart';
+import 'package:dart_web3/json_rpc.dart';
 import 'package:http/http.dart';
-import 'package:web3dart/crypto.dart';
-import 'package:web3dart/json_rpc.dart';
-import 'package:web3dart/web3dart.dart';
 
 /// Dart representation of Ethereums ERC-1056 SmartContract.
 class Erc1056 {
