@@ -17,6 +17,10 @@ dependencies:
   uuid: 3.0.5
   json_schema2: ^2.0.1+1
   asn1lib: 1.1.0
+  crypto_keys: ^0.3.0
+  elliptic:
+    path: ../dart-elliptic
+  x25519: ^0.1.1
 
 
 dev_dependencies:

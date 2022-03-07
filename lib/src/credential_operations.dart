@@ -717,12 +717,12 @@ String signStringOrJson(
       headerMap = jwsHeader;
     if (headerMap!['alg'] != 'ES256K-R')
       throw Exception('Unsupported signature algorithm ${headerMap['alg']}');
-    header = _removePaddingFromBase64(
+    header = removePaddingFromBase64(
         base64UrlEncode(utf8.encode(jsonEncode(headerMap))));
   } else {
     var critical = new Map<String, dynamic>();
     critical['b64'] = false;
-    header = _removePaddingFromBase64(
+    header = removePaddingFromBase64(
         buildJwsHeader(alg: 'ES256K-R', extra: critical));
   }
 
@@ -735,8 +735,7 @@ String signStringOrJson(
     throw Exception('Unexpected Datatype ${toSign.runtimeType} for toSign');
   }
 
-  var payload =
-      _removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
+  var payload = removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
   var signingInput = '$header.$payload';
   var hash = sha256.convert(ascii.encode(signingInput)).bytes;
   String? privateKeyHex;
@@ -753,10 +752,10 @@ String signStringOrJson(
 
   if (detached)
     return '$header.'
-        '.${_removePaddingFromBase64(base64UrlEncode(sigArray))}';
+        '.${removePaddingFromBase64(base64UrlEncode(sigArray))}';
   else
     return '$header.$payload'
-        '.${_removePaddingFromBase64(base64UrlEncode(sigArray))}';
+        '.${removePaddingFromBase64(base64UrlEncode(sigArray))}';
 }
 
 /// Extracts the did used for signing [jws].
@@ -772,7 +771,7 @@ Future<String> getDidFromSignature(String jws,
   if (splitted[1] != '')
     payload = splitted[1];
   else if (toSign != null)
-    payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
+    payload = removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
   else
     throw Exception('No payload given');
   var signingInput = '${splitted[0]}.$payload';
@@ -814,7 +813,7 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
     } else {
       throw Exception('Unexpected Datatype ${toSign.runtimeType} for toSign');
     }
-    payload = _removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
+    payload = removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
   } else
     throw Exception('No payload given');
   var signingInput = '${splitted[0]}.$payload';
@@ -1012,10 +1011,10 @@ String _buildProofOptions(
 MsgSignature _getSignatureFromJws(String jws) {
   var splitJws = jws.split('.');
   Map<String, dynamic> header =
-      jsonDecode(utf8.decode(base64Decode(_addPaddingToBase64(splitJws[0]))));
+      jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(splitJws[0]))));
   if (header['alg'] != 'ES256K-R')
     throw Exception('Unsupported signature Algorithm ${header['alg']}');
-  var sigArray = base64Decode(_addPaddingToBase64(splitJws[2]));
+  var sigArray = base64Decode(addPaddingToBase64(splitJws[2]));
   if (sigArray.length != 65) throw Exception('wrong signature-length');
   return new MsgSignature(bytesToUnsignedInt(sigArray.sublist(0, 32)),
       bytesToUnsignedInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
@@ -1037,12 +1036,12 @@ List<int> _buildSignatureArray(Uint8List hash, EthPrivateKey privateKey) {
   return sigArray;
 }
 
-String _addPaddingToBase64(String base64Input) {
+String addPaddingToBase64(String base64Input) {
   while (base64Input.length % 4 != 0) base64Input += '=';
   return base64Input;
 }
 
-String _removePaddingFromBase64(String base64Input) {
+String removePaddingFromBase64(String base64Input) {
   while (base64Input.endsWith('='))
     base64Input = base64Input.substring(0, base64Input.length - 1);
   return base64Input;
