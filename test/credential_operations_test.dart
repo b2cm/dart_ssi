@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dart_web3/dart_web3.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
+import 'package:flutter_ssi_wallet/src/credentials/presentation_exchange.dart';
 import 'package:http/http.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:test/test.dart';
@@ -1946,6 +1947,147 @@ void main() async {
     tearDown(() {
       if (Directory('other').existsSync())
         Directory('other').delete(recursive: true);
+    });
+  });
+
+  group('Presentation Definition', () {
+    Map<String, dynamic> vc1 = {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://www.w3.org/2018/credentials/examples/v1"
+      ],
+      "id": "http://example.gov/credentials/3732",
+      "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+      "issuer": "https://example.edu",
+      "issuanceDate": "2010-01-01T19:23:24Z",
+      "credentialSubject": {
+        "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+        "degree": {
+          "type": "BachelorDegree",
+          "name": "Bachelor of Science and Arts"
+        }
+      },
+      "proof": {
+        "type": "Ed25519Signature2020",
+        "created": "2021-11-13T18:19:39Z",
+        "verificationMethod": "https://example.edu/issuers/14#key-1",
+        "proofPurpose": "assertionMethod",
+        "proofValue":
+            "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+      }
+    };
+
+    Map<String, dynamic> vc2 = {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://www.w3.org/2018/credentials/examples/v1"
+      ],
+      "id": "http://example.gov/credentials/3732",
+      "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+      "issuer": "https://example2.edu",
+      "issuanceDate": "2010-01-01T19:23:24Z",
+      "credentialSubject": {
+        "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+        'type': 'NameAddress',
+        'familyName': 'Mustermann',
+        'givenName': 'Max',
+        'address': {
+          'streetAddress': 'Am Schwanenteich 8',
+          'postalCode': '09648'
+        }
+      },
+      "proof": {
+        "type": "Ed25519Signature2020",
+        "created": "2021-11-13T18:19:39Z",
+        "verificationMethod": "https://example.edu/issuers/14#key-1",
+        "proofPurpose": "assertionMethod",
+        "proofValue":
+            "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+      }
+    };
+
+    test('simple Request (filter issuer)', () {
+      Map<String, dynamic> presentationDefinition = {
+        "presentation_definition": {
+          "id": "Scalable trust example",
+          "input_descriptors": [
+            {
+              "id": "any type of credit card from any bank",
+              "name": "any type of credit card from any bank",
+              "purpose": "Please provide your student Card from the university",
+              "constraints": {
+                "fields": [
+                  {
+                    "path": [r"$..issuer"],
+                    "filter": {
+                      "type": "string",
+                      "pattern": "https://example2.edu"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      };
+
+      var result = searchCredentialsForPresentationDefinition(
+          [vc1, vc2], PresentationDefinition.fromJson(presentationDefinition));
+      expect(result.length, 1);
+    });
+
+    test('filter issuer id (plain or object)', () {
+      var vc3 = {
+        "@context": [
+          "https://www.w3.org/2018/credentials/v1",
+          "https://www.w3.org/2018/credentials/examples/v1"
+        ],
+        "id": "http://example.gov/credentials/3732",
+        "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+        "issuer": {'id': "https://example2.edu"},
+        "issuanceDate": "2010-01-01T19:23:24Z",
+        "credentialSubject": {
+          "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+          "degree": {
+            "type": "BachelorDegree",
+            "name": "Bachelor of Science and Arts"
+          }
+        },
+        "proof": {
+          "type": "Ed25519Signature2020",
+          "created": "2021-11-13T18:19:39Z",
+          "verificationMethod": "https://example.edu/issuers/14#key-1",
+          "proofPurpose": "assertionMethod",
+          "proofValue":
+              "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+        }
+      };
+      Map<String, dynamic> presentationDefinition = {
+        "presentation_definition": {
+          "id": "Scalable trust example",
+          "input_descriptors": [
+            {
+              "id": "any type of credit card from any bank",
+              "name": "any type of credit card from any bank",
+              "purpose": "Please provide your student Card from the university",
+              "constraints": {
+                "fields": [
+                  {
+                    "path": [r"$.issuer", r'$.issuer.id'],
+                    "filter": {
+                      "type": "string",
+                      "pattern": "https://example2.edu"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      };
+      var result = searchCredentialsForPresentationDefinition(
+          [vc1, vc3], PresentationDefinition.fromJson(presentationDefinition));
+      expect(result.length, 1);
     });
   });
 }

@@ -21,6 +21,7 @@ dependencies:
   elliptic:
     path: ../dart-elliptic
   x25519: ^0.1.1
+  json_path: ^0.3.1
 
 
 dev_dependencies:

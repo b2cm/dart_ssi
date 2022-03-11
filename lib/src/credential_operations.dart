@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
+import 'package:flutter_ssi_wallet/src/credentials/presentation_exchange.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
@@ -823,6 +824,133 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
 
   return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
       expectedDid.split(':').last;
+}
+
+List<Map<String, dynamic>> searchCredentialsForPresentationDefinition(
+    List<Map<String, dynamic>> credentials,
+    PresentationDefinition presentationDefinition) {
+  var globalFormat = presentationDefinition.format;
+  if (globalFormat != null) {
+    if (globalFormat.ldpVp == null &&
+        globalFormat.ldp == null &&
+        globalFormat.ldpVc == null)
+      throw Exception('Only supported Formats are Linked Data proofs');
+  }
+
+  if (presentationDefinition.submissionRequirement != null) {
+    // TODO: Evaluate submission_requirements property
+    throw UnimplementedError('SubmissionRequirements are nut supported yet');
+    // Map<String, dynamic> filterResultPerDescriptor = {};
+    // Map<String, dynamic> descriptorGroups = {};
+    // for (var descriptor in presentationDefinition.inputDescriptors) {
+    //   if (descriptor.group == null)
+    //     throw Exception('Ungrouped input descriptor');
+    //   for (var g in descriptor.group!) {
+    //     if (descriptorGroups.containsKey(g)) {
+    //       List<dynamic> gl = descriptorGroups[g];
+    //       gl.add(descriptor.id);
+    //       descriptorGroups[g] = gl;
+    //     } else
+    //       descriptorGroups[g] = [descriptor.id];
+    //   }
+    //   var filteredCreds =
+    //       _processInputDescriptor(descriptor, globalFormat, credentials);
+    //   filterResultPerDescriptor[descriptor.id] = filteredCreds;
+    //
+    //   for (var requirement in presentationDefinition.submissionRequirement!) {
+    //     List accordingDescriptors = descriptorGroups[requirement.from];
+    //     if (requirement.rule == SubmissionRequirementRule.all) {
+    //       List<dynamic> creds = [];
+    //       for (String d in accordingDescriptors) {
+    //         var credsForDescriptor = filterResultPerDescriptor[d];
+    //         if (creds.length == 0)
+    //           creds = credsForDescriptor;
+    //         else {
+    //           List<dynamic> toAdd = [];
+    //           for (var c1 in creds) {
+    //             for (var c2 in credsForDescriptor) {
+    //               if (c1['id'] != c2['id']) toAdd.add(c2);
+    //             }
+    //           }
+    //           creds += toAdd;
+    //         }
+    //       }
+    //     } else if (requirement.rule == SubmissionRequirementRule.pick) {
+    //     } else
+    //       throw Exception('Unknown Rule in submission requirement');
+    //   }
+    // }
+  } else {
+    List<Map<String, dynamic>> inputCreds = credentials;
+    for (var descriptor in presentationDefinition.inputDescriptors) {
+      //Without any requirements, all input_descriptors must be fulfilled
+      inputCreds =
+          _processInputDescriptor(descriptor, globalFormat, inputCreds);
+    }
+    return inputCreds;
+  }
+}
+
+List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
+    FormatProperty? globalFormat, List<Map<String, dynamic>> creds) {
+  var localFormat = globalFormat;
+  if (descriptor.format != null) {
+    if (descriptor.format != null) {
+      if (descriptor.format!.ldpVp == null &&
+          descriptor.format!.ldp == null &&
+          descriptor.format!.ldpVc == null)
+        throw Exception('Only supported Formats are Linked Data proofs');
+    } else
+      localFormat = descriptor.format;
+  }
+
+  List<Map<String, dynamic>> candidate = [];
+  if (descriptor.constraints != null) {
+    if (descriptor.constraints!.isHolder != null)
+      // TODO: Evaluate Is_Holder property
+      throw UnimplementedError('is_holder property is not supported yet');
+    if (descriptor.constraints!.sameSubject != null)
+      // TODO: Evaluate same_subject property
+      throw UnimplementedError('same_subject feature is not supported yet');
+    if (descriptor.constraints!.statuses != null)
+      // TODO: Evaluate statuses property
+      throw UnimplementedError('statuses feature is not supported yet');
+    if (descriptor.constraints!.fields != null) {
+      var fields = descriptor.constraints!.fields!;
+      for (var cred in creds) {
+        for (var field in fields) {
+          if (field.predicate != null)
+            // TODO: Evaluate predicate property
+            throw UnimplementedError(
+                'Evaluating predicate feature is not supported yet');
+          for (var path in field.path) {
+            var match = path.read(cred);
+            var matchList = match.toList();
+            if (matchList.length == 0) continue;
+            if (field.filter != null) {
+              if (field.filter!.validate(matchList[0].value)) {
+                candidate.add(cred);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //check against format
+  if (localFormat != null) {
+    List<Map<String, dynamic>> candidateFormatFiltered = [];
+    for (var cred in candidate) {
+      String credProofFormat = cred['proof']['type'];
+      if (localFormat.ldpVc != null) {
+        if (localFormat.ldpVc!.proofType.contains(credProofFormat))
+          candidateFormatFiltered.add(cred);
+      }
+    }
+    return candidateFormatFiltered;
+  }
+  return candidate;
 }
 
 /// Converts json-String [credential] to dart Map.
