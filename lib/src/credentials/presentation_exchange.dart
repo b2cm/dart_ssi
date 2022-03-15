@@ -591,3 +591,91 @@ class LinkedDataProofFormat {
 enum Limiting { required, preferred }
 enum SubmissionRequirementRule { all, pick }
 enum StatusDirective { required, allowed, disallowed }
+
+//************** Presentation Submission **************************************
+class PresentationSubmission {
+  late String id;
+  late String presentationDefinitionId;
+  late List<InputDescriptorMappingObject> descriptorMap;
+
+  PresentationSubmission(
+      this.id, this.presentationDefinitionId, this.descriptorMap);
+
+  PresentationSubmission.fromJson(dynamic jsonObject) {
+    Map<String, dynamic> submission = credentialToMap(jsonObject);
+    if (submission.containsKey('id'))
+      id = submission['id'];
+    else
+      throw FormatException('Id Property is needed in presentation submission');
+
+    if (submission.containsKey('definition_id'))
+      presentationDefinitionId = submission['definition_id'];
+    else
+      throw FormatException(
+          'Definition id is needed in presentation submission');
+
+    if (submission.containsKey('descriptor_map')) {
+      List tmp = submission['descriptor_map'];
+      descriptorMap = [];
+      if (tmp.length > 0) {
+        for (var d in tmp) {
+          descriptorMap.add(InputDescriptorMappingObject.fromJson(d));
+        }
+      }
+    } else
+      throw FormatException(
+          'descriptor_map property is needed in presentation submission');
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonObject = {};
+    jsonObject['id'] = id;
+    jsonObject['definition_id'] = presentationDefinitionId;
+    List tmp = [];
+    for (var d in descriptorMap) tmp.add(d.toJson());
+    jsonObject['descriptor_map'] = tmp;
+    return jsonObject;
+  }
+
+  String toString() {
+    return jsonEncode(toJson());
+  }
+}
+
+class InputDescriptorMappingObject {
+  late String id;
+  late String format;
+  late JsonPath path;
+
+  InputDescriptorMappingObject(this.id, this.format, this.path);
+
+  InputDescriptorMappingObject.fromJson(dynamic jsonObject) {
+    Map<String, dynamic> descriptor = credentialToMap(jsonObject);
+    if (descriptor.containsKey('id'))
+      id = descriptor['id'];
+    else
+      throw Exception('Id property is needed in descriptor-Map Object');
+
+    if (descriptor.containsKey('format'))
+      format = descriptor['format'];
+    else
+      throw Exception('Format property is needed in descriptor-map object');
+
+    if (descriptor.containsKey('path'))
+      path = JsonPath(descriptor['path']);
+    else
+      throw Exception(' path property is needed in descriptor-map object');
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonObject = {};
+    jsonObject['id'] = id;
+    jsonObject['format'] = format;
+    jsonObject['path'] = path.expression;
+    return jsonObject;
+  }
+
+  String toString() {
+    return jsonEncode(toJson());
+  }
+}

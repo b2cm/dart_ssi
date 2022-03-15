@@ -826,7 +826,7 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
       expectedDid.split(':').last;
 }
 
-List<Map<String, dynamic>> searchCredentialsForPresentationDefinition(
+List<dynamic> searchCredentialsForPresentationDefinition(
     List<Map<String, dynamic>> credentials,
     PresentationDefinition presentationDefinition) {
   var globalFormat = presentationDefinition.format;
@@ -838,48 +838,60 @@ List<Map<String, dynamic>> searchCredentialsForPresentationDefinition(
   }
 
   if (presentationDefinition.submissionRequirement != null) {
-    // TODO: Evaluate submission_requirements property
-    throw UnimplementedError('SubmissionRequirements are nut supported yet');
-    // Map<String, dynamic> filterResultPerDescriptor = {};
-    // Map<String, dynamic> descriptorGroups = {};
-    // for (var descriptor in presentationDefinition.inputDescriptors) {
-    //   if (descriptor.group == null)
-    //     throw Exception('Ungrouped input descriptor');
-    //   for (var g in descriptor.group!) {
-    //     if (descriptorGroups.containsKey(g)) {
-    //       List<dynamic> gl = descriptorGroups[g];
-    //       gl.add(descriptor.id);
-    //       descriptorGroups[g] = gl;
-    //     } else
-    //       descriptorGroups[g] = [descriptor.id];
-    //   }
-    //   var filteredCreds =
-    //       _processInputDescriptor(descriptor, globalFormat, credentials);
-    //   filterResultPerDescriptor[descriptor.id] = filteredCreds;
-    //
-    //   for (var requirement in presentationDefinition.submissionRequirement!) {
-    //     List accordingDescriptors = descriptorGroups[requirement.from];
-    //     if (requirement.rule == SubmissionRequirementRule.all) {
-    //       List<dynamic> creds = [];
-    //       for (String d in accordingDescriptors) {
-    //         var credsForDescriptor = filterResultPerDescriptor[d];
-    //         if (creds.length == 0)
-    //           creds = credsForDescriptor;
-    //         else {
-    //           List<dynamic> toAdd = [];
-    //           for (var c1 in creds) {
-    //             for (var c2 in credsForDescriptor) {
-    //               if (c1['id'] != c2['id']) toAdd.add(c2);
-    //             }
-    //           }
-    //           creds += toAdd;
-    //         }
-    //       }
-    //     } else if (requirement.rule == SubmissionRequirementRule.pick) {
-    //     } else
-    //       throw Exception('Unknown Rule in submission requirement');
-    //   }
-    // }
+    Map<String, dynamic> filterResultPerDescriptor = {};
+    Map<String, dynamic> descriptorGroups = {};
+
+    //search things for all descriptors
+    for (var descriptor in presentationDefinition.inputDescriptors) {
+      if (descriptor.group == null)
+        throw Exception('Ungrouped input descriptor');
+
+      //input descriptors per group
+      for (var g in descriptor.group!) {
+        if (descriptorGroups.containsKey(g)) {
+          List<dynamic> gl = descriptorGroups[g];
+          gl.add(descriptor.id);
+          descriptorGroups[g] = gl;
+        } else
+          descriptorGroups[g] = [descriptor.id];
+      }
+
+      //credentials per descriptor
+      var filteredCreds =
+          _processInputDescriptor(descriptor, globalFormat, credentials);
+      filterResultPerDescriptor[descriptor.id] = filteredCreds;
+    }
+    //Evaluate submission requirements
+    List finalCredList = [];
+    for (var requirement in presentationDefinition.submissionRequirement!) {
+      if (requirement.fromNested != null)
+        //TODO:process path nested in submission requirement
+        throw UnimplementedError('Cant process from nested entries yet');
+      List accordingDescriptors = descriptorGroups[requirement.from];
+      List<dynamic> creds = [];
+      for (String d in accordingDescriptors) {
+        var credsForDescriptor = filterResultPerDescriptor[d];
+        if (creds.length == 0)
+          creds = credsForDescriptor;
+        else {
+          List<dynamic> toAdd = [];
+          for (var c1 in creds) {
+            for (var c2 in credsForDescriptor) {
+              if (c1['id'] != c2['id']) toAdd.add(c2);
+            }
+          }
+          creds += toAdd;
+        }
+      }
+      if(requirement.rule == SubmissionRequirementRule.pick){
+        int notLower = 0;
+        if(requirement.count != null) notLower = requirement.count!;
+        if(requirement.min != null) notLower =requirement.min!;
+        if(creds.length< notLower) throw Exception('Could not fullfill submission requirement');
+      }
+      finalCredList.add(creds);
+    }
+    return finalCredList;
   } else {
     List<Map<String, dynamic>> inputCreds = credentials;
     for (var descriptor in presentationDefinition.inputDescriptors) {
