@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:dart_web3/dart_web3.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:http/http.dart' as http;
-import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcRopsten =
@@ -41,8 +41,8 @@ void main() async {
       'service',
       endpoint);
 
-  var etherscanRes = jsonDecode((await http.get(
-          Uri.parse('https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=D48K393D61FXFZX6CRZSDUC2DVTS26N6SH')))
+  var etherscanRes = jsonDecode((await http.get(Uri.parse(
+          'https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=D48K393D61FXFZX6CRZSDUC2DVTS26N6SH')))
       .body);
   var safeGasPrice = EtherAmount.fromUnitAndValue(
           EtherUnit.gwei, etherscanRes['result']['SafeGasPrice'])
@@ -54,8 +54,8 @@ void main() async {
           EtherUnit.gwei, etherscanRes['result']['FastGasPrice'])
       .getValueInUnit(EtherUnit.ether);
 
-  var cryptoCmpRes = jsonDecode((await http.get(
-          Uri.parse('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=EUR')))
+  var cryptoCmpRes = jsonDecode((await http.get(Uri.parse(
+          'https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=EUR')))
       .body);
   var ethEur = cryptoCmpRes['EUR'];
 

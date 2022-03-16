@@ -1,7 +1,7 @@
+import 'package:dart_web3/dart_web3.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:flutter_ssi_wallet/src/wallet_store.dart';
 import 'package:http/http.dart';
-import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
