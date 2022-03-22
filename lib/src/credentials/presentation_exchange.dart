@@ -4,8 +4,9 @@ import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
 
 import '../credential_operations.dart';
+import '../types.dart';
 
-class PresentationDefinition {
+class PresentationDefinition implements JsonObject {
   late String id;
   late List<InputDescriptor> inputDescriptors;
   String? name;
@@ -79,7 +80,7 @@ class PresentationDefinition {
   }
 }
 
-class InputDescriptor {
+class InputDescriptor implements JsonObject {
   late String id;
   String? name;
   String? purpose;
@@ -120,7 +121,7 @@ class InputDescriptor {
   }
 }
 
-class InputDescriptorConstraints {
+class InputDescriptorConstraints implements JsonObject {
   List<InputDescriptorField>? fields;
   Limiting? limitDisclosure;
 
@@ -226,7 +227,7 @@ class InputDescriptorConstraints {
   }
 }
 
-class InputDescriptorField {
+class InputDescriptorField implements JsonObject {
   late List<JsonPath> path;
   String? id;
   String? purpose;
@@ -293,7 +294,7 @@ class InputDescriptorField {
   }
 }
 
-class HolderSubjectConstraint {
+class HolderSubjectConstraint implements JsonObject {
   /// Identifies the attributes whose Subject is of concern to the Verifier
   late List<String> fieldId;
 
@@ -341,7 +342,7 @@ class HolderSubjectConstraint {
   }
 }
 
-class StatusObject {
+class StatusObject implements JsonObject {
   StatusDirective? active;
   StatusDirective? suspended;
   StatusDirective? revoked;
@@ -406,7 +407,7 @@ class StatusObject {
   }
 }
 
-class SubmissionRequirement {
+class SubmissionRequirement implements JsonObject {
   late SubmissionRequirementRule rule;
   String? from;
   List<SubmissionRequirement>? fromNested;
@@ -503,7 +504,7 @@ class SubmissionRequirement {
   }
 }
 
-class FormatProperty {
+class FormatProperty implements JsonObject {
   JwtFormat? jwt;
   JwtFormat? jwtVc;
   JwtFormat? jwtVp;
@@ -545,7 +546,7 @@ class FormatProperty {
   }
 }
 
-class JwtFormat {
+class JwtFormat implements JsonObject {
   late List<String> algorithms;
 
   JwtFormat(this.algorithms);
@@ -567,7 +568,7 @@ class JwtFormat {
   }
 }
 
-class LinkedDataProofFormat {
+class LinkedDataProofFormat implements JsonObject {
   late List<String> proofType;
 
   LinkedDataProofFormat(this.proofType);
@@ -593,7 +594,7 @@ enum SubmissionRequirementRule { all, pick }
 enum StatusDirective { required, allowed, disallowed }
 
 //************** Presentation Submission **************************************
-class PresentationSubmission {
+class PresentationSubmission implements JsonObject {
   late String id;
   late String presentationDefinitionId;
   late List<InputDescriptorMappingObject> descriptorMap;
@@ -642,7 +643,7 @@ class PresentationSubmission {
   }
 }
 
-class InputDescriptorMappingObject {
+class InputDescriptorMappingObject implements JsonObject {
   late String id;
   late String format;
   late JsonPath path;

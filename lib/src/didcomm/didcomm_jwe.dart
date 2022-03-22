@@ -6,12 +6,13 @@ import 'package:crypto_keys/crypto_keys.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:elliptic/ecdh.dart' as ecdh;
 import 'package:elliptic/elliptic.dart' as elliptic;
-import 'package:flutter_ssi_wallet/src/didcomm/didcomm_jwm.dart';
 import 'package:x25519/x25519.dart' as x25519;
 
 import '../credential_operations.dart';
+import '../types.dart';
+import 'didcomm_jwm.dart';
 
-class DidcommEncryptedMessage {
+class DidcommEncryptedMessage implements JsonObject {
   late String protectedHeader;
   late String tag;
   late String iv;

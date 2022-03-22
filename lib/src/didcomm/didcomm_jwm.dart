@@ -1,8 +1,9 @@
 import 'dart:convert';
 
 import '../credential_operations.dart';
+import '../types.dart';
 
-class DidcommPlaintextMessage {
+class DidcommPlaintextMessage implements JsonObject {
   List<dynamic>? to;
   String? from;
   late String id;
@@ -16,8 +17,11 @@ class DidcommPlaintextMessage {
   FromPriorJWT? fromPrior;
   List<Attachment>? attachments;
 
-  DidcommPlaintextMessage(this.id, this.type, this.body,
-      {this.typ,
+  DidcommPlaintextMessage(
+      {required this.id,
+      required this.type,
+      required this.body,
+      this.typ,
       this.threadId,
       this.parentThreadId,
       this.createdTime,
@@ -93,7 +97,7 @@ class DidcommPlaintextMessage {
   }
 }
 
-class Attachment {
+class Attachment implements JsonObject {
   String? id;
   String? description;
   String? filename;
@@ -103,8 +107,9 @@ class Attachment {
   int? byteCount;
   late AttachmentData data;
 
-  Attachment(this.data,
-      {this.id,
+  Attachment(
+      {required this.data,
+      this.id,
       this.description,
       this.filename,
       this.mediaType,
@@ -150,7 +155,7 @@ class Attachment {
   }
 }
 
-class AttachmentData {
+class AttachmentData implements JsonObject {
   dynamic jws;
   String? hash;
   List<String>? links;
@@ -170,7 +175,10 @@ class AttachmentData {
 
   //TODO write this function: resolve Data from links; decode base64; check hash -> store everything in json;
   void resolveData() {
-    throw UnimplementedError('could not resolve link-data for now');
+    if (base64 != null)
+      json = jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(base64!))));
+    else
+      throw UnimplementedError('could not resolve link-data for now');
   }
 
   Map<String, dynamic> toJson() {
@@ -203,8 +211,14 @@ class FromPriorJWT {
   late String curve;
   late String signature;
 
-  FromPriorJWT(this.sub, this.iss, this.iat, this.curve, this.alg, this.kid,
-      this.signature);
+  FromPriorJWT(
+      {required this.sub,
+      required this.iss,
+      required this.iat,
+      required this.curve,
+      required this.alg,
+      required this.kid,
+      required this.signature});
 
   FromPriorJWT.fromCompactSerialization(String jwtCompact) {
     var splitted = jwtCompact.split('.');

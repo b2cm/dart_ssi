@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_ssi_wallet/src/types.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../credential_operations.dart';
@@ -26,7 +27,7 @@ class ProposePresentation {
       id = idValue;
 
     attachment = Attachment(
-        AttachmentData(json: presentationDefinition.toJson()),
+        data: AttachmentData(json: presentationDefinition.toJson()),
         id: attachmentId,
         format: 'dif/presentation-exchange/definitions@v1.0',
         mediaType: 'application/json');
@@ -36,7 +37,8 @@ class ProposePresentation {
     Map<String, dynamic> body = {};
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
-    return DidcommPlaintextMessage(id, type, body, attachments: [attachment]);
+    return DidcommPlaintextMessage(
+        id: id, type: type, body: body, attachments: [attachment]);
   }
 }
 
@@ -67,7 +69,7 @@ class RequestPresentation {
       id = idValue;
 
     attachment = Attachment(
-        AttachmentData(json: {
+        data: AttachmentData(json: {
           'options:': options.toJson(),
           'presentation_definition': presentationDefinition.toJson()
         }),
@@ -81,7 +83,8 @@ class RequestPresentation {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     body['will_confirm'] = willConfirm;
-    return DidcommPlaintextMessage(id, type, body, attachments: [attachment]);
+    return DidcommPlaintextMessage(
+        id: id, type: type, body: body, attachments: [attachment]);
   }
 }
 
@@ -104,7 +107,7 @@ class Presentation {
       id = idValue;
 
     attachment = Attachment(
-        AttachmentData(json: presentationDefinition.toJson()),
+        data: AttachmentData(json: presentationDefinition.toJson()),
         id: attachmentId,
         format: 'dif/presentation-exchange/submission@v1.0',
         mediaType: 'application/json');
@@ -114,11 +117,12 @@ class Presentation {
     Map<String, dynamic> body = {};
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
-    return DidcommPlaintextMessage(id, type, body, attachments: [attachment]);
+    return DidcommPlaintextMessage(
+        id: id, type: type, body: body, attachments: [attachment]);
   }
 }
 
-class PresentationRequestOptions {
+class PresentationRequestOptions implements JsonObject {
   late String domain;
   late String challenge;
 
