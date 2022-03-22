@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter_ssi_wallet/src/credentials/presentation_exchange.dart';
+
 import '../credential_operations.dart';
 import '../types.dart';
 
@@ -184,6 +186,93 @@ class CredentialStatus implements JsonObject {
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
     jsonObject['type'] = type;
+    return jsonObject;
+  }
+
+  String toString() {
+    return jsonEncode(toJson());
+  }
+}
+
+//****** Presentation ******
+class VerifiablePresentation implements JsonObject {
+  late List<String> context;
+  String? id;
+  late List<String> type;
+  late List<VerifiableCredential> verifiableCredential;
+  String? holder;
+  List<LinkedDataProof>? proof;
+  List<PresentationSubmission>? presentationSubmission;
+
+  VerifiablePresentation(
+      {required this.context,
+      required this.type,
+      required this.verifiableCredential,
+      this.id,
+      this.holder,
+      this.proof,
+      this.presentationSubmission});
+
+  VerifiablePresentation.fromJson(dynamic jsonObject) {
+    var presentation = credentialToMap(jsonObject);
+    if (presentation.containsKey('@context'))
+      context = presentation['@context'];
+    else
+      throw FormatException(
+          'context property is needed in verifiable presentation');
+    if (presentation.containsKey('type'))
+      type = presentation['type'];
+    else
+      throw FormatException(
+          'type property is needed in verifiable presentation');
+    if (presentation.containsKey('verifiableCredential')) {
+      verifiableCredential = [];
+      List tmp = presentation['verifiableCredential'];
+      for (var c in tmp) {
+        verifiableCredential.add(VerifiableCredential.fromJson(c));
+      }
+    } else
+      throw FormatException(
+          'verifiable credential property is needed in verifiable presentation');
+    id = presentation['id'];
+    holder = presentation['holder'];
+    if (presentation.containsKey('proof')) {
+      proof = [];
+      List tmp = presentation['proof'];
+      for (var c in tmp) {
+        proof!.add(LinkedDataProof.fromJson(c));
+      }
+    }
+
+    if (presentation.containsKey('presentation_submission')) {
+      presentationSubmission = [];
+      List tmp = presentation['presentation_submission'];
+      for (var c in tmp) {
+        presentationSubmission!.add(PresentationSubmission.fromJson(c));
+      }
+    }
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonObject = {};
+    jsonObject['@context'] = context;
+    jsonObject['type'] = type;
+    List tmp = [];
+    for (var c in verifiableCredential) tmp.add(c.toJson());
+    jsonObject['verifiableCredential'] = tmp;
+    if (id != null) jsonObject['id'] = id;
+    if (holder != null) jsonObject['holder'] = holder;
+    if (presentationSubmission != null) {
+      tmp = [];
+      for (var s in presentationSubmission!) tmp.add(s.toJson());
+      jsonObject['presentation_submission'] = tmp;
+    }
+    if (proof != null) {
+      tmp = [];
+      for (var p in proof!) tmp.add(p.toJson());
+      jsonObject['proof'] = tmp;
+    }
     return jsonObject;
   }
 
