@@ -17,6 +17,16 @@ class DidcommPlaintextMessage implements JsonObject {
   FromPriorJWT? fromPrior;
   List<Attachment>? attachments;
 
+  /// The header’s value is an array of strings that clarify when the ACK is
+  /// requested. Only the following value is defined by this version of
+  /// the spec: “receipt”.
+  List<String>? pleaseAck;
+
+  ///  the value of the header is an array that contains the id of one or more
+  ///  messages being acknowledged. Values in this array MUST appear in the
+  ///  order received, from oldest to most recent.
+  List<String>? ack;
+
   DidcommPlaintextMessage(
       {required this.id,
       required this.type,
@@ -29,13 +39,23 @@ class DidcommPlaintextMessage implements JsonObject {
       this.to,
       this.from,
       this.fromPrior,
-      this.attachments});
+      this.attachments,
+      bool pleaseAck = false,
+      this.ack}) {
+    if (pleaseAck) this.pleaseAck = ['receipt'];
+  }
 
   DidcommPlaintextMessage.fromJson(dynamic message) {
     Map<String, dynamic> decoded = credentialToMap(message);
     id = decoded['id']!;
     type = decoded['type']!;
-    body = decoded['body']!;
+    if (decoded.containsKey('body'))
+      body = decoded['body']!;
+    else {
+      body = {};
+      if (type != 'https://didcomm.org/reserved/2.0/empty')
+        throw Exception('Empty Body only allowed in Empty Message');
+    }
     from = decoded['from'];
     to = decoded['to'];
     threadId = decoded['thid'];
@@ -65,6 +85,8 @@ class DidcommPlaintextMessage implements JsonObject {
         }
       }
     }
+    pleaseAck = decoded['please_ack'];
+    ack = decoded['ack'];
   }
 
   Map<String, dynamic> toJson() {
@@ -89,6 +111,8 @@ class DidcommPlaintextMessage implements JsonObject {
       for (var a in attachments!) tmp.add(a.toJson());
       message['attachments'] = tmp;
     }
+    if (pleaseAck != null) message['please_ack'] = pleaseAck;
+    if (ack != null) message['ack'] = ack;
     return message;
   }
 
