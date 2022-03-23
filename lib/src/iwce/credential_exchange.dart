@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import '../credentials/credential_operations.dart';
+import '../util/types.dart';
+
 /// Represents a credential request as documented in inter-wallet-credential-exchange protocol.
-class CredentialRequest {
+class CredentialRequest implements JsonObject {
   List<dynamic>? _credentialTypes;
 
   Map<String, List<dynamic>>? _requiredProperties;
@@ -24,11 +27,21 @@ class CredentialRequest {
 
   String _selectiveDisclosureType = 'HashedPlaintextCredential2021';
 
-  CredentialRequest(this._credentialTypes, this._location, this._challenge,
-      [this._requiredProperties,
-      this._isAppLink = true,
-      this._domain,
-      this._domainSpecificExtension]);
+  CredentialRequest(
+      {required List<dynamic> credentialTypes,
+      required String location,
+      required String challenge,
+      Map<String, List<dynamic>>? requiredProperties,
+      bool isAppLink = true,
+      String? domain,
+      Map<String, dynamic>? domainSpecificExtension})
+      : _credentialTypes = credentialTypes,
+        _location = location,
+        _challenge = challenge,
+        _requiredProperties = requiredProperties,
+        _isAppLink = isAppLink,
+        _domain = domain,
+        _domainSpecificExtension = domainSpecificExtension;
 
   /// Searches base64URL encoded Response from [queryParameters] and decodes it.
   ///
@@ -36,8 +49,17 @@ class CredentialRequest {
   CredentialRequest.fromQuery(Map<String, dynamic> queryParameters) {
     if (!queryParameters.containsKey('iwce'))
       throw FormatException('Could not find expected query parameter');
-    Map<String, dynamic> json =
-        jsonDecode(utf8.decode(base64Decode(Base64Codec().normalize(queryParameters['iwce']))));
+    Map<String, dynamic> json = jsonDecode(utf8.decode(
+        base64Decode(Base64Codec().normalize(queryParameters['iwce']))));
+    _fromJson(json);
+  }
+
+  CredentialRequest.fromJson(dynamic jsonObject) {
+    var json = credentialToMap(jsonObject);
+    _fromJson(json);
+  }
+
+  _fromJson(Map<String, dynamic> json) {
     if (json['type'] != _type)
       throw FormatException('Unsupported Request Type');
 
@@ -80,17 +102,17 @@ class CredentialRequest {
 
   /// Returns the base64Url encoded credential request that could be used as query in an uri. It is prefixed with key 'iwce='.
   String toQuery() {
-    var json = _toJson();
+    var json = toJson();
     return 'iwce=${base64UrlEncode(utf8.encode(jsonEncode(json)))}';
   }
 
   /// String encoded json-representation of a credential request
   @override
   String toString() {
-    return jsonEncode(_toJson());
+    return jsonEncode(toJson());
   }
 
-  Map<String, dynamic> _toJson() {
+  Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     Map<String, dynamic> accept = {};
     Map<String, dynamic> vp = {};
@@ -168,7 +190,7 @@ class CredentialRequest {
 }
 
 /// Represents a credential response as documented in inter-wallet-credential-exchange protocol.
-class CredentialResponse {
+class CredentialResponse implements JsonObject {
   Map<String, dynamic>? _verifiablePresentation;
 
   List<dynamic>? _plaintextCredentials;
@@ -177,7 +199,11 @@ class CredentialResponse {
 
   String _sdType = 'HashedPlaintextCredential2021';
 
-  CredentialResponse(this._verifiablePresentation, this._plaintextCredentials);
+  CredentialResponse(
+      {required Map<String, dynamic> verifiablePresentation,
+      required List<dynamic> plaintextCredentials})
+      : _verifiablePresentation = verifiablePresentation,
+        _plaintextCredentials = plaintextCredentials;
 
   /// Searches base64URL encoded Response from [queryParameters] and decodes it.
   ///
@@ -185,8 +211,17 @@ class CredentialResponse {
   CredentialResponse.fromQuery(Map<String, dynamic> queryParameters) {
     if (!queryParameters.containsKey('iwce'))
       throw FormatException('Could not find expected query parameter');
-    Map<String, dynamic> json =
-        jsonDecode(utf8.decode(base64Decode(Base64Codec().normalize(queryParameters['iwce']))));
+    Map<String, dynamic> json = jsonDecode(utf8.decode(
+        base64Decode(Base64Codec().normalize(queryParameters['iwce']))));
+    _fromJson(json);
+  }
+
+  CredentialResponse.fromJson(dynamic jsonObject) {
+    var json = credentialToMap(jsonObject);
+    _fromJson(json);
+  }
+
+  _fromJson(Map<String, dynamic> json) {
     if (json['type'] != _type)
       throw FormatException('Unsupported Response-Type');
     _verifiablePresentation = json['verifiablePresentation'];
@@ -201,11 +236,11 @@ class CredentialResponse {
 
   /// Returns the base64Url encoded credential request that could be used as query in an uri. It is prefix with key 'iwce='.
   String toQuery() {
-    var json = _toJson();
+    var json = toJson();
     return 'iwce=${base64UrlEncode(utf8.encode(jsonEncode(json)))}';
   }
 
-  Map<String, dynamic> _toJson() {
+  Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     Map<String, dynamic> selectiveDisclosure = {};
     json['type'] = _type;
@@ -219,7 +254,7 @@ class CredentialResponse {
   /// String encoded json-representation of a credential response
   @override
   String toString() {
-    return jsonEncode(_toJson());
+    return jsonEncode(toJson());
   }
 
   /// The Verifiable Presentation containing the requested Verifiable Credentials

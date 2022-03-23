@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import '../credential_operations.dart';
-import '../types.dart';
+import '../credentials/credential_operations.dart';
+import '../util/types.dart';
 
 class DidcommPlaintextMessage implements JsonObject {
   List<dynamic>? to;

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
 
-import '../credential_operations.dart';
-import '../types.dart';
+import '../util/types.dart';
+import 'credential_operations.dart';
 
 class PresentationDefinition implements JsonObject {
   late String id;

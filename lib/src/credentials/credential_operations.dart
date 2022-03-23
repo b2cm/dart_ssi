@@ -4,12 +4,13 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
-import 'package:flutter_ssi_wallet/src/credentials/presentation_exchange.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
-import 'ethereum_connector.dart';
-import 'wallet_store.dart';
+import '../dids/did_ethr.dart';
+import '../wallet/wallet_store.dart';
+import 'presentation_exchange.dart';
+import 'revocation.dart';
 
 final _hashedAttributeSchemaMap = {
   "type": "object",

@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
 
-import '../../credential_operations.dart';
+import '../../credentials/credential_operations.dart';
 import '../../credentials/verifiable_credential.dart';
-import '../../types.dart';
+import '../../util/types.dart';
 import '../didcomm_jwm.dart';
 
 class ProposeCredential extends DidcommPlaintextMessage {

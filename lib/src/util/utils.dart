@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:asn1lib/asn1lib.dart';
 
-import 'credential_operations.dart';
+import '../credentials/credential_operations.dart';
 
 Future<List<String>> getDidFromDidConfiguration(String url) async {
   List<String> didsInConfig = [];

@@ -8,8 +8,8 @@ import 'package:dart_web3/crypto.dart';
 import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
 
+import '../util/private_util.dart';
 import 'hive_model.dart';
-import 'private_util.dart';
 
 /// A wallet storing credentials and keys permanently using Hive.
 ///

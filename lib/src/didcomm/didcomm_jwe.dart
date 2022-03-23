@@ -8,8 +8,8 @@ import 'package:elliptic/ecdh.dart' as ecdh;
 import 'package:elliptic/elliptic.dart' as elliptic;
 import 'package:x25519/x25519.dart' as x25519;
 
-import '../credential_operations.dart';
-import '../types.dart';
+import '../credentials/credential_operations.dart';
+import '../util/types.dart';
 import 'didcomm_jwm.dart';
 
 class DidcommEncryptedMessage implements JsonObject {
@@ -19,8 +19,12 @@ class DidcommEncryptedMessage implements JsonObject {
   late String ciphertext;
   late List<dynamic> recipients;
 
-  DidcommEncryptedMessage(this.protectedHeader, this.tag, this.iv,
-      this.ciphertext, this.recipients);
+  DidcommEncryptedMessage(
+      {required this.protectedHeader,
+      required this.tag,
+      required this.iv,
+      required this.ciphertext,
+      required this.recipients});
 
   DidcommEncryptedMessage.fromJson(dynamic message) {
     Map<String, dynamic> decoded = credentialToMap(message);
