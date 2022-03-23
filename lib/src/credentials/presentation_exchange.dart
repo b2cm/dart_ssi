@@ -14,8 +14,13 @@ class PresentationDefinition implements JsonObject {
   FormatProperty? format;
   List<SubmissionRequirement>? submissionRequirement;
 
-  PresentationDefinition(this.id, this.inputDescriptors,
-      {this.name, this.purpose, this.format, this.submissionRequirement});
+  PresentationDefinition(
+      {required this.id,
+      required this.inputDescriptors,
+      this.name,
+      this.purpose,
+      this.format,
+      this.submissionRequirement});
 
   PresentationDefinition.fromJson(dynamic presentationDefinitionJson) {
     var definition = credentialToMap(presentationDefinitionJson);
@@ -88,8 +93,13 @@ class InputDescriptor implements JsonObject {
   InputDescriptorConstraints? constraints;
   List<String>? group;
 
-  InputDescriptor(this.id,
-      {this.name, this.purpose, this.format, this.constraints, this.group});
+  InputDescriptor(
+      {required this.id,
+      this.name,
+      this.purpose,
+      this.format,
+      this.constraints,
+      this.group});
 
   InputDescriptor.fromJson(dynamic inputDescriptorJson) {
     var input = credentialToMap(inputDescriptorJson);
@@ -239,8 +249,8 @@ class InputDescriptorField implements JsonObject {
   /// - `preferred`: This indicates that the returned value SHOULD be the boolean result of applying the value of the filter property to the result of evaluating the path property.
   Limiting? predicate;
 
-  InputDescriptorField(this.path,
-      {this.id, this.purpose, this.filter, this.predicate});
+  InputDescriptorField(
+      {required this.path, this.id, this.purpose, this.filter, this.predicate});
 
   InputDescriptorField.fromJson(dynamic fieldJson) {
     var field = credentialToMap(fieldJson);
@@ -304,7 +314,7 @@ class HolderSubjectConstraint implements JsonObject {
   /// - `preferred`: This indicates that it is RECOMMENDED that the processing entity include proof that the Subject of each attribute identified by a value in the field_id array is the same as the entity submitting the response.
   late Limiting directive;
 
-  HolderSubjectConstraint(this.fieldId, this.directive);
+  HolderSubjectConstraint({required this.fieldId, required this.directive});
 
   HolderSubjectConstraint.fromJson(dynamic isHolderObject) {
     Map<String, dynamic> ih = credentialToMap(isHolderObject);
@@ -415,8 +425,9 @@ class SubmissionRequirement implements JsonObject {
   String? purpose;
   int? min, max, count;
 
-  SubmissionRequirement(this.rule,
-      {this.from,
+  SubmissionRequirement(
+      {required this.rule,
+      this.from,
       this.fromNested,
       this.name,
       this.purpose,
@@ -549,7 +560,7 @@ class FormatProperty implements JsonObject {
 class JwtFormat implements JsonObject {
   late List<String> algorithms;
 
-  JwtFormat(this.algorithms);
+  JwtFormat({required this.algorithms});
 
   JwtFormat.fromJson(dynamic jwtFormatJson) {
     var jwtAlg = credentialToMap(jwtFormatJson);
@@ -571,7 +582,7 @@ class JwtFormat implements JsonObject {
 class LinkedDataProofFormat implements JsonObject {
   late List<String> proofType;
 
-  LinkedDataProofFormat(this.proofType);
+  LinkedDataProofFormat({required this.proofType});
   LinkedDataProofFormat.fromJson(dynamic proofTypeJson) {
     var proofTypeTmp = credentialToMap(proofTypeJson);
     if (proofTypeTmp.containsKey('proof_type'))
@@ -600,7 +611,9 @@ class PresentationSubmission implements JsonObject {
   late List<InputDescriptorMappingObject> descriptorMap;
 
   PresentationSubmission(
-      this.id, this.presentationDefinitionId, this.descriptorMap);
+      {required this.id,
+      required this.presentationDefinitionId,
+      required this.descriptorMap});
 
   PresentationSubmission.fromJson(dynamic jsonObject) {
     Map<String, dynamic> submission = credentialToMap(jsonObject);
@@ -648,7 +661,8 @@ class InputDescriptorMappingObject implements JsonObject {
   late String format;
   late JsonPath path;
 
-  InputDescriptorMappingObject(this.id, this.format, this.path);
+  InputDescriptorMappingObject(
+      {required this.id, required this.format, required this.path});
 
   InputDescriptorMappingObject.fromJson(dynamic jsonObject) {
     Map<String, dynamic> descriptor = credentialToMap(jsonObject);

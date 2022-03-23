@@ -8,7 +8,7 @@ class DidcommPlaintextMessage implements JsonObject {
   String? from;
   late String id;
   late String type;
-  String? typ;
+  DidcommMessageTyp? typ;
   String? threadId;
   String? parentThreadId;
   DateTime? createdTime;
@@ -60,7 +60,22 @@ class DidcommPlaintextMessage implements JsonObject {
     to = decoded['to'];
     threadId = decoded['thid'];
     parentThreadId = decoded['pthid'];
-    typ = decoded['typ'];
+    if (decoded.containsKey('typ')) {
+      String typTmp = decoded['typ'];
+      switch (typTmp) {
+        case 'application/didcomm-plain+json':
+          typ = DidcommMessageTyp.plain;
+          break;
+        case 'application/didcomm-signed+json':
+          typ = DidcommMessageTyp.signed;
+          break;
+        case 'application/didcomm-encrypted+json':
+          typ = DidcommMessageTyp.encrypted;
+          break;
+        default:
+          throw Exception('Unknown typ');
+      }
+    }
     var tmp = decoded['created_time'];
     if (tmp != null)
       createdTime =
@@ -70,10 +85,12 @@ class DidcommPlaintextMessage implements JsonObject {
       expiresTime =
           DateTime.fromMillisecondsSinceEpoch(tmp * 1000, isUtc: true);
 
-    fromPrior = FromPriorJWT.fromCompactSerialization(decoded['from_prior']);
-    if (fromPrior != null && from != null) {
-      if (from != fromPrior!.sub)
-        throw Exception('from value must match from_prior.sub');
+    if (decoded.containsKey('from_prior')) {
+      fromPrior = FromPriorJWT.fromCompactSerialization(decoded['from_prior']);
+      if (fromPrior != null && from != null) {
+        if (from != fromPrior!.sub)
+          throw Exception('from value must match from_prior.sub');
+      }
     }
 
     if (decoded.containsKey(['attachments'])) {
@@ -95,7 +112,7 @@ class DidcommPlaintextMessage implements JsonObject {
     message['type'] = type;
     if (from != null) message['from'] = from;
     if (to != null) message['to'] = to;
-    if (typ != null) message['typ'] = typ;
+    if (typ != null) message['typ'] = typ!.value;
     if (threadId != null) message['thid'] = threadId;
     if (parentThreadId != null) message['pthid'] = parentThreadId;
     if (createdTime != null)
@@ -272,4 +289,27 @@ class FromPriorJWT {
   String build() {
     return '';
   }
+}
+
+enum DidcommProfiles { aip1, rfc19, rfc587, v2 }
+
+extension DidcommProfileExt on DidcommProfiles {
+  static const Map<DidcommProfiles, String> values = {
+    DidcommProfiles.aip1: 'didcomm/aip1',
+    DidcommProfiles.rfc19: 'didcomm/aip2;env=rfc19',
+    DidcommProfiles.rfc587: 'didcomm/aip2;env=rfc587',
+    DidcommProfiles.v2: 'didcomm/v2'
+  };
+  String get value => values[this]!;
+}
+
+enum DidcommMessageTyp { plain, signed, encrypted }
+
+extension DidcommMessageTypExt on DidcommMessageTyp {
+  static const Map<DidcommMessageTyp, String> values = {
+    DidcommMessageTyp.plain: 'application/didcomm-plain+json',
+    DidcommMessageTyp.signed: 'application/didcomm-signed+json',
+    DidcommMessageTyp.encrypted: 'application/didcomm-encrypted+json'
+  };
+  String get value => values[this]!;
 }
