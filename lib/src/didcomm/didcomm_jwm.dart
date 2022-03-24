@@ -16,6 +16,7 @@ class DidcommPlaintextMessage implements JsonObject {
   late Map<String, dynamic> body;
   FromPriorJWT? fromPrior;
   List<Attachment>? attachments;
+  Map<String, dynamic>? additionalHeaders;
 
   /// The header’s value is an array of strings that clarify when the ACK is
   /// requested. Only the following value is defined by this version of
@@ -41,7 +42,8 @@ class DidcommPlaintextMessage implements JsonObject {
       this.fromPrior,
       this.attachments,
       bool pleaseAck = false,
-      this.ack}) {
+      this.ack,
+      this.additionalHeaders}) {
     if (pleaseAck) this.pleaseAck = ['receipt'];
   }
 
@@ -104,6 +106,22 @@ class DidcommPlaintextMessage implements JsonObject {
     }
     pleaseAck = decoded['please_ack'];
     ack = decoded['ack'];
+
+    decoded.remove('to');
+    decoded.remove('from');
+    decoded.remove('id');
+    decoded.remove('type');
+    decoded.remove('typ');
+    decoded.remove('thid');
+    decoded.remove('pthid');
+    decoded.remove('created_time');
+    decoded.remove('expires_time');
+    decoded.remove('body');
+    decoded.remove('from_prior');
+    decoded.remove('attachments');
+    decoded.remove('ack');
+    decoded.remove('please_ack');
+    if (decoded.length > 0) additionalHeaders = decoded;
   }
 
   Map<String, dynamic> toJson() {
@@ -119,6 +137,10 @@ class DidcommPlaintextMessage implements JsonObject {
       message['created_time'] = createdTime!.millisecondsSinceEpoch ~/ 1000;
     if (expiresTime != null)
       message['expires_time'] = expiresTime!.millisecondsSinceEpoch ~/ 1000;
+
+    if (pleaseAck != null) message['please_ack'] = pleaseAck;
+    if (ack != null) message['ack'] = ack;
+    if (additionalHeaders != null) message.addAll(additionalHeaders!);
     message['body'] = body;
 
     //TODO: from_prior header
@@ -128,8 +150,7 @@ class DidcommPlaintextMessage implements JsonObject {
       for (var a in attachments!) tmp.add(a.toJson());
       message['attachments'] = tmp;
     }
-    if (pleaseAck != null) message['please_ack'] = pleaseAck;
-    if (ack != null) message['ack'] = ack;
+
     return message;
   }
 
