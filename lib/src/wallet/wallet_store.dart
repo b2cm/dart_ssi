@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:base_codecs/base_codecs.dart';
 import 'package:bip32/bip32.dart';
-import 'package:bip32_ed25519/api.dart';
 import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
