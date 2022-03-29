@@ -25,7 +25,8 @@ main() async {
   var allCredentials = holder.getAllCredentials();
   var keyList = allCredentials.keys;
   Credential c = allCredentials[keyList.first]!;
-  var presentation = buildPresentation([c.w3cCredential], holder, challenge);
+  var presentation =
+      await buildPresentation([c.w3cCredential], holder, challenge);
   await new File('example/presentation.json').writeAsString(presentation);
 
   //Holder hides all values he wouldn't show

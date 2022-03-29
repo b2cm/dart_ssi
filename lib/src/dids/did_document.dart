@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:base_codecs/base_codecs.dart';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
@@ -252,6 +255,34 @@ class VerificationMethod implements JsonObject {
           'controller property is needed in Verification Method');
     publicKeyJwk = method['publicKeyJwk'];
     publicKeyMultibase = method['publicKeyMultibase'];
+    _resolveMultibase();
+  }
+
+  _resolveMultibase() {
+    if (publicKeyMultibase != null && publicKeyJwk == null) {
+      String firstLetter = publicKeyMultibase![0];
+      String key = publicKeyMultibase!.substring(1);
+      if (firstLetter == 'z') {
+        var keyDecoded = Base58CodecBitcoin().decode(key);
+        _toJwk(keyDecoded);
+      }
+    }
+  }
+
+  _toJwk(Uint8List decodedKey) {
+    Map<String, dynamic> jwk = {};
+    if (type.startsWith('Ed25519VerificationKey')) {
+      jwk['kty'] = 'OKP';
+      jwk['crv'] = 'Ed25519';
+      jwk['x'] = removePaddingFromBase64(
+          base64UrlEncode(decodedKey.sublist(2).toList()));
+    } else if (type.startsWith('X25519KeyAgreementKey')) {
+      jwk['kty'] = 'OKP';
+      jwk['crv'] = 'X25519';
+      jwk['x'] = removePaddingFromBase64(
+          base64UrlEncode(decodedKey.sublist(2).toList()));
+    }
+    publicKeyJwk = jwk;
   }
 
   Map<String, dynamic> toJson() {

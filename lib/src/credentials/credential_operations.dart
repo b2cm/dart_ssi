@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:base_codecs/base_codecs.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
+import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
@@ -243,7 +245,7 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 }
 
 /// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
-String signCredential(WalletStore wallet, dynamic credential) {
+Future<String> signCredential(WalletStore wallet, dynamic credential) async {
   credential = credentialToMap(credential);
   String issuerDid = getIssuerDidFromCredential(credential);
   if (issuerDid == '') {
@@ -251,8 +253,7 @@ String signCredential(WalletStore wallet, dynamic credential) {
   }
 
   var credHash = sha256.convert(utf8.encode(jsonEncode(credential))).bytes;
-  var proof = _buildProof(credHash as Uint8List, issuerDid, wallet);
-
+  var proof = await _buildProof(credHash as Uint8List, issuerDid, wallet);
   credential['proof'] = proof;
   return jsonEncode(credential);
 }
@@ -298,9 +299,9 @@ class RevokedException implements Exception {
 ///
 /// If not only the ownership of the dids in the credentials should be proofed a List of [additionalDids]
 /// could be given and a proof section for each did is added.
-String buildPresentation(
+Future<String> buildPresentation(
     List<dynamic> credentials, WalletStore? wallet, String challenge,
-    {List<String>? additionalDids, List<dynamic>? disclosedCredentials}) {
+    {List<String>? additionalDids, List<dynamic>? disclosedCredentials}) async {
   List<Map<String, dynamic>?> credMapList = [];
   List<String?> holderDids = [];
   credentials.forEach((element) {
@@ -331,19 +332,35 @@ String buildPresentation(
   var presentationHash =
       sha256.convert(utf8.encode(jsonEncode(presentation))).bytes;
   List<Map<String, dynamic>> proofList = [];
-  holderDids.forEach((element) {
-    var proof = _buildProof(presentationHash as Uint8List, element, wallet!,
+  for (var element in holderDids) {
+    SignatureType type;
+    if (element!.startsWith('did:ethr'))
+      type = SignatureType.ecdsaRecovery;
+    else if (element.startsWith('did:key:z6Mk'))
+      type = SignatureType.edDsa;
+    else
+      throw Exception('Unknown did -method');
+    var proof = await _buildProof(
+        presentationHash as Uint8List, element, wallet!,
         proofOptions: _buildProofOptions(
-            verificationMethod: element, challenge: challenge));
+            type: type, verificationMethod: element, challenge: challenge));
     proofList.add(proof);
-  });
+  }
   if (additionalDids != null) {
-    additionalDids.forEach((element) {
-      var proof = _buildProof(presentationHash as Uint8List, element, wallet!,
+    for (var element in additionalDids) {
+      SignatureType type;
+      if (element.startsWith('did:ethr'))
+        type = SignatureType.ecdsaRecovery;
+      else if (element.startsWith('did:key:z6Mk'))
+        type = SignatureType.edDsa;
+      else
+        throw Exception('Unknown did -method');
+      var proof = await _buildProof(
+          presentationHash as Uint8List, element, wallet!,
           proofOptions: _buildProofOptions(
-              verificationMethod: element, challenge: challenge));
+              type: type, verificationMethod: element, challenge: challenge));
       proofList.add(proof);
-    });
+    }
   }
   presentation['proof'] = proofList;
   return jsonEncode(presentation);
@@ -1086,12 +1103,53 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
   return true;
 }
 
-Map<String, dynamic> _buildProof(
-    Uint8List hashToSign, String? didToSignWith, WalletStore wallet,
+Future<Map<String, dynamic>> _buildProof(
+    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
+    {dynamic proofOptions}) async {
+  if (didToSignWith.startsWith('did:ethr'))
+    return _buildEcdsaRecoveryProof(hashToSign, didToSignWith, wallet,
+        proofOptions: proofOptions);
+  else if (didToSignWith.startsWith('did:key:z6Mk'))
+    return await _buildEdDsaProof(hashToSign, didToSignWith, wallet,
+        proofOptions: proofOptions);
+  else
+    throw UnimplementedError('Other dids are not supported yet');
+}
+
+Future<Map<String, dynamic>> _buildEdDsaProof(
+    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
+    {dynamic proofOptions}) async {
+  String pOptions;
+  if (proofOptions == null) {
+    pOptions = _buildProofOptions(
+        type: SignatureType.edDsa, verificationMethod: didToSignWith);
+  } else {
+    if (proofOptions is String)
+      pOptions = proofOptions;
+    else
+      pOptions = jsonEncode(proofOptions);
+  }
+  var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
+  var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
+
+  var privateKey = await wallet.getPrivateKeyForCredentialDidEd(didToSignWith);
+  if (privateKey == null)
+    privateKey = await wallet.getPrivateKeyForConnectionDidEd(didToSignWith);
+  if (privateKey == null) throw Exception('Could not find a private key');
+  var signature = ed.sign(privateKey, Uint8List.fromList(hash));
+  Map<String, dynamic> optionsMap = jsonDecode(pOptions);
+  optionsMap['proofValue'] = 'z${base58BitcoinEncode(signature)}';
+
+  return optionsMap;
+}
+
+Map<String, dynamic> _buildEcdsaRecoveryProof(
+    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
     {dynamic proofOptions}) {
   String pOptions;
   if (proofOptions == null) {
-    pOptions = _buildProofOptions(verificationMethod: didToSignWith);
+    pOptions = _buildProofOptions(
+        type: SignatureType.ecdsaRecovery, verificationMethod: didToSignWith);
   } else {
     if (proofOptions is String)
       pOptions = proofOptions;
@@ -1121,10 +1179,33 @@ Map<String, dynamic> _buildProof(
 }
 
 bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
-  var signature = _getSignatureFromJws(proof['jws']);
-
-  if (proof['type'] != 'EcdsaSecp256k1RecoverySignature2020')
+  if (proof['type'] == SignatureType.ecdsaRecovery.value)
+    return _verifyEcdsaRecovery(proof, hash, did);
+  else if (proof['type'] == SignatureType.edDsa.value)
+    return _verifyEdDsa(proof, hash, did);
+  else
     throw Exception('Proof type ${proof['type']} is not supported');
+}
+
+bool _verifyEdDsa(Map<String, dynamic> proof, Uint8List hash, String did) {
+  var proofValue = proof.remove('proofValue');
+
+  var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
+  var hashToSign = sha256.convert(proofHash + hash).bytes;
+
+  proof['proofValue'] = proofValue;
+
+  var encodedKey = did.split(':')[2];
+  var base58DecodedKey = base58BitcoinDecode(encodedKey.substring(1));
+  return ed.verify(
+      ed.PublicKey(base58DecodedKey.sublist(2)),
+      Uint8List.fromList(hashToSign),
+      base58BitcoinDecode(proofValue.substring(1)));
+}
+
+bool _verifyEcdsaRecovery(
+    Map<String, dynamic> proof, Uint8List hash, String did) {
+  var signature = _getSignatureFromJws(proof['jws']);
 
   var jws = proof.remove('jws');
   var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
@@ -1141,23 +1222,35 @@ bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
 }
 
 String _buildProofOptions(
-    {required String? verificationMethod, String? domain, String? challenge}) {
+    {required SignatureType type,
+    required String verificationMethod,
+    String? domain,
+    String? challenge}) {
   Map<String, dynamic> jsonObject = new Map();
-  jsonObject.putIfAbsent('type', () => 'EcdsaSecp256k1RecoverySignature2020');
+  jsonObject.putIfAbsent('type', () => type.value);
   jsonObject.putIfAbsent('proofPurpose', () => 'assertionMethod');
   jsonObject.putIfAbsent('verificationMethod', () => verificationMethod);
   jsonObject.putIfAbsent(
       'created', () => DateTime.now().toUtc().toIso8601String());
 
   if (domain != null) {
-    jsonObject.putIfAbsent('domain', () => domain);
+    jsonObject['domain'] = domain;
   }
 
   if (challenge != null) {
-    jsonObject.putIfAbsent('challenge', () => challenge);
+    jsonObject['challenge'] = challenge;
   }
-
   return json.encode(jsonObject);
+}
+
+enum SignatureType { ecdsaRecovery, edDsa }
+
+extension SignatureTypeExt on SignatureType {
+  static const Map<SignatureType, String> values = {
+    SignatureType.ecdsaRecovery: 'EcdsaSecp256k1RecoverySignature2020',
+    SignatureType.edDsa: 'Ed25519Signature2020',
+  };
+  String get value => values[this]!;
 }
 
 MsgSignature _getSignatureFromJws(String jws) {

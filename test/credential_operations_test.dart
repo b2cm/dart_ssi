@@ -1224,7 +1224,7 @@ void main() async {
 
     test('check signed credential; no proof Options given; no manipulation',
         () async {
-      var signed = signCredential(wallet, w3c);
+      var signed = await signCredential(wallet, w3c);
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['verificationMethod'],
@@ -1242,7 +1242,7 @@ void main() async {
     test(
         'check signed credential; no proof Options given; with manipulation in data',
         () async {
-      var signed = signCredential(wallet, w3c);
+      var signed = await signCredential(wallet, w3c);
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
       signedMap['credentialSubject']['id'] = '0x567';
       expect(signedMap.containsKey('proof'), true);
@@ -1261,7 +1261,7 @@ void main() async {
     test(
         'check signed credential; no proof Options given; with manipulation in proof Options',
         () async {
-      var signed = signCredential(wallet, w3c);
+      var signed = await signCredential(wallet, w3c);
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['verificationMethod'],
@@ -1295,7 +1295,7 @@ void main() async {
         var cred = buildPlaintextCredential(plaintext, ganacheDid6);
         var w3cCred = buildW3cCredentialwithHashes(cred, ganacheDid9,
             revocationRegistryAddress: revAddress);
-        var signed = signCredential(ganacheAccounts, w3cCred);
+        var signed = await signCredential(ganacheAccounts, w3cCred);
 
         //before revocation
         var verified = await verifyCredential(signed,
@@ -1318,7 +1318,7 @@ void main() async {
         var w3cMap = jsonDecode(w3c!);
         var rev = {'type': 'RevocationList2020', 'id': 'http://example.com'};
         w3cMap['credentialStatus'] = rev;
-        var signed = signCredential(wallet, w3cMap);
+        var signed = await signCredential(wallet, w3cMap);
 
         expect(
             () async => await verifyCredential(signed,
@@ -1331,7 +1331,7 @@ void main() async {
     test('with owner change', () async {
       var web3 = Web3Client(rpcUrl, Client());
 
-      var signed = signCredential(wallet, w3c);
+      var signed = await signCredential(wallet, w3c);
       expect(
           await verifyCredential(signed,
               erc1056: erc1056, revocationRegistry: revocationRegistry),
@@ -1418,19 +1418,20 @@ void main() async {
       var w3cCred3 =
           buildW3cCredentialwithHashes(plaintext3, iss3.getStandardIssuerDid());
 
-      signed1 = signCredential(iss1, w3cCred1);
-      signed2 = signCredential(iss2, w3cCred2);
-      signed3 = signCredential(iss3, w3cCred3);
+      signed1 = await signCredential(iss1, w3cCred1);
+      signed2 = await signCredential(iss2, w3cCred2);
+      signed3 = await signCredential(iss3, w3cCred3);
     });
 
     test('build and verify presentation without manipulation', () async {
       var challenge = Uuid().v4();
-      var presentation =
-          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presentation = await buildPresentation(
+          [signed1, signed2, signed3], holder, challenge);
       var presMap = jsonDecode(presentation) as Map;
       expect(presMap.containsKey('proof'), true);
       expect(presMap['proof'] is List, true);
       expect(presMap['proof'].length, 3);
+      // print(presMap);
 
       expect(presMap.containsKey('verifiableCredential'), true);
       expect(presMap['verifiableCredential'] is List, true);
@@ -1454,8 +1455,8 @@ void main() async {
 
     test('one nonce/challenge is manipulated', () async {
       var challenge = Uuid().v4();
-      var presentation =
-          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presentation = await buildPresentation(
+          [signed1, signed2, signed3], holder, challenge);
       var presMap = jsonDecode(presentation) as Map;
 
       presMap['proof'][0]['challenge'] = Uuid().v4();
@@ -1469,8 +1470,8 @@ void main() async {
 
     test('manipulated proof', () async {
       var challenge = Uuid().v4();
-      var presentation =
-          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presentation = await buildPresentation(
+          [signed1, signed2, signed3], holder, challenge);
       var presMap = jsonDecode(presentation) as Map;
 
       presMap['proof'][0]['verificationMethod'] =
@@ -1484,10 +1485,10 @@ void main() async {
               'Proof for did:ethr:0xC3d188C872e25c0370Ff3D2aA7268e2e13D11fe9 could not been verified')));
     });
 
-    test('not enough proofs', () {
+    test('not enough proofs', () async {
       var challenge = Uuid().v4();
-      var presentation =
-          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presentation = await buildPresentation(
+          [signed1, signed2, signed3], holder, challenge);
       var presMap = jsonDecode(presentation) as Map;
 
       presMap['proof'].removeAt(0);
@@ -1502,7 +1503,7 @@ void main() async {
     test('add additional proofs', () async {
       var challenge = Uuid().v4();
       var newDID = await holder.getNextConnectionDID();
-      var presentation = buildPresentation(
+      var presentation = await buildPresentation(
           [signed1, signed2, signed3], holder, challenge,
           additionalDids: [newDID]);
       var presMap = jsonDecode(presentation) as Map;
@@ -1517,8 +1518,8 @@ void main() async {
     test('credential could not been verified (verifyCredential returns false)',
         () async {
       var challenge = Uuid().v4();
-      var presentation =
-          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presentation = await buildPresentation(
+          [signed1, signed2, signed3], holder, challenge);
       var presMap = jsonDecode(presentation) as Map;
       presMap['verifiableCredential'][0]['issuer'] =
           await holder.getNextCredentialDID();
@@ -1532,8 +1533,8 @@ void main() async {
 
     test('one holder did was changed', () async {
       var challenge = Uuid().v4();
-      var presentation1 =
-          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presentation1 = await buildPresentation(
+          [signed1, signed2, signed3], holder, challenge);
       expect(
           await verifyPresentation(presentation1, challenge,
               erc1056: erc1056, revocationRegistry: revocationRegistry),
@@ -1556,8 +1557,8 @@ void main() async {
 
       var newPath = holder.getCredential(newDid)!.hdPath;
       holder.storeCredential('', '', newPath, credDid: didCred1);
-      var presentation2 =
-          buildPresentation([signed1, signed2, signed3], holder, challenge);
+      var presentation2 = await buildPresentation(
+          [signed1, signed2, signed3], holder, challenge);
       expect(
           await verifyPresentation(presentation2, challenge,
               erc1056: erc1056, revocationRegistry: revocationRegistry),
@@ -1575,7 +1576,7 @@ void main() async {
 
       test('all without manipulation', () async {
         var challenge = Uuid().v4();
-        var presentation = buildPresentation(
+        var presentation = await buildPresentation(
             [signed1, signed2, signed3], holder, challenge,
             disclosedCredentials: [undisclosed1, undisclosed2, undisclosed3]);
         Map<String, dynamic> presMap = jsonDecode(presentation);
@@ -1940,7 +1941,7 @@ void main() async {
           wallet.getStandardIssuerDid()!.startsWith('did:ethr:ropsten'), true);
       var w3c =
           buildW3cCredentialwithHashes(plain, wallet.getStandardIssuerDid());
-      var signed = signCredential(wallet, w3c);
+      var signed = await signCredential(wallet, w3c);
       expect(await verifyCredential(signed, erc1056: ercWithId), true);
     });
 

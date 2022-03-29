@@ -1,10 +1,16 @@
 library flutter_ssi_wallet;
 
+import 'dart:typed_data';
+
+import 'package:base_codecs/base_codecs.dart';
 import 'package:bip32/bip32.dart';
+import 'package:bip32_ed25519/api.dart';
 import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
+import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
+import 'package:ed25519_hd_key/ed25519_hd_key.dart';
 import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
 
@@ -31,6 +37,12 @@ class WalletStore {
 
   ///The path used to derive connection keys
   final String standardConnectionPath = 'm/456/1';
+
+  ///The path used to derive credential keys
+  final String standardCredentialPathEd = 'm/457\'/0\'/';
+
+  ///The path used to derive connection keys
+  final String standardConnectionPathEd = 'm/457\'/1\'';
 
   /// Constructs a wallet at file-system path [path].
   WalletStore(this._walletPath) {
@@ -159,6 +171,8 @@ class WalletStore {
     _keyBox!.put('seed', seed);
     _keyBox!.put('lastCredentialIndex', 0);
     _keyBox!.put('lastConnectionIndex', 0);
+    _keyBox!.put('lastCredentialIndexEd', 0);
+    _keyBox!.put('lastConnectionIndexEd', 0);
     _configBox!.put('network', network);
 
     return mne;
@@ -174,14 +188,34 @@ class WalletStore {
     return issuerDid;
   }
 
+  /// Generates and returns DID for the issuer.
+  Future<String> initializeIssuerEdKey() async {
+    var key = await ED25519_HD_KEY.derivePath(
+        'm/457\'/1\'/2\'', _keyBox!.get('seed').toList());
+    var issuerDid = await _edKeyToDid(key);
+    _keyBox!.put('issuerDidEd', issuerDid);
+    _credentialBox!.put(issuerDid, new Credential('m/457\'/1\'/2\'', '', ''));
+    return issuerDid;
+  }
+
   /// Returns the DID for issuing credentials.
   String? getStandardIssuerDid() {
     return _keyBox!.get('issuerDid');
   }
 
+  /// Returns the DID for issuing credentials.
+  String? getStandardIssuerDidEd() {
+    return _keyBox!.get('issuerDidEd');
+  }
+
   /// Returns the private key for issuing credentials.
   String? getStandardIssuerPrivateKey() {
     return getPrivateKeyForCredentialDid(getStandardIssuerDid());
+  }
+
+  /// Returns the private key for issuing credentials.
+  Future<ed.PrivateKey?> getStandardIssuerPrivateKeyEd() async {
+    return getPrivateKeyForCredentialDidEd(getStandardIssuerDidEd());
   }
 
   /// Lists all credentials.
@@ -303,9 +337,19 @@ class WalletStore {
     return _keyBox!.get('lastCredentialIndex');
   }
 
+  /// Returns the last value of the next HD-path for the credential keys.
+  int? getLastIndexEd() {
+    return _keyBox!.get('lastCredentialIndexEd');
+  }
+
   /// Returns the last value of the next HD-path for the connection keys.
   int? getLastCommunicationIndex() {
     return _keyBox!.get('lastConnectionIndex');
+  }
+
+  /// Returns the last value of the next HD-path for the connection keys.
+  int? getLastCommunicationIndexEd() {
+    return _keyBox!.get('lastConnectionIndexEd');
   }
 
   /// Returns a new DID a credential could be issued for.
@@ -324,6 +368,26 @@ class WalletStore {
 
     //store temporarily
     await _configBox!.put('lastCredentialDid', did);
+    await _credentialBox!.put(did, new Credential(path, '', ''));
+
+    return did;
+  }
+
+  /// Returns a new DID a credential could be issued for.
+  Future<String> getNextCredentialDIDWithEdKey() async {
+    //generate new keypair
+    var lastIndex = _keyBox!.get('lastCredentialIndexEd');
+    var path = '$standardCredentialPathEd$lastIndex\'';
+    var key =
+        await ED25519_HD_KEY.derivePath(path, _keyBox!.get('seed').toList());
+    var did = await _edKeyToDid(key);
+
+    //increment derivation index
+    lastIndex++;
+    await _keyBox!.put('lastCredentialIndexEd', lastIndex);
+
+    //store temporarily
+    await _configBox!.put('lastCredentialDidEd', did);
     await _credentialBox!.put(did, new Credential(path, '', ''));
 
     return did;
@@ -350,12 +414,40 @@ class WalletStore {
     return did;
   }
 
+  /// Returns a new connection-DID.
+  Future<String> getNextConnectionDIDWithEdKey() async {
+    //generate new keypair
+    var lastIndex = _keyBox!.get('lastConnectionIndexEd');
+    var path = '$standardCredentialPathEd$lastIndex\'';
+    var key =
+        await ED25519_HD_KEY.derivePath(path, _keyBox!.get('seed').toList());
+    var did = await _edKeyToDid(key);
+
+    //increment derivation index
+    lastIndex++;
+    await _keyBox!.put('lastConnectionIndexEd', lastIndex);
+
+    //store temporarily
+    await _configBox!.put('lastConnectionDidEd', did);
+    await _connection!.put(did, new Connection(path, '', ''));
+
+    return did;
+  }
+
   String? getLastCredentialDid() {
     return _configBox!.get('lastCredentialDid');
   }
 
   String? getLastConnectionDid() {
     return _configBox!.get('lastConnectionDid');
+  }
+
+  String? getLastCredentialDidEd() {
+    return _configBox!.get('lastCredentialDidEd');
+  }
+
+  String? getLastConnectionDidEd() {
+    return _configBox!.get('lastConnectionDidEd');
   }
 
   /// Returns the DID associated with [hdPath].
@@ -380,6 +472,15 @@ class WalletStore {
   }
 
   /// Returns the private key as hex-String associated with [did].
+  Future<ed.PrivateKey?> getPrivateKeyForCredentialDidEd(String? did) async {
+    var cred = getCredential(did);
+    if (cred == null) return null;
+    var key = await ED25519_HD_KEY.derivePath(
+        cred.hdPath, _keyBox!.get('seed').toList());
+    return ed.newKeyFromSeed(Uint8List.fromList(key.key));
+  }
+
+  /// Returns the private key as hex-String associated with [did].
   String? getPrivateKeyForCredentialDid(String? did) {
     var cred = getCredential(did);
     if (cred == null) return null;
@@ -395,6 +496,15 @@ class WalletStore {
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var key = master.derivePath(com.hdPath);
     return HEX.encode(key.privateKey!);
+  }
+
+  /// Returns the private key as hex-String associated with [did].
+  Future<ed.PrivateKey?> getPrivateKeyForConnectionDidEd(String? did) async {
+    var com = getConnection(did);
+    if (com == null) return null;
+    var key = await ED25519_HD_KEY.derivePath(
+        com.hdPath, _keyBox!.get('seed').toList());
+    return ed.newKeyFromSeed(Uint8List.fromList(key.key));
   }
 
   /// Stores a configuration Entry.
@@ -417,3 +527,13 @@ class WalletStore {
       return 'did:ethr:$network:${addr.hexEip55}';
   }
 }
+
+Future<String> _edKeyToDid(KeyData d) async {
+  var private = ed.newKeyFromSeed(Uint8List.fromList(d.key));
+  return 'did:key:z${base58Bitcoin.encode(Uint8List.fromList([
+        237,
+        1
+      ] + ed.public(private).bytes))}';
+}
+
+enum KeyType { secp256k1, ed25519 }

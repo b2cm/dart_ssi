@@ -98,7 +98,7 @@ void main() async {
       revocationRegistryAddress: revAddress);
 
   //Issuer signs the credential and sends it to the Holder
-  var signedImma = signCredential(issuer, w3cImma);
+  var signedImma = await signCredential(issuer, w3cImma);
   await new File('example/signedImma.json').writeAsString(signedImma);
   //Issuer stores it in its own history to be able to revoke it
   issuer.toIssuingHistory(immaDid, plaintextCred, signedImma);

@@ -107,7 +107,8 @@ class LinkedDataProof implements JsonObject {
   late String proofPurpose;
   late String verificationMethod;
   late DateTime created;
-  late String proofValue;
+  String? proofValue;
+  String? jws;
   String? domain;
 
   LinkedDataProof(
@@ -115,7 +116,8 @@ class LinkedDataProof implements JsonObject {
       required this.proofPurpose,
       required this.verificationMethod,
       required this.created,
-      required this.proofValue,
+      this.proofValue,
+      this.jws,
       this.domain});
 
   LinkedDataProof.fromJson(dynamic jsonObject) {
@@ -140,10 +142,10 @@ class LinkedDataProof implements JsonObject {
     else
       throw FormatException('created is needed in proof object');
 
-    if (proof.containsKey('proofValue'))
-      proofValue = proof['proofValue'];
-    else
-      throw FormatException('proof value is needed in proof object');
+    proofValue = proof['proofValue'];
+    jws = proof['jws'];
+    if (jws == null && proofValue == null)
+      throw FormatException('one of proofValue or jws must be present');
 
     domain = proof['domain'];
   }
@@ -154,7 +156,8 @@ class LinkedDataProof implements JsonObject {
     jsonObject['proofPurpose'] = proofPurpose;
     jsonObject['verificationMethod'] = verificationMethod;
     jsonObject['created'] = created.toIso8601String();
-    jsonObject['proofValue'] = proofValue;
+    if (proofValue != null) jsonObject['proofValue'] = proofValue;
+    if (jws != null) jsonObject['jws'] = jws;
     if (domain != null) jsonObject['domain'] = domain;
     return jsonObject;
   }
