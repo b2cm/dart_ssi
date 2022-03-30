@@ -3,22 +3,40 @@ import 'dart:convert';
 import 'package:crypto_keys/crypto_keys.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
+import 'didcomm_jwe.dart';
+import 'didcomm_jwm.dart';
+import 'types.dart';
 
-class DidcommSignedMessage implements JsonObject {
-  late String payload;
+class DidcommSignedMessage implements JsonObject, DidcommMessage {
+  late DidcommMessage payload;
   late List<SignatureObject> signatures;
+  String? _base64Payload;
 
   DidcommSignedMessage({required this.payload, required this.signatures});
 
   DidcommSignedMessage.fromJson(dynamic jsonObject) {
     var sig = credentialToMap(jsonObject);
-    if (sig.containsKey('payload'))
-      payload = sig['payload'];
-    else
+    if (sig.containsKey('payload')) {
+      _base64Payload = sig['payload'];
+      var decodedPayload =
+          utf8.decode(base64Decode(addPaddingToBase64(sig['payload'])));
+      try {
+        payload = DidcommSignedMessage.fromJson(decodedPayload);
+      } catch (e) {
+        try {
+          payload = DidcommPlaintextMessage.fromJson(decodedPayload);
+        } catch (e) {
+          try {
+            payload = DidcommEncryptedMessage.fromJson(decodedPayload);
+          } catch (e) {
+            throw Exception('Unknown message type');
+          }
+        }
+      }
+    } else
       throw Exception('payload is needed in jws');
     if (sig.containsKey('signatures')) {
       List tmp = sig['signatures'];
@@ -56,7 +74,8 @@ class DidcommSignedMessage implements JsonObject {
       var encodedHeader = removePaddingFromBase64(
           base64UrlEncode(utf8.encode(jsonEncode(protected))));
       var signer = privateKey.createSigner(algorithms.signing.ecdsa.sha256);
-      var sig = signer.sign(ascii.encode('$encodedHeader.$payload'));
+      var sig = signer.sign(ascii.encode(
+          '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'));
       return SignatureObject(
           signature: removePaddingFromBase64(base64UrlEncode(sig.data)),
           protected: protected);
@@ -70,7 +89,8 @@ class DidcommSignedMessage implements JsonObject {
       var encodedHeader = removePaddingFromBase64(
           base64UrlEncode(utf8.encode(jsonEncode(protected))));
       var signer = privateKey.createSigner(algorithms.signing.ecdsa.sha256);
-      var sig = signer.sign(ascii.encode('$encodedHeader.$payload'));
+      var sig = signer.sign(ascii.encode(
+          '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'));
       return SignatureObject(
           signature: removePaddingFromBase64(base64UrlEncode(sig.data)),
           protected: protected);
@@ -82,7 +102,10 @@ class DidcommSignedMessage implements JsonObject {
       var encodedHeader = removePaddingFromBase64(
           base64UrlEncode(utf8.encode(jsonEncode(protected))));
 
-      var sig = ed.sign(privateKey, ascii.encode('$encodedHeader.$payload'));
+      var sig = ed.sign(
+          privateKey,
+          ascii.encode(
+              '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'));
       return SignatureObject(
           signature: removePaddingFromBase64(base64UrlEncode(sig)),
           protected: protected);
@@ -104,7 +127,10 @@ class DidcommSignedMessage implements JsonObject {
             ed.PublicKey(base64Decode(addPaddingToBase64(publicKeyJwk['x'])));
         var encodedHeader = removePaddingFromBase64(
             base64UrlEncode(utf8.encode(jsonEncode(s.protected))));
-        valid = ed.verify(publicKey, ascii.encode('$encodedHeader.$payload'),
+        valid = ed.verify(
+            publicKey,
+            ascii.encode(
+                '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'),
             base64Decode(addPaddingToBase64(s.signature)));
       } else if (alg == JwsSignatureAlgorithm.es256.value) {
         if (crv != 'P-256') throw Exception('wrong curve for algorithm $alg');
@@ -117,7 +143,9 @@ class DidcommSignedMessage implements JsonObject {
         var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha256);
         var encodedHeader = removePaddingFromBase64(
             base64UrlEncode(utf8.encode(jsonEncode(s.protected))));
-        valid = verifier.verify(ascii.encode('$encodedHeader.$payload'),
+        valid = verifier.verify(
+            ascii.encode(
+                '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'),
             Signature(base64Decode(addPaddingToBase64(s.signature))));
       } else if (alg == JwsSignatureAlgorithm.es256k.value) {
         if (crv != 'secp256k1')
@@ -131,7 +159,9 @@ class DidcommSignedMessage implements JsonObject {
         var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha256);
         var encodedHeader = removePaddingFromBase64(
             base64UrlEncode(utf8.encode(jsonEncode(s.protected))));
-        valid = verifier.verify(ascii.encode('$encodedHeader.$payload'),
+        valid = verifier.verify(
+            ascii.encode(
+                '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'),
             Signature(base64Decode(addPaddingToBase64(s.signature))));
       } else
         throw UnimplementedError('Other signing algorithms are not supported');
@@ -141,7 +171,8 @@ class DidcommSignedMessage implements JsonObject {
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
-    jsonObject['payload'] = payload;
+    jsonObject['payload'] = removePaddingFromBase64(
+        base64UrlEncode(utf8.encode(payload.toString())));
     List sigs = [];
     for (var s in signatures) {
       sigs.add(s.toJson());
@@ -187,15 +218,4 @@ class SignatureObject implements JsonObject {
   String toString() {
     return jsonEncode(toJson());
   }
-}
-
-enum JwsSignatureAlgorithm { edDsa, es256, es256k }
-
-extension JwsSignatureAlgorithmExt on JwsSignatureAlgorithm {
-  static const Map<JwsSignatureAlgorithm, String> values = {
-    JwsSignatureAlgorithm.edDsa: 'EdDSA',
-    JwsSignatureAlgorithm.es256: 'ES256',
-    JwsSignatureAlgorithm.es256k: 'ES256K'
-  };
-  String get value => values[this]!;
 }

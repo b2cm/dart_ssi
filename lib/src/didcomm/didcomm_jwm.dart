@@ -2,8 +2,9 @@ import 'dart:convert';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
+import 'types.dart';
 
-class DidcommPlaintextMessage implements JsonObject {
+class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
   List<dynamic>? to;
   String? from;
   late String id;
@@ -127,10 +128,10 @@ class DidcommPlaintextMessage implements JsonObject {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> message = {};
     message['id'] = id;
+    if (typ != null) message['typ'] = typ!.value;
     message['type'] = type;
     if (from != null) message['from'] = from;
     if (to != null) message['to'] = to;
-    if (typ != null) message['typ'] = typ!.value;
     if (threadId != null) message['thid'] = threadId;
     if (parentThreadId != null) message['pthid'] = parentThreadId;
     if (createdTime != null)
@@ -310,27 +311,4 @@ class FromPriorJWT {
   String build() {
     return '';
   }
-}
-
-enum DidcommProfiles { aip1, rfc19, rfc587, v2 }
-
-extension DidcommProfileExt on DidcommProfiles {
-  static const Map<DidcommProfiles, String> values = {
-    DidcommProfiles.aip1: 'didcomm/aip1',
-    DidcommProfiles.rfc19: 'didcomm/aip2;env=rfc19',
-    DidcommProfiles.rfc587: 'didcomm/aip2;env=rfc587',
-    DidcommProfiles.v2: 'didcomm/v2'
-  };
-  String get value => values[this]!;
-}
-
-enum DidcommMessageTyp { plain, signed, encrypted }
-
-extension DidcommMessageTypExt on DidcommMessageTyp {
-  static const Map<DidcommMessageTyp, String> values = {
-    DidcommMessageTyp.plain: 'application/didcomm-plain+json',
-    DidcommMessageTyp.signed: 'application/didcomm-signed+json',
-    DidcommMessageTyp.encrypted: 'application/didcomm-encrypted+json'
-  };
-  String get value => values[this]!;
 }

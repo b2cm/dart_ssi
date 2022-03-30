@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
 import '../didcomm_jwm.dart';
+import '../types.dart';
 
 class EmptyMessage extends DidcommPlaintextMessage {
   EmptyMessage({String? id})

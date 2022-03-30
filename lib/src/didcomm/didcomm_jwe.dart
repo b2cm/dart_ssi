@@ -11,8 +11,11 @@ import 'package:x25519/x25519.dart' as x25519;
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
 import 'didcomm_jwm.dart';
+import 'didcomm_jws.dart';
+import 'messages/basic_messages.dart';
+import 'types.dart';
 
-class DidcommEncryptedMessage implements JsonObject {
+class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
   late String protectedHeader;
   late String tag;
   late String iv;
@@ -36,15 +39,15 @@ class DidcommEncryptedMessage implements JsonObject {
   }
 
   DidcommEncryptedMessage.fromPlaintext(
-      String keyWrapAlgorithm,
-      String encryptionAlgorithm,
-      Map<String, dynamic> senderPrivateKeyJwk,
-      List<Map<String, dynamic>> recipientPublicKeyJwk,
-      DidcommPlaintextMessage plaintext) {
+      {KeyWrapAlgorithm keyWrapAlgorithm = KeyWrapAlgorithm.ecdh1PU,
+      EncryptionAlgorithm encryptionAlgorithm = EncryptionAlgorithm.a256cbc,
+      required Map<String, dynamic> senderPrivateKeyJwk,
+      required List<Map<String, dynamic>> recipientPublicKeyJwk,
+      required DidcommMessage plaintext}) {
     Map<String, dynamic> jweHeader = {};
-    jweHeader['enc'] = encryptionAlgorithm;
-    jweHeader['alg'] = keyWrapAlgorithm;
-    if (keyWrapAlgorithm.startsWith('ECDH-1PU')) {
+    jweHeader['enc'] = encryptionAlgorithm.value;
+    jweHeader['alg'] = keyWrapAlgorithm.value;
+    if (keyWrapAlgorithm == KeyWrapAlgorithm.ecdh1PU) {
       jweHeader['apu'] = removePaddingFromBase64(
           base64UrlEncode(utf8.encode(senderPrivateKeyJwk['kid'])));
     }
@@ -113,9 +116,9 @@ class DidcommEncryptedMessage implements JsonObject {
     //3) generate symmetric CEK
     var cek = SymmetricKey.generate(256);
     Encrypter e;
-    if (encryptionAlgorithm == 'A256CBC-HS512')
+    if (encryptionAlgorithm == EncryptionAlgorithm.a256cbc)
       e = cek.createEncrypter(algorithms.encryption.aes.cbcWithHmac.sha512);
-    else if (encryptionAlgorithm == 'A256GCM')
+    else if (encryptionAlgorithm == EncryptionAlgorithm.a256gcm)
       e = cek.createEncrypter(algorithms.encryption.aes.gcm);
     else
       throw UnimplementedError();
@@ -137,7 +140,7 @@ class DidcommEncryptedMessage implements JsonObject {
         Map<String, dynamic> r = {};
         r['header'] = {'kid': key['kid']};
         var encryptedCek = _encryptSymmetricKey(
-            cek, keyWrapAlgorithm, curve, key, epkPrivate, apv,
+            cek, keyWrapAlgorithm.value, curve, key, epkPrivate, apv,
             c: c,
             senderPrivateKeyJwk: senderPrivateKeyJwk,
             tag: encrypted.authenticationTag);
@@ -158,7 +161,7 @@ class DidcommEncryptedMessage implements JsonObject {
     this.recipients = recipients;
   }
 
-  DidcommPlaintextMessage decrypt(Map<String, dynamic> privateKeyJwk,
+  DidcommMessage decrypt(Map<String, dynamic> privateKeyJwk,
       [Map<String, dynamic>? senderPublicKeyJwk]) {
     Map<String, dynamic> protectDecoded = jsonDecode(
         utf8.decode(base64Decode(addPaddingToBase64(protectedHeader))));
@@ -271,8 +274,23 @@ class DidcommEncryptedMessage implements JsonObject {
         initializationVector: base64Decode(addPaddingToBase64(iv)));
 
     var plain = e.decrypt(toDecrypt);
-    //5)return body as PlaintextMessage
-    return DidcommPlaintextMessage.fromJson(utf8.decode(plain));
+    //5)return body
+    DidcommMessage m = EmptyMessage();
+    try {
+      m = DidcommPlaintextMessage.fromJson(utf8.decode(plain));
+    } catch (e) {
+      try {
+        m = DidcommSignedMessage.fromJson(utf8.decode(plain));
+      } catch (e) {
+        try {
+          m = DidcommEncryptedMessage.fromJson(utf8.decode(plain));
+        } catch (e) {
+          throw Exception('Unknown Message type');
+        }
+      }
+    }
+
+    return m;
   }
 
   Map<String, dynamic> toJson() {

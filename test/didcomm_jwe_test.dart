@@ -49,8 +49,14 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-ES+A256KW', 'A256GCM', aliceJWK, [bobJWK], message);
+          keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
+          encryptionAlgorithm: EncryptionAlgorithm.a256gcm,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -83,8 +89,14 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-ES+A256KW', 'A256GCM', aliceJWK, [bobJWK], message);
+          keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
+          encryptionAlgorithm: EncryptionAlgorithm.a256gcm,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -115,8 +127,14 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-ES+A256KW', 'A256GCM', aliceJWK, [bobJWK], message);
+          keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
+          encryptionAlgorithm: EncryptionAlgorithm.a256gcm,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -140,8 +158,14 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-ES+A256KW', 'A256GCM', aliceJWK, [bobJWK], message);
+          keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
+          encryptionAlgorithm: EncryptionAlgorithm.a256gcm,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -175,8 +199,13 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-1PU+A256KW', 'A256GCM', aliceJWK, [bobJWK], message);
+          encryptionAlgorithm: EncryptionAlgorithm.a256gcm,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -209,8 +238,13 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-1PU+A256KW', 'A256GCM', aliceJWK, [bobJWK], message);
+          encryptionAlgorithm: EncryptionAlgorithm.a256gcm,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -243,8 +277,13 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-1PU+A256KW', 'A256GCM', aliceJWK, [bobJWK], message);
+          encryptionAlgorithm: EncryptionAlgorithm.a256gcm,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -268,8 +307,13 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-1PU+A256KW', 'A256GCM', aliceJWK, [bobJWK], message);
+          encryptionAlgorithm: EncryptionAlgorithm.a256gcm,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -303,8 +347,13 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-ES+A256KW', 'A256CBC-HS512', aliceJWK, [bobJWK], message);
+          keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -337,8 +386,13 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-ES+A256KW', 'A256CBC-HS512', aliceJWK, [bobJWK], message);
+          keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -371,8 +425,13 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-ES+A256KW', 'A256CBC-HS512', aliceJWK, [bobJWK], message);
+          keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -396,8 +455,13 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-ES+A256KW', 'A256CBC-HS512', aliceJWK, [bobJWK], message);
+          keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -431,8 +495,12 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-1PU+A256KW', 'A256CBC-HS512', aliceJWK, [bobJWK], message);
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -465,8 +533,12 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-1PU+A256KW', 'A256CBC-HS512', aliceJWK, [bobJWK], message);
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -499,8 +571,12 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-1PU+A256KW', 'A256CBC-HS512', aliceJWK, [bobJWK], message);
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -524,8 +600,12 @@ void main() async {
       };
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
-          'ECDH-1PU+A256KW', 'A256CBC-HS512', aliceJWK, [bobJWK], message);
+          senderPrivateKeyJwk: aliceJWK,
+          recipientPublicKeyJwk: [bobJWK],
+          plaintext: message);
       var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      expect(m2 is DidcommPlaintextMessage, true);
+      m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
       expect(message.body, m2.body);
     });
@@ -566,6 +646,8 @@ void main() async {
       };
 
       var m = encrypted.decrypt(bobKeyJWK);
+      expect(m is DidcommPlaintextMessage, true);
+      m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
       expect(message.body, m.body);
     });
@@ -604,6 +686,8 @@ void main() async {
       };
 
       var m = encrypted.decrypt(bobKeyJWK);
+      expect(m is DidcommPlaintextMessage, true);
+      m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
       expect(message.body, m.body);
     });
@@ -644,6 +728,8 @@ void main() async {
       };
 
       var m = encrypted.decrypt(bobKeyJWK);
+      expect(m is DidcommPlaintextMessage, true);
+      m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
       expect(message.body, m.body);
     });
@@ -684,6 +770,8 @@ void main() async {
       };
 
       var m = encrypted.decrypt(bobKeyJWK);
+      expect(m is DidcommPlaintextMessage, true);
+      m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
       expect(message.body, m.body);
     });
@@ -732,6 +820,8 @@ void main() async {
       };
 
       var m = encrypted.decrypt(bobKeyJWK, aliceJwk);
+      expect(m is DidcommPlaintextMessage, true);
+      m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
       expect(message.body, m.body);
     });
@@ -780,6 +870,8 @@ void main() async {
       };
 
       var m = encrypted.decrypt(bobKeyJWK, aliceJwk);
+      expect(m is DidcommPlaintextMessage, true);
+      m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
       expect(message.body, m.body);
     });
@@ -828,8 +920,171 @@ void main() async {
       };
 
       var m = encrypted.decrypt(bobKeyJWK, aliceJwk);
+      expect(m is DidcommPlaintextMessage, true);
+      m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
       expect(message.body, m.body);
+    });
+  });
+
+  group('signing test from didcomm spec', () {
+    test('ed25519', () {
+      var signedMessage3 = DidcommSignedMessage.fromJson({
+        "payload":
+            "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJ0eXBlIjoiaHR0cDovL2V4YW1wbGUuY29tL3Byb3RvY29scy9sZXRzX2RvX2x1bmNoLzEuMC9wcm9wb3NhbCIsImZyb20iOiJkaWQ6ZXhhbXBsZTphbGljZSIsInRvIjpbImRpZDpleGFtcGxlOmJvYiJdLCJjcmVhdGVkX3RpbWUiOjE1MTYyNjkwMjIsImV4cGlyZXNfdGltZSI6MTUxNjM4NTkzMSwiYm9keSI6eyJtZXNzYWdlc3BlY2lmaWNhdHRyaWJ1dGUiOiJhbmQgaXRzIHZhbHVlIn19",
+        "signatures": [
+          {
+            "protected":
+                "eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXNpZ25lZCtqc29uIiwiYWxnIjoiRWREU0EifQ",
+            "signature":
+                "FW33NnvOHV0Ted9-F7GZbkia-vYAfBKtH4oBxbrttWAhBZ6UFJMxcGjL3lwOl4YohI3kyyd08LHPWNMgP2EVCQ",
+            "header": {"kid": "did:example:alice#key-1"}
+          }
+        ]
+      });
+      var key3 = {
+        "kid": "did:example:alice#key-1",
+        "kty": "OKP",
+        "d": "pFRUKkyzx4kHdJtFSnlPA9WzqkDT1HWV0xZ5OYZd2SY",
+        "crv": "Ed25519",
+        "x": "G-boxFB6vOZBu-wXkm-9Lh79I8nf9Z50cILaOgKKGww"
+      };
+      expect(signedMessage3.verify(key3), true);
+    });
+    test('es256', () {
+      var signedMessage = DidcommSignedMessage.fromJson({
+        "payload":
+            "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJ0eXBlIjoiaHR0cDovL2V4YW1wbGUuY29tL3Byb3RvY29scy9sZXRzX2RvX2x1bmNoLzEuMC9wcm9wb3NhbCIsImZyb20iOiJkaWQ6ZXhhbXBsZTphbGljZSIsInRvIjpbImRpZDpleGFtcGxlOmJvYiJdLCJjcmVhdGVkX3RpbWUiOjE1MTYyNjkwMjIsImV4cGlyZXNfdGltZSI6MTUxNjM4NTkzMSwiYm9keSI6eyJtZXNzYWdlc3BlY2lmaWNhdHRyaWJ1dGUiOiJhbmQgaXRzIHZhbHVlIn19",
+        "signatures": [
+          {
+            "protected":
+                "eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXNpZ25lZCtqc29uIiwiYWxnIjoiRVMyNTYifQ",
+            "signature":
+                "gcW3lVifhyR48mLHbbpnGZQuziskR5-wXf6IoBlpa9SzERfSG9I7oQ9pssmHZwbvJvyMvxskpH5oudw1W3X5Qg",
+            "header": {"kid": "did:example:alice#key-2"}
+          }
+        ]
+      });
+
+      var key = {
+        "kid": "did:example:alice#key-2",
+        "kty": "EC",
+        "d": "7TCIdt1rhThFtWcEiLnk_COEjh1ZfQhM4bW2wz-dp4A",
+        "crv": "P-256",
+        "x": "2syLh57B-dGpa0F8p1JrO6JU7UUSF6j7qL-vfk1eOoY",
+        "y": "BgsGtI7UPsObMRjdElxLOrgAO9JggNMjOcfzEPox18w"
+      };
+      expect(signedMessage.verify(key), true);
+    });
+    test('es259k', () {
+      var signedMessage2 = DidcommSignedMessage.fromJson({
+        "payload":
+            "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJ0eXBlIjoiaHR0cDovL2V4YW1wbGUuY29tL3Byb3RvY29scy9sZXRzX2RvX2x1bmNoLzEuMC9wcm9wb3NhbCIsImZyb20iOiJkaWQ6ZXhhbXBsZTphbGljZSIsInRvIjpbImRpZDpleGFtcGxlOmJvYiJdLCJjcmVhdGVkX3RpbWUiOjE1MTYyNjkwMjIsImV4cGlyZXNfdGltZSI6MTUxNjM4NTkzMSwiYm9keSI6eyJtZXNzYWdlc3BlY2lmaWNhdHRyaWJ1dGUiOiJhbmQgaXRzIHZhbHVlIn19",
+        "signatures": [
+          {
+            "protected":
+                "eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXNpZ25lZCtqc29uIiwiYWxnIjoiRVMyNTZLIn0",
+            "signature":
+                "EGjhIcts6tqiJgqtxaTiTY3EUvL-_rLjn9lxaZ4eRUwa1-CS1nknZoyJWbyY5NQnUafWh5nvCtQpdpMyzH3blw",
+            "header": {"kid": "did:example:alice#key-3"}
+          }
+        ]
+      });
+      var key2 = {
+        "kid": "did:example:alice#key-3",
+        "kty": "EC",
+        "d": "N3Hm1LXA210YVGGsXw_GklMwcLu_bMgnzDese6YQIyA",
+        "crv": "secp256k1",
+        "x": "aToW5EaTq5mlAf8C5ECYDSkqsJycrW-e1SQ6_GJcAOk",
+        "y": "JAGX94caA21WKreXwYUaOCYTBMrqaX4KWIlsQZTHWCk"
+      };
+      expect(signedMessage2.verify(key2), true);
+    });
+  });
+
+  group('Signing message locally', () {
+    test('ed25519', () {
+      var key3 = {
+        "kid": "did:example:alice#key-1",
+        "kty": "OKP",
+        "d": "pFRUKkyzx4kHdJtFSnlPA9WzqkDT1HWV0xZ5OYZd2SY",
+        "crv": "Ed25519",
+        "x": "G-boxFB6vOZBu-wXkm-9Lh79I8nf9Z50cILaOgKKGww"
+      };
+      var sig3 =
+          DidcommSignedMessage.sign(payload: message, jwkToSignWith: [key3]);
+      expect(sig3.verify(key3), true);
+    });
+    test('es256', () {
+      var key = {
+        "kid": "did:example:alice#key-2",
+        "kty": "EC",
+        "d": "7TCIdt1rhThFtWcEiLnk_COEjh1ZfQhM4bW2wz-dp4A",
+        "crv": "P-256",
+        "x": "2syLh57B-dGpa0F8p1JrO6JU7UUSF6j7qL-vfk1eOoY",
+        "y": "BgsGtI7UPsObMRjdElxLOrgAO9JggNMjOcfzEPox18w"
+      };
+      var sig3 =
+          DidcommSignedMessage.sign(payload: message, jwkToSignWith: [key]);
+      expect(sig3.verify(key), true);
+    });
+    test('es259k', () {
+      var key2 = {
+        "kid": "did:example:alice#key-3",
+        "kty": "EC",
+        "d": "N3Hm1LXA210YVGGsXw_GklMwcLu_bMgnzDese6YQIyA",
+        "crv": "secp256k1",
+        "x": "aToW5EaTq5mlAf8C5ECYDSkqsJycrW-e1SQ6_GJcAOk",
+        "y": "JAGX94caA21WKreXwYUaOCYTBMrqaX4KWIlsQZTHWCk"
+      };
+      var sig3 =
+          DidcommSignedMessage.sign(payload: message, jwkToSignWith: [key2]);
+      expect(sig3.verify(key2), true);
+    });
+  });
+
+  group('combination', () {
+    test('signed in encrypted', () {
+      Map<String, dynamic> aliceEncryptionKey = {
+        "kid": "did:example:alice#key-x25519-1",
+        "kty": "OKP",
+        "d": "r-jK2cO3taR8LQnJB1_ikLBTAnOtShJOsHXRUWT-aZA",
+        "crv": "X25519",
+        "x": "avH0O2Y4tqLAq8y9zpianr8ajii5m4F_mICrzNlatXs"
+      };
+      Map<String, dynamic> aliceSigningKey = {
+        "kid": "did:example:alice#key-3",
+        "kty": "EC",
+        "d": "N3Hm1LXA210YVGGsXw_GklMwcLu_bMgnzDese6YQIyA",
+        "crv": "secp256k1",
+        "x": "aToW5EaTq5mlAf8C5ECYDSkqsJycrW-e1SQ6_GJcAOk",
+        "y": "JAGX94caA21WKreXwYUaOCYTBMrqaX4KWIlsQZTHWCk"
+      };
+      Map<String, dynamic> bobPublicKey = {
+        "kid": "did:example:bob#key-x25519-1",
+        "kty": "OKP",
+        "d": "b9NnuOCB0hm7YGNvaE9DMhwH_wjZA1-gWD6dA0JWdL0",
+        "crv": "X25519",
+        "x": "GDTrI66K0pFfO54tlCSvfjjNapIs44dzpneBgyx0S3E"
+      };
+
+      var signedMessage = DidcommSignedMessage.sign(
+          payload: message, jwkToSignWith: [aliceSigningKey]);
+
+      expect(signedMessage.verify(aliceSigningKey), true);
+
+      var encrypted = DidcommEncryptedMessage.fromPlaintext(
+          senderPrivateKeyJwk: aliceEncryptionKey,
+          recipientPublicKeyJwk: [bobPublicKey],
+          plaintext: signedMessage);
+
+      var decrypted = encrypted.decrypt(bobPublicKey, aliceEncryptionKey);
+      expect(decrypted is DidcommSignedMessage, true);
+      decrypted = decrypted as DidcommSignedMessage;
+
+      var jwm = DidcommPlaintextMessage.fromJson(decrypted.payload);
+
+      expect(jwm.body, message.body);
     });
   });
 }
