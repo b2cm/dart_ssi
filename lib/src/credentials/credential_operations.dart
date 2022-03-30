@@ -10,6 +10,7 @@ import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
 import '../dids/did_ethr.dart';
+import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 import 'presentation_exchange.dart';
 import 'revocation.dart';
@@ -994,16 +995,6 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
   return candidate;
 }
 
-/// Converts json-String [credential] to dart Map.
-Map<String, dynamic> credentialToMap(dynamic credential) {
-  if (credential is String)
-    return jsonDecode(credential);
-  else if (credential is Map<String, dynamic>)
-    return credential;
-  else
-    throw Exception('unknown type for $credential');
-}
-
 //***********************Private Methods***************************************
 
 Map<String, dynamic> _hashStringOrNum(dynamic value) {
@@ -1282,15 +1273,4 @@ List<int> _buildSignatureArray(Uint8List hash, EthPrivateKey privateKey) {
   }
   List<int> sigArray = rList + sList + [signature.v - 27];
   return sigArray;
-}
-
-String addPaddingToBase64(String base64Input) {
-  while (base64Input.length % 4 != 0) base64Input += '=';
-  return base64Input;
-}
-
-String removePaddingFromBase64(String base64Input) {
-  while (base64Input.endsWith('='))
-    base64Input = base64Input.substring(0, base64Input.length - 1);
-  return base64Input;
 }

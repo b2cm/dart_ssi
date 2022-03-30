@@ -4,8 +4,8 @@ import 'package:crypto_keys/crypto_keys.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 
-import '../credentials/credential_operations.dart';
 import '../util/types.dart';
+import '../util/utils.dart';
 import 'didcomm_jwe.dart';
 import 'didcomm_jwm.dart';
 import 'types.dart';

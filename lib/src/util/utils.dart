@@ -5,6 +5,27 @@ import 'package:asn1lib/asn1lib.dart';
 
 import '../credentials/credential_operations.dart';
 
+/// Converts json-String [credential] to dart Map.
+Map<String, dynamic> credentialToMap(dynamic credential) {
+  if (credential is String)
+    return jsonDecode(credential);
+  else if (credential is Map<String, dynamic>)
+    return credential;
+  else
+    throw Exception('unknown type for $credential');
+}
+
+String addPaddingToBase64(String base64Input) {
+  while (base64Input.length % 4 != 0) base64Input += '=';
+  return base64Input;
+}
+
+String removePaddingFromBase64(String base64Input) {
+  while (base64Input.endsWith('='))
+    base64Input = base64Input.substring(0, base64Input.length - 1);
+  return base64Input;
+}
+
 Future<List<String>> getDidFromDidConfiguration(String url) async {
   List<String> didsInConfig = [];
   var uri = Uri.parse(url);

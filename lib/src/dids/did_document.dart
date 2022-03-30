@@ -4,8 +4,8 @@ import 'dart:typed_data';
 
 import 'package:base_codecs/base_codecs.dart';
 
-import '../credentials/credential_operations.dart';
 import '../util/types.dart';
+import '../util/utils.dart';
 
 class DidDocument implements JsonObject {
   List<String>? context;

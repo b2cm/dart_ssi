@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_ssi_wallet/src/credentials/presentation_exchange.dart';
 
 import '../util/types.dart';
-import 'credential_operations.dart';
+import '../util/utils.dart';
 
 class VerifiableCredential implements JsonObject {
   late List<String> context;

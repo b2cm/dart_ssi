@@ -8,8 +8,8 @@ import 'package:elliptic/ecdh.dart' as ecdh;
 import 'package:elliptic/elliptic.dart' as elliptic;
 import 'package:x25519/x25519.dart' as x25519;
 
-import '../credentials/credential_operations.dart';
 import '../util/types.dart';
+import '../util/utils.dart';
 import 'didcomm_jwm.dart';
 import 'didcomm_jws.dart';
 import 'messages/basic_messages.dart';

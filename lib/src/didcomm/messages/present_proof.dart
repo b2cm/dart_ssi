@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_ssi_wallet/src/credentials/verifiable_credential.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../credentials/credential_operations.dart';
 import '../../credentials/presentation_exchange.dart';
 import '../../util/types.dart';
+import '../../util/utils.dart';
 import '../didcomm_jwm.dart';
 
 class ProposePresentation extends DidcommPlaintextMessage {

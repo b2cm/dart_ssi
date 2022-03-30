@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import '../credentials/credential_operations.dart';
 import '../util/types.dart';
+import '../util/utils.dart';
 
 /// Represents a credential request as documented in inter-wallet-credential-exchange protocol.
 class CredentialRequest implements JsonObject {
