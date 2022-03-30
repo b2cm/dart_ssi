@@ -724,9 +724,9 @@ String getHolderDidFromCredential(dynamic credential) {
 /// ```
 /// If a custom one should be used, it has to be given in its json representation (dart String or Map) and the value of alg has to be ES256K-R,
 /// because for now this is the only supported signature algorithm.
-String signStringOrJson(
+Future<String> signStringOrJson(
     WalletStore wallet, String didToSignWith, dynamic toSign,
-    {bool detached = false, dynamic jwsHeader}) {
+    {bool detached = false, dynamic jwsHeader}) async {
   String header;
   if (jwsHeader != null) {
     Map<String, dynamic>? headerMap;
@@ -759,9 +759,9 @@ String signStringOrJson(
   var hash = sha256.convert(ascii.encode(signingInput)).bytes;
   String? privateKeyHex;
 
-  privateKeyHex = wallet.getPrivateKeyForCredentialDid(didToSignWith);
+  privateKeyHex = await wallet.getPrivateKeyForCredentialDid(didToSignWith);
   if (privateKeyHex == null)
-    privateKeyHex = wallet.getPrivateKeyForConnectionDid(didToSignWith);
+    privateKeyHex = await wallet.getPrivateKeyForConnectionDid(didToSignWith);
   if (privateKeyHex == null) throw Exception('Could not find private key');
   var key = EthPrivateKey.fromHex(privateKeyHex);
   var sigArray = _buildSignatureArray(hash as Uint8List, key);
@@ -1132,20 +1132,23 @@ Future<Map<String, dynamic>> _buildEdDsaProof(
   var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
   var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
 
-  var privateKey = await wallet.getPrivateKeyForCredentialDidEd(didToSignWith);
+  var privateKey = await wallet.getPrivateKeyForCredentialDid(
+      didToSignWith, KeyType.ed25519);
   if (privateKey == null)
-    privateKey = await wallet.getPrivateKeyForConnectionDidEd(didToSignWith);
+    privateKey = await wallet.getPrivateKeyForConnectionDid(
+        didToSignWith, KeyType.ed25519);
   if (privateKey == null) throw Exception('Could not find a private key');
-  var signature = ed.sign(privateKey, Uint8List.fromList(hash));
+  var signature = ed.sign(
+      ed.PrivateKey(hexToBytes(privateKey).toList()), Uint8List.fromList(hash));
   Map<String, dynamic> optionsMap = jsonDecode(pOptions);
   optionsMap['proofValue'] = 'z${base58BitcoinEncode(signature)}';
 
   return optionsMap;
 }
 
-Map<String, dynamic> _buildEcdsaRecoveryProof(
+Future<Map<String, dynamic>> _buildEcdsaRecoveryProof(
     Uint8List hashToSign, String didToSignWith, WalletStore wallet,
-    {dynamic proofOptions}) {
+    {dynamic proofOptions}) async {
   String pOptions;
   if (proofOptions == null) {
     pOptions = _buildProofOptions(
@@ -1159,9 +1162,9 @@ Map<String, dynamic> _buildEcdsaRecoveryProof(
 
   var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
   var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
-  var privateKeyHex = wallet.getPrivateKeyForCredentialDid(didToSignWith);
+  var privateKeyHex = await wallet.getPrivateKeyForCredentialDid(didToSignWith);
   if (privateKeyHex == null)
-    privateKeyHex = wallet.getPrivateKeyForConnectionDid(didToSignWith);
+    privateKeyHex = await wallet.getPrivateKeyForConnectionDid(didToSignWith);
   if (privateKeyHex == null) throw Exception('Could not find a private key');
   var key = EthPrivateKey.fromHex(privateKeyHex);
 

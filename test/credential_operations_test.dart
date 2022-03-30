@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:dart_web3/dart_web3.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
-import 'package:flutter_ssi_wallet/src/credentials/presentation_exchange.dart';
 import 'package:http/http.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:test/test.dart';
@@ -18,7 +17,7 @@ void main() async {
   var revocationRegistry = RevocationRegistry(rpcUrl);
   var ganacheAccounts = new WalletStore('ganache');
   await ganacheAccounts.openBoxes('ganache');
-  ganacheAccounts.initialize(
+  await ganacheAccounts.initialize(
       mnemonic:
           'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
 
@@ -1213,7 +1212,7 @@ void main() async {
       if (!dir.existsSync()) {
         wallet = WalletStore('tests');
         await wallet.openBoxes('password');
-        wallet.initialize();
+        await wallet.initialize();
         await wallet.initializeIssuer();
       }
       var cred = {'name': 'Max', 'age': 20, 'height': 1.78, 'student': true};
@@ -1291,7 +1290,7 @@ void main() async {
         var plaintext = {'name': 'Max', 'age': 20};
         var rev = RevocationRegistry(rpcUrl);
         var revAddress = await rev
-            .deploy(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'));
+            .deploy(await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'));
         var cred = buildPlaintextCredential(plaintext, ganacheDid6);
         var w3cCred = buildW3cCredentialwithHashes(cred, ganacheDid9,
             revocationRegistryAddress: revAddress);
@@ -1304,7 +1303,8 @@ void main() async {
 
         //revocation
         await rev.revoke(
-            ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'), ganacheDid6);
+            await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'),
+            ganacheDid6);
 
         //after revocation
         expect(
@@ -1345,10 +1345,10 @@ void main() async {
 
       await web3.sendTransaction(
           EthPrivateKey.fromHex(
-              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5')),
+              await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5')),
           tx);
 
-      await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey()!,
+      await erc1056.changeOwner((await wallet.getStandardIssuerPrivateKey())!,
           wallet.getStandardIssuerDid()!, await wallet.getNextCredentialDID());
 
       expect(
@@ -1371,22 +1371,22 @@ void main() async {
     setUp(() async {
       var iss1 = WalletStore('testIss1');
       await iss1.openBoxes('password1');
-      iss1.initialize();
+      await iss1.initialize();
       await iss1.initializeIssuer();
 
       var iss2 = WalletStore('testIss2');
       await iss2.openBoxes('password2');
-      iss2.initialize();
+      await iss2.initialize();
       await iss2.initializeIssuer();
 
       var iss3 = WalletStore('testIss3');
       await iss3.openBoxes('password3');
-      iss3.initialize();
+      await iss3.initialize();
       await iss3.initializeIssuer();
 
       holder = WalletStore('holder');
       await holder.openBoxes('passwordH');
-      holder.initialize();
+      await holder.initialize();
 
       var cred1 = {
         'name': 'Max Mustermann',
@@ -1549,11 +1549,13 @@ void main() async {
 
       await web3.sendTransaction(
           EthPrivateKey.fromHex(
-              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5')),
+              await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5')),
           tx);
       var newDid = await holder.getNextCredentialDID();
       await erc1056.changeOwner(
-          holder.getPrivateKeyForCredentialDid(didCred1)!, didCred1!, newDid);
+          (await holder.getPrivateKeyForCredentialDid(didCred1!))!,
+          didCred1!,
+          newDid);
 
       var newPath = holder.getCredential(newDid)!.hdPath;
       holder.storeCredential('', '', newPath, credDid: didCred1);
@@ -1603,9 +1605,9 @@ void main() async {
       String toSign = 'Its a String';
       WalletStore w = WalletStore('tests');
       await w.openBoxes('password');
-      w.initialize();
+      await w.initialize();
       var did = await w.getNextCredentialDID();
-      var jws = signStringOrJson(w, did, toSign);
+      var jws = await signStringOrJson(w, did, toSign);
 
       var verified = await verifyStringSignature(jws, did,
           erc1056: erc1056, toSign: toSign);
@@ -1912,7 +1914,7 @@ void main() async {
     setUp(() async {
       wallet = WalletStore('other');
       await wallet.openBoxes();
-      wallet.initialize(network: 'ropsten');
+      await wallet.initialize(network: 'ropsten');
       await wallet.initializeIssuer();
       ercWithId = Erc1056(rpcUrl,
           networkNameOrId: 'ropsten',
@@ -1927,7 +1929,7 @@ void main() async {
     test('sign String', () async {
       var toSign = 'test';
       var didToSignWith = await wallet.getNextConnectionDID();
-      var jws = signStringOrJson(wallet, didToSignWith, toSign);
+      var jws = await signStringOrJson(wallet, didToSignWith, toSign);
       var checked =
           await verifyStringSignature(jws, didToSignWith, erc1056: ercWithId);
       expect(checked, true);

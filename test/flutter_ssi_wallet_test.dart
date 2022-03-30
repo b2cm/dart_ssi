@@ -6,8 +6,8 @@ void main() {
   test('init wallet with new seed', () async {
     var wallet = new WalletStore('testNew');
     await wallet.openBoxes('password');
-    var mne = wallet.initialize()!;
-    expect(validateMnemonic(mne), true);
+    var mne = await wallet.initialize();
+    expect(validateMnemonic(mne!), true);
     await wallet.closeBoxes();
   });
 

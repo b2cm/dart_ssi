@@ -158,63 +158,68 @@ class WalletStore {
   /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
   ///
   /// Returns the used mnemonic.
-  /// If the wallet should be used on another ethereum-network than the mainnet,
+  /// If the wallet should be used with did:eth and on another ethereum-network than the mainnet,
   /// pass the nme or its id as [network].
-  String? initialize({String? mnemonic, String network = 'mainnet'}) {
+  Future<String?> initialize(
+      {String? mnemonic, String network = 'mainnet'}) async {
     var mne = mnemonic;
     if (mnemonic == null) {
       mne = generateMnemonic();
     }
     var seed = mnemonicToSeed(mne!);
 
-    _keyBox!.put('seed', seed);
-    _keyBox!.put('lastCredentialIndex', 0);
-    _keyBox!.put('lastConnectionIndex', 0);
-    _keyBox!.put('lastCredentialIndexEd', 0);
-    _keyBox!.put('lastConnectionIndexEd', 0);
-    _configBox!.put('network', network);
+    await _keyBox!.put('seed', seed);
+    await _keyBox!.put('lastCredentialIndex', 0);
+    await _keyBox!.put('lastConnectionIndex', 0);
+    await _keyBox!.put('lastCredentialIndexEd', 0);
+    await _keyBox!.put('lastConnectionIndexEd', 0);
+    await _configBox!.put('network', network);
 
     return mne;
   }
 
   /// Generates and returns DID for the issuer.
-  Future<String> initializeIssuer() async {
-    var master = BIP32.fromSeed(_keyBox!.get('seed'));
-    var key = master.derivePath('m/456/1/0');
-    var issuerDid = await _bip32KeyToDid(key);
-    _keyBox!.put('issuerDid', issuerDid);
-    _credentialBox!.put(issuerDid, new Credential('m/456/1/0', '', ''));
-    return issuerDid;
+  Future<String> initializeIssuer([KeyType keyType = KeyType.secp256k1]) async {
+    if (keyType == KeyType.secp256k1) {
+      var master = BIP32.fromSeed(_keyBox!.get('seed'));
+      var key = master.derivePath('m/456/1/0');
+      var issuerDid = await _bip32KeyToDid(key);
+      await _keyBox!.put('issuerDid', issuerDid);
+      await _credentialBox!.put(issuerDid, new Credential('m/456/1/0', '', ''));
+      return issuerDid;
+    } else if (keyType == KeyType.ed25519)
+      return await _initializeIssuerEdKey();
+    else
+      throw Exception('unknown keyType');
   }
 
   /// Generates and returns DID for the issuer.
-  Future<String> initializeIssuerEdKey() async {
+  Future<String> _initializeIssuerEdKey() async {
     var key = await ED25519_HD_KEY.derivePath(
         'm/457\'/1\'/2\'', _keyBox!.get('seed').toList());
     var issuerDid = await _edKeyToDid(key);
-    _keyBox!.put('issuerDidEd', issuerDid);
-    _credentialBox!.put(issuerDid, new Credential('m/457\'/1\'/2\'', '', ''));
+    await _keyBox!.put('issuerDidEd', issuerDid);
+    await _credentialBox!
+        .put(issuerDid, new Credential('m/457\'/1\'/2\'', '', ''));
     return issuerDid;
   }
 
   /// Returns the DID for issuing credentials.
-  String? getStandardIssuerDid() {
-    return _keyBox!.get('issuerDid');
-  }
-
-  /// Returns the DID for issuing credentials.
-  String? getStandardIssuerDidEd() {
-    return _keyBox!.get('issuerDidEd');
-  }
-
-  /// Returns the private key for issuing credentials.
-  String? getStandardIssuerPrivateKey() {
-    return getPrivateKeyForCredentialDid(getStandardIssuerDid());
+  String? getStandardIssuerDid([KeyType keyType = KeyType.secp256k1]) {
+    if (keyType == KeyType.secp256k1)
+      return _keyBox!.get('issuerDid');
+    else if (keyType == KeyType.ed25519)
+      return _keyBox!.get('issuerDidEd');
+    else
+      throw Exception('unknown keyType');
   }
 
   /// Returns the private key for issuing credentials.
-  Future<ed.PrivateKey?> getStandardIssuerPrivateKeyEd() async {
-    return getPrivateKeyForCredentialDidEd(getStandardIssuerDidEd());
+  Future<String?> getStandardIssuerPrivateKey(
+      [KeyType keyType = KeyType.secp256k1]) async {
+    var issuerDid = getStandardIssuerDid(keyType);
+    if (issuerDid == null) throw Exception('Can\'t find a standard issuer did');
+    return getPrivateKeyForCredentialDid(issuerDid);
   }
 
   /// Lists all credentials.
@@ -289,8 +294,6 @@ class WalletStore {
     var tmp = ExchangeHistoryEntry(
         timestamp, action, otherParty, shownAttributes ?? []);
     if (existingHistoryEntries == null) {
-      print('no entries');
-
       await _exchangeHistory!.put(credentialDid, [tmp]);
     } else {
       await _exchangeHistory!
@@ -332,27 +335,37 @@ class WalletStore {
   }
 
   /// Returns the last value of the next HD-path for the credential keys.
-  int? getLastIndex() {
-    return _keyBox!.get('lastCredentialIndex');
-  }
-
-  /// Returns the last value of the next HD-path for the credential keys.
-  int? getLastIndexEd() {
-    return _keyBox!.get('lastCredentialIndexEd');
-  }
-
-  /// Returns the last value of the next HD-path for the connection keys.
-  int? getLastCommunicationIndex() {
-    return _keyBox!.get('lastConnectionIndex');
+  int? getLastIndex([KeyType keyType = KeyType.secp256k1]) {
+    if (keyType == KeyType.secp256k1)
+      return _keyBox!.get('lastCredentialIndex');
+    else if (keyType == KeyType.ed25519)
+      return _keyBox!.get('lastCredentialIndexEd');
+    else
+      throw Exception('Unknown KeyType');
   }
 
   /// Returns the last value of the next HD-path for the connection keys.
-  int? getLastCommunicationIndexEd() {
-    return _keyBox!.get('lastConnectionIndexEd');
+  int? getLastCommunicationIndex([KeyType keyType = KeyType.secp256k1]) {
+    if (keyType == KeyType.secp256k1)
+      return _keyBox!.get('lastConnectionIndex');
+    else if (keyType == KeyType.ed25519)
+      return _keyBox!.get('lastConnectionIndexEd');
+    else
+      throw Exception('Unknown KeyType');
   }
 
   /// Returns a new DID a credential could be issued for.
-  Future<String> getNextCredentialDID() async {
+  Future<String> getNextCredentialDID(
+      [KeyType keyType = KeyType.secp256k1]) async {
+    if (keyType == KeyType.secp256k1)
+      return _getNextCredentialDidEthr();
+    else if (keyType == KeyType.ed25519)
+      return _getNextCredentialDIDWithEdKey();
+    else
+      throw Exception('Unknown KeyType');
+  }
+
+  Future<String> _getNextCredentialDidEthr() async {
     //generate new keypair
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var lastIndex = _keyBox!.get('lastCredentialIndex');
@@ -373,7 +386,7 @@ class WalletStore {
   }
 
   /// Returns a new DID a credential could be issued for.
-  Future<String> getNextCredentialDIDWithEdKey() async {
+  Future<String> _getNextCredentialDIDWithEdKey() async {
     //generate new keypair
     var lastIndex = _keyBox!.get('lastCredentialIndexEd');
     var path = '$standardCredentialPathEd$lastIndex\'';
@@ -393,7 +406,17 @@ class WalletStore {
   }
 
   /// Returns a new connection-DID.
-  Future<String> getNextConnectionDID() async {
+  Future<String> getNextConnectionDID(
+      [KeyType keyType = KeyType.secp256k1]) async {
+    if (keyType == KeyType.secp256k1)
+      return _getNextConnectionDidEthr();
+    else if (keyType == KeyType.ed25519)
+      return _getNextConnectionDIDWithEdKey();
+    else
+      throw Exception('Unknown KeyType');
+  }
+
+  Future<String> _getNextConnectionDidEthr() async {
     //generate new keypair
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var lastIndex = _keyBox!.get('lastConnectionIndex');
@@ -414,7 +437,7 @@ class WalletStore {
   }
 
   /// Returns a new connection-DID.
-  Future<String> getNextConnectionDIDWithEdKey() async {
+  Future<String> _getNextConnectionDIDWithEdKey() async {
     //generate new keypair
     var lastIndex = _keyBox!.get('lastConnectionIndexEd');
     var path = '$standardCredentialPathEd$lastIndex\'';
@@ -433,54 +456,92 @@ class WalletStore {
     return did;
   }
 
-  String? getLastCredentialDid() {
-    return _configBox!.get('lastCredentialDid');
+  String? getLastCredentialDid([KeyType keyType = KeyType.secp256k1]) {
+    if (keyType == KeyType.secp256k1)
+      return _configBox!.get('lastCredentialDid');
+    else if (keyType == KeyType.ed25519)
+      return _configBox!.get('lastCredentialDidEd');
+    else
+      throw Exception('Unknown KeyType');
   }
 
-  String? getLastConnectionDid() {
-    return _configBox!.get('lastConnectionDid');
-  }
-
-  String? getLastCredentialDidEd() {
-    return _configBox!.get('lastCredentialDidEd');
-  }
-
-  String? getLastConnectionDidEd() {
-    return _configBox!.get('lastConnectionDidEd');
+  String? getLastConnectionDid([KeyType keyType = KeyType.secp256k1]) {
+    if (keyType == KeyType.secp256k1)
+      return _configBox!.get('lastConnectionDid');
+    else if (keyType == KeyType.ed25519)
+      return _configBox!.get('lastConnectionDidEd');
+    else
+      throw Exception('Unknown KeyType');
   }
 
   /// Returns the DID associated with [hdPath].
-  Future<String> getDid(String hdPath) async {
-    var master = BIP32.fromSeed(_keyBox!.get('seed'));
-    var key = master.derivePath(hdPath);
-    return await _bip32KeyToDid(key);
+  Future<String> getDid(String hdPath,
+      [KeyType keyType = KeyType.secp256k1]) async {
+    if (keyType == KeyType.secp256k1) {
+      var master = BIP32.fromSeed(_keyBox!.get('seed'));
+      var key = master.derivePath(hdPath);
+      return await _bip32KeyToDid(key);
+    } else if (keyType == KeyType.ed25519) {
+      var key = await ED25519_HD_KEY.derivePath(
+          hdPath, _keyBox!.get('seed').toList());
+      return await _edKeyToDid(key);
+    } else
+      throw Exception('Unknown KeyType');
   }
 
   /// Returns the private key as hex-String associated with [hdPath].
-  String getPrivateKey(String hdPath) {
-    var master = BIP32.fromSeed(_keyBox!.get('seed'));
-    var key = master.derivePath(hdPath);
-    return HEX.encode(key.privateKey!);
+  Future<String> getPrivateKey(String hdPath,
+      [KeyType keyType = KeyType.secp256k1]) async {
+    if (keyType == KeyType.secp256k1) {
+      var master = BIP32.fromSeed(_keyBox!.get('seed'));
+      var key = master.derivePath(hdPath);
+      return HEX.encode(key.privateKey!);
+    } else if (keyType == KeyType.ed25519) {
+      var key = await ED25519_HD_KEY.derivePath(
+          hdPath, _keyBox!.get('seed').toList());
+      return await HEX
+          .encode(ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
+    } else
+      throw Exception('Unknown KeyType');
   }
 
   /// Returns the public key as hex-String associated with [hdPath].
-  String getPublicKey(String hdPath) {
-    var master = BIP32.fromSeed(_keyBox!.get('seed'));
-    var key = master.derivePath(hdPath);
-    return HEX.encode(key.publicKey);
+  Future<String> getPublicKey(String hdPath,
+      [KeyType keyType = KeyType.secp256k1]) async {
+    if (keyType == KeyType.secp256k1) {
+      var master = BIP32.fromSeed(_keyBox!.get('seed'));
+      var key = master.derivePath(hdPath);
+      return HEX.encode(key.publicKey);
+    } else if (keyType == KeyType.ed25519) {
+      var key = await ED25519_HD_KEY.derivePath(
+          hdPath, _keyBox!.get('seed').toList());
+      return await HEX.encode(
+          ed.public(ed.newKeyFromSeed(Uint8List.fromList(key.key))).bytes);
+    } else
+      throw Exception('Unknown KeyType');
   }
 
   /// Returns the private key as hex-String associated with [did].
-  Future<ed.PrivateKey?> getPrivateKeyForCredentialDidEd(String? did) async {
+  Future<String?> getPrivateKeyForCredentialDid(String did,
+      [KeyType keyType = KeyType.secp256k1]) async {
+    if (keyType == KeyType.secp256k1)
+      return _getPrivateKeyForCredentialDidEthr(did);
+    else if (keyType == KeyType.ed25519)
+      return _getPrivateKeyForCredentialDidEd(did);
+    else
+      throw Exception('Unknown KeyType');
+  }
+
+  Future<String?> _getPrivateKeyForCredentialDidEd(String did) async {
     var cred = getCredential(did);
     if (cred == null) return null;
     var key = await ED25519_HD_KEY.derivePath(
         cred.hdPath, _keyBox!.get('seed').toList());
-    return ed.newKeyFromSeed(Uint8List.fromList(key.key));
+    return HEX.encode(ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
   }
 
   /// Returns the private key as hex-String associated with [did].
-  String? getPrivateKeyForCredentialDid(String? did) {
+  String? _getPrivateKeyForCredentialDidEthr(String did) {
     var cred = getCredential(did);
     if (cred == null) return null;
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
@@ -488,8 +549,18 @@ class WalletStore {
     return HEX.encode(key.privateKey!);
   }
 
+  Future<String?> getPrivateKeyForConnectionDid(String did,
+      [KeyType keyType = KeyType.secp256k1]) async {
+    if (keyType == KeyType.secp256k1)
+      return _getPrivateKeyForConnectionDidEthr(did);
+    else if (keyType == KeyType.ed25519)
+      return _getPrivateKeyForConnectionDidEd(did);
+    else
+      throw Exception('Unknown KeyType');
+  }
+
   /// Returns the private key as hex-String associated with [did].
-  String? getPrivateKeyForConnectionDid(String? did) {
+  String? _getPrivateKeyForConnectionDidEthr(String did) {
     var com = getConnection(did);
     if (com == null) return null;
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
@@ -498,12 +569,12 @@ class WalletStore {
   }
 
   /// Returns the private key as hex-String associated with [did].
-  Future<ed.PrivateKey?> getPrivateKeyForConnectionDidEd(String? did) async {
+  Future<String?> _getPrivateKeyForConnectionDidEd(String did) async {
     var com = getConnection(did);
     if (com == null) return null;
     var key = await ED25519_HD_KEY.derivePath(
         com.hdPath, _keyBox!.get('seed').toList());
-    return ed.newKeyFromSeed(Uint8List.fromList(key.key));
+    return HEX.encode(ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
   }
 
   /// Stores a configuration Entry.

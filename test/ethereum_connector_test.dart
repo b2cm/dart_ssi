@@ -25,7 +25,7 @@ void main() async {
     test('exception when type is too long', () async {
       expect(
           () async => await erc1056.addDelegate(
-              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5'),
+              await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5'),
               ganacheDid6,
               'anAlittlebitToooooLongDelegateType',
               ganacheDid7),
@@ -34,7 +34,7 @@ void main() async {
 
     test('add one Delegate', () async {
       await erc1056.addDelegate(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5'),
           ganacheDid6,
           'Signer',
           ganacheDid7);
@@ -50,7 +50,7 @@ void main() async {
 
     test('revoke added Delegate', () async {
       await erc1056.revokeDelegate(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/5'),
           ganacheDid6,
           'Signer',
           ganacheDid7);
@@ -64,12 +64,12 @@ void main() async {
 
     test('add two delagates with same type', () async {
       await erc1056.addDelegate(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
           ganacheDid7,
           'Signer',
           ganacheDid8);
       await erc1056.addDelegate(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
           ganacheDid7,
           'Signer',
           ganacheDid5);
@@ -88,7 +88,7 @@ void main() async {
 
     test('revoke one out of two delegates', () async {
       await erc1056.revokeDelegate(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
           ganacheDid7,
           'Signer',
           ganacheDid8);
@@ -105,7 +105,7 @@ void main() async {
 
     test('add delegate with other type', () async {
       await erc1056.addDelegate(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
           ganacheDid7,
           'Other',
           ganacheDid8);
@@ -128,13 +128,13 @@ void main() async {
   group('Owner Operations', () {
     test('change owner one time', () async {
       await erc1056.changeOwner(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
           ganacheDid7,
           ganacheDid5);
 
       expect(
           () async => erc1056.changeOwner(
-              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+              await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
               ganacheDid7,
               ganacheDid5),
           throwsException);
@@ -148,13 +148,13 @@ void main() async {
 
     test('change Owner a second time', () async {
       await erc1056.changeOwner(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4'),
           ganacheDid7,
           ganacheDid8);
 
       expect(
           () async => erc1056.changeOwner(
-              ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4'),
+              await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/4'),
               ganacheDid7,
               ganacheDid8),
           throwsException);
@@ -171,7 +171,7 @@ void main() async {
   group('attribute Operations', () {
     test('set one attribute', () async {
       await erc1056.setAttribute(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
           'serviceEndpoint',
           'http://identity.service.de');
@@ -187,7 +187,7 @@ void main() async {
 
     test('revoke one attribute', () async {
       await erc1056.revokeAttribute(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
           'serviceEndpoint',
           'http://identity.service.de');
@@ -200,7 +200,7 @@ void main() async {
 
     test('attribute with very short validity', () async {
       await erc1056.setAttribute(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
           'service',
           'http://identity.service.de',
@@ -219,7 +219,7 @@ void main() async {
       value = value.padRight(200, 'KO');
 
       await erc1056.setAttribute(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
           'LongService',
           value);
@@ -237,7 +237,7 @@ void main() async {
       value = value.padRight(200, 'KO');
 
       await erc1056.setAttribute(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
           'serviceEndpoint',
           'http://identity.service.de');
@@ -254,7 +254,7 @@ void main() async {
 
     test('two values for one attribute', () async {
       await erc1056.setAttribute(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
           'serviceEndpoint',
           'http://hsmw.identity.service.de');
@@ -274,7 +274,7 @@ void main() async {
 
     test('revoke one out of two attribute values', () async {
       await erc1056.revokeAttribute(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/7'),
           ganacheDid8,
           'serviceEndpoint',
           'http://hsmw.identity.service.de');
@@ -296,13 +296,15 @@ void main() async {
   group('Revocation Contract', () {
     var rev = RevocationRegistry(rpcUrl);
     test('revoke something', () async {
-      await rev.deploy(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'));
+      await rev
+          .deploy(await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'));
 
       var isRevoked = await rev
           .isRevoked('did:ethr:0x3B974dC1107e45cDDf1174B810960A7212562Ae4');
       expect(isRevoked, false);
 
-      await rev.revoke(ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+      await rev.revoke(
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
           'did:ethr:0x3B974dC1107e45cDDf1174B810960A7212562Ae4');
 
       isRevoked = await rev
@@ -316,7 +318,8 @@ void main() async {
 
     test('change Owner', () async {
       await rev.changeOwner(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'), ganacheDid8);
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/6'),
+          ganacheDid8);
 
       expect(
           () async => await rev.revoke('m/44\'/60\'/0\'/0/6',
@@ -342,7 +345,7 @@ void main() async {
       expect(ercWithId.chainId, 1337);
       expect(await ercWithId.identityOwner(ganacheDid10), ganacheDid10);
       await ercWithId.changeOwner(
-          ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/9'),
+          await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/9'),
           ganacheDid10,
           ganacheDid9);
       expect(await ercWithId.identityOwner(ganacheDid10), ganacheDid9);

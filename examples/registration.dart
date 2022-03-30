@@ -24,16 +24,16 @@ void main() async {
 
   // now both can store them
   var com = holder.getConnection(did)!;
-  holder.storeConnection(didIss, 'Issuer1', com.hdPath);
+  await holder.storeConnection(didIss, 'Issuer1', com.hdPath);
 
   var comIss = issuer.getConnection(didIss)!;
-  issuer.storeConnection(did, 'student1', comIss.hdPath);
+  await issuer.storeConnection(did, 'student1', comIss.hdPath);
 
   // meeting the next time they can authenticate each Other by e.g. signing a challenge.
   // Here it is only shown that the holder authenticate himself with the issuer.
   var challenge = Uuid().v4();
 
-  var jws = signStringOrJson(holder, did, challenge);
+  var jws = await signStringOrJson(holder, did, challenge);
 
   print(await verifyStringSignature(jws, did, erc1056: erc1056));
 }

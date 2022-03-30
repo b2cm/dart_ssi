@@ -18,7 +18,7 @@ void main() async {
   //init issuer
   var issuer = new WalletStore('example/issuer');
   await issuer.openBoxes('iss1passsword');
-  issuer.initialize(); //comment this line if trying a second time
+  await issuer.initialize(); //comment this line if trying a second time
   await issuer.initializeIssuer(); //comment this line if trying a second time
   //generate Revocation Contract and store its address
   var revocation = RevocationRegistry(rpcUrl);
@@ -30,13 +30,13 @@ void main() async {
               issuer.getStandardIssuerDid()!.substring(9)),
           value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1)));
   var revAddress =
-      await revocation.deploy(issuer.getStandardIssuerPrivateKey()!);
+      await revocation.deploy((await issuer.getStandardIssuerPrivateKey())!);
   issuer.storeConfigEntry('revAddress', revAddress);
 
   //init Holder
   var holder = new WalletStore('example/holder');
   await holder.openBoxes('holderPW');
-  holder.initialize(); //comment this line if trying a second time
+  await holder.initialize(); //comment this line if trying a second time
 
   //*******************************************
   //** Holder gets a Credential from Issuer **
