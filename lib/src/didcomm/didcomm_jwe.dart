@@ -51,7 +51,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       jweHeader['apu'] = removePaddingFromBase64(
           base64UrlEncode(utf8.encode(senderPrivateKeyJwk['kid'])));
     }
-
+    jweHeader['skid'] = senderPrivateKeyJwk['kid'];
     String curve = senderPrivateKeyJwk['crv']!;
     String keyType = senderPrivateKeyJwk['kty']!;
 

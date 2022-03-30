@@ -1082,7 +1082,7 @@ void main() async {
       expect(decrypted is DidcommSignedMessage, true);
       decrypted = decrypted as DidcommSignedMessage;
 
-      var jwm = DidcommPlaintextMessage.fromJson(decrypted.payload);
+      var jwm = decrypted.payload as DidcommPlaintextMessage;
 
       expect(jwm.body, message.body);
     });
