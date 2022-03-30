@@ -8,20 +8,19 @@ environment:
   sdk: '>=2.15.0 <3.0.0'
 
 dependencies:
-  hive: 2.0.5
+  hive: ^2.1.0
   bip32: 2.0.0
   bip39: 1.0.6
   dart_web3: ^0.0.3
   hex: 0.2.0
   crypto: 3.0.1
-  uuid: 3.0.5
+  uuid: ^3.0.6
   json_schema2: ^2.0.1+1
   asn1lib: 1.1.0
   crypto_keys: ^0.3.0
-  elliptic:
-    path: ../dart-elliptic
+  elliptic: ^0.3.7
   x25519: ^0.1.1
-  json_path: ^0.3.1
+  json_path: ^0.4.0
   base_codecs: ^1.0.1
   ed25519_edwards: ^0.3.1
   ed25519_hd_key: ^2.2.0
@@ -31,7 +30,7 @@ dev_dependencies:
   test: ^1.15.0
   test_process: ^2.0.0
   hive_generator: 1.1.2
-  build_runner: 2.1.7
+  build_runner: 2.1.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
