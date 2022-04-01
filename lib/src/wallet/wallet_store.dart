@@ -12,6 +12,7 @@ import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:ed25519_hd_key/ed25519_hd_key.dart';
 import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
+import 'package:x25519/x25519.dart' as x;
 
 import '../util/private_util.dart';
 import 'hive_model.dart';
@@ -42,6 +43,9 @@ class WalletStore {
 
   ///The path used to derive connection keys
   final String standardConnectionPathEd = 'm/457\'/1\'';
+
+  ///The path used to derive connection keys
+  final String standardConnectionPathX = 'm/457\'/2\'';
 
   /// Constructs a wallet at file-system path [path].
   WalletStore(this._walletPath) {
@@ -173,6 +177,7 @@ class WalletStore {
     await _keyBox!.put('lastConnectionIndex', 0);
     await _keyBox!.put('lastCredentialIndexEd', 0);
     await _keyBox!.put('lastConnectionIndexEd', 0);
+    await _keyBox!.put('lastConnectionIndexX', 0);
     await _configBox!.put('network', network);
 
     return mne;
@@ -345,11 +350,13 @@ class WalletStore {
   }
 
   /// Returns the last value of the next HD-path for the connection keys.
-  int? getLastCommunicationIndex([KeyType keyType = KeyType.secp256k1]) {
+  int? getLastConnectionIndex([KeyType keyType = KeyType.secp256k1]) {
     if (keyType == KeyType.secp256k1)
       return _keyBox!.get('lastConnectionIndex');
     else if (keyType == KeyType.ed25519)
       return _keyBox!.get('lastConnectionIndexEd');
+    else if (keyType == KeyType.x25519)
+      return _keyBox!.get('lastConnectionIndexX');
     else
       throw Exception('Unknown KeyType');
   }
@@ -412,8 +419,29 @@ class WalletStore {
       return _getNextConnectionDidEthr();
     else if (keyType == KeyType.ed25519)
       return _getNextConnectionDIDWithEdKey();
-    else
+    else if (keyType == KeyType.x25519) {
+      return _getNextConnectionDidXKey();
+    } else
       throw Exception('Unknown KeyType');
+  }
+
+  Future<String> _getNextConnectionDidXKey() async {
+    //generate new keypair
+    var lastIndex = _keyBox!.get('lastConnectionIndexX');
+    var path = '$standardCredentialPathEd$lastIndex\'';
+    var key =
+        await ED25519_HD_KEY.derivePath(path, _keyBox!.get('seed').toList());
+    var did = await _edKeyToXKeyDid(key);
+
+    //increment derivation index
+    lastIndex++;
+    await _keyBox!.put('lastConnectionIndexX', lastIndex);
+
+    //store temporarily
+    await _configBox!.put('lastConnectionDidX', did);
+    await _connection!.put(did, new Connection(path, '', ''));
+
+    return did;
   }
 
   Future<String> _getNextConnectionDidEthr() async {
@@ -606,4 +634,25 @@ Future<String> _edKeyToDid(KeyData d) async {
       ] + ed.public(private).bytes))}';
 }
 
-enum KeyType { secp256k1, ed25519 }
+Future<String> _edKeyToXKeyDid(KeyData data) async {
+  var private = ed.newKeyFromSeed(Uint8List.fromList(data.key));
+  var d = _edPrivateToXPrivate(private);
+
+  var xPublic = List.filled(32, 0);
+  x.ScalarBaseMult(xPublic, d);
+  return 'did:key:z${base58Bitcoin.encode(Uint8List.fromList([
+        236,
+        1
+      ] + xPublic))}';
+}
+
+List<int> _edPrivateToXPrivate(ed.PrivateKey private) {
+  var hash = sha512.convert(private.bytes.sublist(0, 32));
+  var d = hash.bytes;
+  d[0] &= 248;
+  d[31] &= 127;
+  d[31] |= 64;
+  return d;
+}
+
+enum KeyType { secp256k1, ed25519, x25519 }

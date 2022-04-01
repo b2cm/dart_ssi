@@ -14,6 +14,7 @@ export 'src/didcomm/messages/present_proof.dart';
 export 'src/didcomm/types.dart';
 export 'src/dids/did_document.dart';
 export 'src/dids/did_ethr.dart';
+export 'src/dids/did_key.dart';
 export 'src/iwce/credential_exchange.dart';
 export 'src/util/utils.dart';
 export 'src/wallet/hive_model.dart';

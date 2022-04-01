@@ -1,9 +1,43 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:asn1lib/asn1lib.dart';
+import 'package:base_codecs/base_codecs.dart';
+import 'package:dart_web3/crypto.dart';
 
 import '../credentials/credential_operations.dart';
+
+Uint8List _multibaseToUint8List(String multibase) {
+  if (multibase.startsWith('z'))
+    return base58BitcoinDecode(multibase.substring(1));
+  else
+    throw UnimplementedError('Unsupported multibase indicator ${multibase[0]}');
+}
+
+String multibaseToBase64Url(String multibase) {
+  return base64UrlEncode(_multibaseToUint8List(multibase));
+}
+
+Map<String, dynamic> multibaseKeyToJwk(String multibaseKey) {
+  var key = _multibaseToUint8List(multibaseKey);
+  var indicator = key.sublist(0, 2);
+  var indicatorHex = bytesToHex(indicator);
+  key = key.sublist(2);
+  Map<String, dynamic> jwk = {};
+  if (indicatorHex == 'ed01') {
+    jwk['kty'] = 'OKP';
+    jwk['crv'] = 'Ed25519';
+    jwk['x'] = removePaddingFromBase64(base64UrlEncode(key));
+  } else if (indicatorHex == 'ec01') {
+    jwk['kty'] = 'OKP';
+    jwk['crv'] = 'X25519';
+    jwk['x'] = removePaddingFromBase64(base64UrlEncode(key));
+  } else
+    throw UnimplementedError(
+        'Unsupported multicodec indicator 0x$indicatorHex');
+  return jwk;
+}
 
 /// Converts json-String [credential] to dart Map.
 Map<String, dynamic> credentialToMap(dynamic credential) {

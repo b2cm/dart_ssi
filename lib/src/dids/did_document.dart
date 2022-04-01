@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:base_codecs/base_codecs.dart';
+import 'package:flutter_ssi_wallet/src/dids/did_key.dart';
 
 import '../util/types.dart';
 import '../util/utils.dart';
@@ -11,7 +10,7 @@ class DidDocument implements JsonObject {
   List<String>? context;
   late String id;
   List<String>? alsoKnownAs;
-  dynamic? controller;
+  dynamic controller;
   List<VerificationMethod>? verificationMethod;
   List<dynamic>? authentication;
   List<dynamic>? assertionMethod;
@@ -19,6 +18,19 @@ class DidDocument implements JsonObject {
   List<dynamic>? capabilityInvocation;
   List<dynamic>? capabilityDelegation;
   List<ServiceEndpoint>? service;
+
+  DidDocument(
+      {this.context,
+      required this.id,
+      this.alsoKnownAs,
+      this.controller,
+      this.verificationMethod,
+      this.authentication,
+      this.keyAgreement,
+      this.service,
+      this.assertionMethod,
+      this.capabilityDelegation,
+      this.capabilityInvocation});
 
   DidDocument.fromJson(dynamic jsonObject) {
     var document = credentialToMap(jsonObject);
@@ -129,6 +141,91 @@ class DidDocument implements JsonObject {
     }
   }
 
+  DidDocument resolveKeyIds() {
+    if (verificationMethod == null || verificationMethod!.length == 0) {
+      return this;
+    }
+    var newDdo = DidDocument(
+        id: this.id,
+        context: this.context,
+        controller: this.controller,
+        alsoKnownAs: this.alsoKnownAs,
+        service: this.service,
+        verificationMethod: this.verificationMethod);
+    Map<String, VerificationMethod> veriMap = {};
+    for (var v in verificationMethod!) {
+      veriMap[v.id] = v;
+      if (v.id.contains('#')) {
+        var s = v.id.split('#');
+        if (s.length == 2) {
+          veriMap[s[1]] = v;
+        }
+      }
+    }
+    if (assertionMethod != null && assertionMethod!.length > 0)
+      newDdo.assertionMethod = _resolveIds(veriMap, assertionMethod!);
+    if (keyAgreement != null && keyAgreement!.length > 0)
+      newDdo.keyAgreement = _resolveIds(veriMap, keyAgreement!);
+    if (authentication != null && authentication!.length > 0)
+      newDdo.authentication = _resolveIds(veriMap, authentication!);
+    if (capabilityInvocation != null && capabilityInvocation!.length > 0)
+      newDdo.capabilityInvocation = _resolveIds(veriMap, capabilityInvocation!);
+    if (capabilityDelegation != null && capabilityDelegation!.length > 0)
+      newDdo.capabilityDelegation = _resolveIds(veriMap, capabilityDelegation!);
+    return newDdo;
+  }
+
+  List _resolveIds(Map<String, VerificationMethod> veriMap, List old) {
+    List newList = [];
+    for (var entry in old) {
+      if (entry is VerificationMethod)
+        newList.add(entry);
+      else if (entry is String) {
+        if (veriMap.containsKey(entry)) newList.add(veriMap[entry]);
+      } else
+        throw Exception(
+            'Element $entry has unsupported Datatype ${entry.runtimeType}');
+    }
+    return newList;
+  }
+
+  DidDocument convertAllKeysToJwk() {
+    var newDdo = DidDocument(
+        id: this.id,
+        context: this.context,
+        controller: this.controller,
+        alsoKnownAs: this.alsoKnownAs,
+        service: this.service);
+
+    if (verificationMethod != null && verificationMethod!.length > 0) {
+      List<VerificationMethod> newVm = [];
+      for (var entry in verificationMethod!) newVm.add(entry.toPublicKeyJwk());
+      newDdo.verificationMethod = newVm;
+    }
+    if (assertionMethod != null && assertionMethod!.length > 0)
+      newDdo.assertionMethod = _convertKeys(assertionMethod!);
+    if (keyAgreement != null && keyAgreement!.length > 0)
+      newDdo.keyAgreement = _convertKeys(keyAgreement!);
+    if (authentication != null && authentication!.length > 0)
+      newDdo.authentication = _convertKeys(authentication!);
+    if (capabilityInvocation != null && capabilityInvocation!.length > 0)
+      newDdo.capabilityInvocation = _convertKeys(capabilityInvocation!);
+    if (capabilityDelegation != null && capabilityDelegation!.length > 0)
+      newDdo.capabilityDelegation = _convertKeys(capabilityDelegation!);
+    return newDdo;
+  }
+
+  List _convertKeys(List old) {
+    List newList = [];
+    for (var entry in old) {
+      if (entry is VerificationMethod)
+        newList.add(entry.toPublicKeyJwk());
+      else
+        newList.add(entry);
+    }
+    return newList;
+  }
+
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
@@ -236,7 +333,11 @@ class VerificationMethod implements JsonObject {
       required this.controller,
       required this.type,
       this.publicKeyJwk,
-      this.publicKeyMultibase});
+      this.publicKeyMultibase}) {
+    if (publicKeyJwk == null && publicKeyMultibase == null)
+      throw Exception(
+          'Verification Method must have an entry for a public key');
+  }
 
   VerificationMethod.fromJson(dynamic jsonObject) {
     var method = credentialToMap(jsonObject);
@@ -255,34 +356,23 @@ class VerificationMethod implements JsonObject {
           'controller property is needed in Verification Method');
     publicKeyJwk = method['publicKeyJwk'];
     publicKeyMultibase = method['publicKeyMultibase'];
-    _resolveMultibase();
+
+    if (publicKeyJwk == null && publicKeyMultibase == null)
+      throw Exception(
+          'Verification Method must have an entry for a public key');
   }
 
-  _resolveMultibase() {
-    if (publicKeyMultibase != null && publicKeyJwk == null) {
-      String firstLetter = publicKeyMultibase![0];
-      String key = publicKeyMultibase!.substring(1);
-      if (firstLetter == 'z') {
-        var keyDecoded = Base58CodecBitcoin().decode(key);
-        _toJwk(keyDecoded);
-      }
-    }
-  }
-
-  _toJwk(Uint8List decodedKey) {
-    Map<String, dynamic> jwk = {};
-    if (type.startsWith('Ed25519VerificationKey')) {
-      jwk['kty'] = 'OKP';
-      jwk['crv'] = 'Ed25519';
-      jwk['x'] = removePaddingFromBase64(
-          base64UrlEncode(decodedKey.sublist(2).toList()));
-    } else if (type.startsWith('X25519KeyAgreementKey')) {
-      jwk['kty'] = 'OKP';
-      jwk['crv'] = 'X25519';
-      jwk['x'] = removePaddingFromBase64(
-          base64UrlEncode(decodedKey.sublist(2).toList()));
-    }
-    publicKeyJwk = jwk;
+  VerificationMethod toPublicKeyJwk() {
+    if (publicKeyMultibase != null)
+      return VerificationMethod(
+          id: id,
+          controller: controller,
+          type: 'JsonWebKey2020',
+          publicKeyJwk: multibaseKeyToJwk(publicKeyMultibase!));
+    else if (publicKeyJwk != null)
+      return this;
+    else
+      throw Exception('Cant find key in this Verification Method');
   }
 
   Map<String, dynamic> toJson() {
@@ -339,23 +429,30 @@ class ServiceEndpoint implements JsonObject {
   }
 }
 
-Future<DidDocument> resolveDidDocument(
-    String resolverAddress, String did) async {
-  try {
-    var client = await HttpClient()
-        .getUrl(Uri.parse('$resolverAddress/1.0/identifiers/$did'))
-        .timeout(Duration(seconds: 30));
-    var res = await client.close();
-    if (res.statusCode == 200) {
-      var contents = StringBuffer();
-      await for (var data in res.transform(utf8.decoder)) {
-        contents.write(data);
-      }
-      var didResolution = jsonDecode(contents.toString());
-      return DidDocument.fromJson(didResolution['didDocument']);
-    } else
-      throw Exception('Bad status code ${res.statusCode}');
-  } catch (e) {
-    throw Exception('Something went wrong during resolving: $e');
+Future<DidDocument> resolveDidDocument(String did,
+    [String? resolverAddress]) async {
+  if (did.startsWith('did:key:z6Mk'))
+    return resolveDidKey(did);
+  else {
+    if (resolverAddress == null)
+      throw Exception(
+          'The did con only be resolved using universal resolver, therefore the resolver address is required');
+    try {
+      var client = await HttpClient()
+          .getUrl(Uri.parse('$resolverAddress/1.0/identifiers/$did'))
+          .timeout(Duration(seconds: 30));
+      var res = await client.close();
+      if (res.statusCode == 200) {
+        var contents = StringBuffer();
+        await for (var data in res.transform(utf8.decoder)) {
+          contents.write(data);
+        }
+        var didResolution = jsonDecode(contents.toString());
+        return DidDocument.fromJson(didResolution['didDocument']);
+      } else
+        throw Exception('Bad status code ${res.statusCode}');
+    } catch (e) {
+      throw Exception('Something went wrong during resolving: $e');
+    }
   }
 }
