@@ -10,7 +10,7 @@ import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:ed25519_hd_key/ed25519_hd_key.dart';
-import 'package:hex/hex.dart';
+//import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
 import 'package:x25519/x25519.dart' as x;
 
@@ -498,6 +498,8 @@ class WalletStore {
       return _configBox!.get('lastConnectionDid');
     else if (keyType == KeyType.ed25519)
       return _configBox!.get('lastConnectionDidEd');
+    else if (keyType == KeyType.x25519)
+      return _configBox!.get('lastConnectionDidX');
     else
       throw Exception('Unknown KeyType');
   }
@@ -513,6 +515,10 @@ class WalletStore {
       var key = await ED25519_HD_KEY.derivePath(
           hdPath, _keyBox!.get('seed').toList());
       return await _edKeyToDid(key);
+    } else if (keyType == KeyType.x25519) {
+      var key = await ED25519_HD_KEY.derivePath(
+          hdPath, _keyBox!.get('seed').toList());
+      return await _edKeyToXKeyDid(key);
     } else
       throw Exception('Unknown KeyType');
   }
@@ -523,12 +529,17 @@ class WalletStore {
     if (keyType == KeyType.secp256k1) {
       var master = BIP32.fromSeed(_keyBox!.get('seed'));
       var key = master.derivePath(hdPath);
-      return HEX.encode(key.privateKey!);
+      return bytesToHex(key.privateKey!);
     } else if (keyType == KeyType.ed25519) {
       var key = await ED25519_HD_KEY.derivePath(
           hdPath, _keyBox!.get('seed').toList());
-      return await HEX
-          .encode(ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
+      return await bytesToHex(
+          ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
+    } else if (keyType == KeyType.x25519) {
+      var key = await ED25519_HD_KEY.derivePath(
+          hdPath, _keyBox!.get('seed').toList());
+      return await bytesToHex(
+          _edPrivateToXPrivate(ed.newKeyFromSeed(Uint8List.fromList(key.key))));
     } else
       throw Exception('Unknown KeyType');
   }
@@ -539,22 +550,28 @@ class WalletStore {
     if (keyType == KeyType.secp256k1) {
       var master = BIP32.fromSeed(_keyBox!.get('seed'));
       var key = master.derivePath(hdPath);
-      return HEX.encode(key.publicKey);
+      return bytesToHex(key.publicKey);
     } else if (keyType == KeyType.ed25519) {
       var key = await ED25519_HD_KEY.derivePath(
           hdPath, _keyBox!.get('seed').toList());
-      return await HEX.encode(
+      return await bytesToHex(
           ed.public(ed.newKeyFromSeed(Uint8List.fromList(key.key))).bytes);
+    } else if (keyType == KeyType.x25519) {
+      var key = await ED25519_HD_KEY.derivePath(
+          hdPath, _keyBox!.get('seed').toList());
+      return await bytesToHex(
+          _edPrivateToXPublic(ed.newKeyFromSeed(Uint8List.fromList(key.key))));
     } else
       throw Exception('Unknown KeyType');
   }
 
   /// Returns the private key as hex-String associated with [did].
-  Future<String?> getPrivateKeyForCredentialDid(String did,
-      [KeyType keyType = KeyType.secp256k1]) async {
-    if (keyType == KeyType.secp256k1)
+  Future<String?> getPrivateKeyForCredentialDid(
+    String did,
+  ) async {
+    if (did.startsWith('did:ethr'))
       return _getPrivateKeyForCredentialDidEthr(did);
-    else if (keyType == KeyType.ed25519)
+    else if (did.startsWith('did:key:z6Mk'))
       return _getPrivateKeyForCredentialDidEd(did);
     else
       throw Exception('Unknown KeyType');
@@ -565,7 +582,7 @@ class WalletStore {
     if (cred == null) return null;
     var key = await ED25519_HD_KEY.derivePath(
         cred.hdPath, _keyBox!.get('seed').toList());
-    return HEX.encode(ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
+    return bytesToHex(ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
   }
 
   /// Returns the private key as hex-String associated with [did].
@@ -574,15 +591,16 @@ class WalletStore {
     if (cred == null) return null;
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var key = master.derivePath(cred.hdPath);
-    return HEX.encode(key.privateKey!);
+    return bytesToHex(key.privateKey!);
   }
 
-  Future<String?> getPrivateKeyForConnectionDid(String did,
-      [KeyType keyType = KeyType.secp256k1]) async {
-    if (keyType == KeyType.secp256k1)
+  Future<String?> getPrivateKeyForConnectionDid(String did) async {
+    if (did.startsWith('did:ethr'))
       return _getPrivateKeyForConnectionDidEthr(did);
-    else if (keyType == KeyType.ed25519)
+    else if (did.startsWith('did:key:z6Mk'))
       return _getPrivateKeyForConnectionDidEd(did);
+    else if (did.startsWith('did:key:z6LS'))
+      return _getPrivateKeyForConnectionDidX(did);
     else
       throw Exception('Unknown KeyType');
   }
@@ -593,7 +611,7 @@ class WalletStore {
     if (com == null) return null;
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var key = master.derivePath(com.hdPath);
-    return HEX.encode(key.privateKey!);
+    return bytesToHex(key.privateKey!);
   }
 
   /// Returns the private key as hex-String associated with [did].
@@ -602,7 +620,43 @@ class WalletStore {
     if (com == null) return null;
     var key = await ED25519_HD_KEY.derivePath(
         com.hdPath, _keyBox!.get('seed').toList());
-    return HEX.encode(ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
+    return bytesToHex(ed.newKeyFromSeed(Uint8List.fromList(key.key)).bytes);
+  }
+
+  /// Returns the private key as hex-String associated with [did].
+  Future<String?> _getPrivateKeyForConnectionDidX(String did) async {
+    var com = getConnection(did);
+    if (com == null) return null;
+    var key = await ED25519_HD_KEY.derivePath(
+        com.hdPath, _keyBox!.get('seed').toList());
+    return bytesToHex(
+        _edPrivateToXPrivate(ed.newKeyFromSeed(Uint8List.fromList(key.key))));
+  }
+
+  Future<String?> getKeyAgreementKeyForDid(String did) async {
+    if (did.startsWith('did:ethr'))
+      throw Exception('Could not resolve an agreement key for did:ethr');
+    else if (did.startsWith('did:key:z6LS'))
+      return getPrivateKeyForConnectionDid(did);
+    else if (did.startsWith('did:key:z6Mk')) {
+      var cred = getCredential(did);
+      if (cred != null) {
+        var key = await ED25519_HD_KEY.derivePath(
+            cred.hdPath, _keyBox!.get('seed').toList());
+        return bytesToHex(_edPrivateToXPrivate(
+            ed.newKeyFromSeed(Uint8List.fromList(key.key))));
+      } else {
+        var con = getConnection(did);
+        if (con != null) {
+          var key = await ED25519_HD_KEY.derivePath(
+              con.hdPath, _keyBox!.get('seed').toList());
+          return bytesToHex(_edPrivateToXPrivate(
+              ed.newKeyFromSeed(Uint8List.fromList(key.key))));
+        } else
+          throw Exception('Could not find a key for this did');
+      }
+    } else
+      throw Exception('unsupported did');
   }
 
   /// Stores a configuration Entry.
@@ -624,35 +678,38 @@ class WalletStore {
     else
       return 'did:ethr:$network:${addr.hexEip55}';
   }
-}
 
-Future<String> _edKeyToDid(KeyData d) async {
-  var private = ed.newKeyFromSeed(Uint8List.fromList(d.key));
-  return 'did:key:z${base58Bitcoin.encode(Uint8List.fromList([
-        237,
-        1
-      ] + ed.public(private).bytes))}';
-}
+  Future<String> _edKeyToDid(KeyData d) async {
+    var private = ed.newKeyFromSeed(Uint8List.fromList(d.key));
+    return 'did:key:z${base58Bitcoin.encode(Uint8List.fromList([
+          237,
+          1
+        ] + ed.public(private).bytes))}';
+  }
 
-Future<String> _edKeyToXKeyDid(KeyData data) async {
-  var private = ed.newKeyFromSeed(Uint8List.fromList(data.key));
-  var d = _edPrivateToXPrivate(private);
+  Future<String> _edKeyToXKeyDid(KeyData data) async {
+    var private = ed.newKeyFromSeed(Uint8List.fromList(data.key));
 
-  var xPublic = List.filled(32, 0);
-  x.ScalarBaseMult(xPublic, d);
-  return 'did:key:z${base58Bitcoin.encode(Uint8List.fromList([
-        236,
-        1
-      ] + xPublic))}';
-}
+    return 'did:key:z${base58Bitcoin.encode(Uint8List.fromList([
+          236,
+          1
+        ] + _edPrivateToXPublic(private)))}';
+  }
 
-List<int> _edPrivateToXPrivate(ed.PrivateKey private) {
-  var hash = sha512.convert(private.bytes.sublist(0, 32));
-  var d = hash.bytes;
-  d[0] &= 248;
-  d[31] &= 127;
-  d[31] |= 64;
-  return d;
+  List<int> _edPrivateToXPrivate(ed.PrivateKey private) {
+    var hash = sha512.convert(private.bytes.sublist(0, 32));
+    var d = hash.bytes;
+    d[0] &= 248;
+    d[31] &= 127;
+    d[31] |= 64;
+    return d;
+  }
+
+  List<int> _edPrivateToXPublic(ed.PrivateKey private) {
+    var xPublic = List.filled(32, 0);
+    x.ScalarBaseMult(xPublic, _edPrivateToXPrivate(private));
+    return xPublic;
+  }
 }
 
 enum KeyType { secp256k1, ed25519, x25519 }

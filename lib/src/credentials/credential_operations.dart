@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
+import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
@@ -246,8 +247,13 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 }
 
 /// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
-Future<String> signCredential(WalletStore wallet, dynamic credential) async {
-  credential = credentialToMap(credential);
+Future<String> signCredential(
+    WalletStore wallet, dynamic credentialToSign) async {
+  Map<String, dynamic> credential;
+  if (credentialToSign is VerifiableCredential)
+    credential = credentialToSign.toJson();
+  else
+    credential = credentialToMap(credentialToSign);
   String issuerDid = getIssuerDidFromCredential(credential);
   if (issuerDid == '') {
     throw new Exception('Could not examine IssuerDID');
@@ -1123,11 +1129,9 @@ Future<Map<String, dynamic>> _buildEdDsaProof(
   var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
   var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
 
-  var privateKey = await wallet.getPrivateKeyForCredentialDid(
-      didToSignWith, KeyType.ed25519);
+  var privateKey = await wallet.getPrivateKeyForCredentialDid(didToSignWith);
   if (privateKey == null)
-    privateKey = await wallet.getPrivateKeyForConnectionDid(
-        didToSignWith, KeyType.ed25519);
+    privateKey = await wallet.getPrivateKeyForConnectionDid(didToSignWith);
   if (privateKey == null) throw Exception('Could not find a private key');
   var signature = ed.sign(
       ed.PrivateKey(hexToBytes(privateKey).toList()), Uint8List.fromList(hash));
