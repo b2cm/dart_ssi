@@ -96,7 +96,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       }
     }
 
-    if (decoded.containsKey(['attachments'])) {
+    if (decoded.containsKey('attachments')) {
       List tmp = decoded['attachments'];
       if (tmp.length > 0) {
         attachments = [];
@@ -238,7 +238,9 @@ class AttachmentData implements JsonObject {
 
   //TODO write this function: resolve Data from links; decode base64; check hash -> store everything in json;
   void resolveData() {
-    if (base64 != null)
+    if (json != null)
+      return; //Nothing to resolve
+    else if (base64 != null)
       json = jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(base64!))));
     else
       throw UnimplementedError('could not resolve link-data for now');

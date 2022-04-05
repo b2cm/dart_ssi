@@ -218,9 +218,9 @@ class DidDocument implements JsonObject {
   List _convertKeys(List old) {
     List newList = [];
     for (var entry in old) {
-      if (entry is VerificationMethod)
+      if (entry is VerificationMethod) {
         newList.add(entry.toPublicKeyJwk());
-      else
+      } else
         newList.add(entry);
     }
     return newList;
@@ -363,13 +363,15 @@ class VerificationMethod implements JsonObject {
   }
 
   VerificationMethod toPublicKeyJwk() {
-    if (publicKeyMultibase != null)
+    if (publicKeyMultibase != null) {
+      var pkJwk = multibaseKeyToJwk(publicKeyMultibase!);
+      pkJwk['kid'] = id;
       return VerificationMethod(
           id: id,
           controller: controller,
           type: 'JsonWebKey2020',
-          publicKeyJwk: multibaseKeyToJwk(publicKeyMultibase!));
-    else if (publicKeyJwk != null)
+          publicKeyJwk: pkJwk);
+    } else if (publicKeyJwk != null)
       return this;
     else
       throw Exception('Cant find key in this Verification Method');
@@ -431,7 +433,7 @@ class ServiceEndpoint implements JsonObject {
 
 Future<DidDocument> resolveDidDocument(String did,
     [String? resolverAddress]) async {
-  if (did.startsWith('did:key:z6Mk'))
+  if (did.startsWith('did:key:z6Mk') || did.startsWith('did:key:z6LS'))
     return resolveDidKey(did);
   else {
     if (resolverAddress == null)

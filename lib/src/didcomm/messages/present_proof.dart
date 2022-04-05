@@ -103,8 +103,8 @@ class RequestPresentation extends DidcommPlaintextMessage {
       for (var a in attachments!) {
         if (a.format == 'dif/presentation-exchange/definitions@v1.0') {
           a.data.resolveData();
-          presentationDefinition.add(PresentationDefinitionWithOptions.fromJson(
-              a.data.json!['presentation_definition']));
+          presentationDefinition
+              .add(PresentationDefinitionWithOptions.fromJson(a.data.json!));
         } else if (a.format == 'hlindy/proof-req@v2.0') {
           throw UnimplementedError('Indy proof request is not supported');
         } else
@@ -132,9 +132,9 @@ class Presentation extends DidcommPlaintextMessage {
     if (comment != null) body['comment'] = comment;
     attachments = [];
     for (var d in verifiablePresentation) {
-      if (d.presentationSubmission == null)
-        throw Exception(
-            'The verifiable Presentation used here must contain a presentation submission');
+      // if (d.presentationSubmission == null)
+      //   throw Exception(
+      //       'The verifiable Presentation used here must contain a presentation submission');
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
@@ -157,9 +157,9 @@ class Presentation extends DidcommPlaintextMessage {
         if (a.format == 'dif/presentation-exchange/submission@v1.0') {
           a.data.resolveData();
           var tmp = VerifiablePresentation.fromJson(a.data.json);
-          if (tmp.presentationSubmission == null)
-            throw Exception(
-                'The verifiable Presentation used here must contain a presentation submission');
+          // if (tmp.presentationSubmission == null)
+          //   throw Exception(
+          //       'The verifiable Presentation used here must contain a presentation submission');
           verifiablePresentation.add(tmp);
         } else if (a.format == 'hlindy/proof@v2.0') {
           throw UnimplementedError('Indy proof request is not supported');
@@ -209,8 +209,11 @@ class PresentationDefinitionWithOptions implements JsonObject {
 
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
-    jsonObject['domain'] = domain;
-    jsonObject['challenge'] = challenge;
+    Map<String, dynamic> options = {};
+    options['domain'] = domain;
+    options['challenge'] = challenge;
+    jsonObject['options'] = options;
+    jsonObject['presentation_definition'] = presentationDefinition.toJson();
     return jsonObject;
   }
 

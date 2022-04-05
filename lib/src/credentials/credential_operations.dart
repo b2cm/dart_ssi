@@ -247,8 +247,8 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 }
 
 /// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
-Future<String> signCredential(
-    WalletStore wallet, dynamic credentialToSign) async {
+Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
+    {String? challenge}) async {
   Map<String, dynamic> credential;
   if (credentialToSign is VerifiableCredential)
     credential = credentialToSign.toJson();
@@ -259,8 +259,18 @@ Future<String> signCredential(
     throw new Exception('Could not examine IssuerDID');
   }
 
+  SignatureType type;
+  if (issuerDid.startsWith('did:key:z6Mk'))
+    type = SignatureType.edDsa;
+  else if (issuerDid.startsWith('did:ethr'))
+    type = SignatureType.ecdsaRecovery;
+  else
+    throw Exception('could not examine signature type');
+
   var credHash = sha256.convert(utf8.encode(jsonEncode(credential))).bytes;
-  var proof = await _buildProof(credHash as Uint8List, issuerDid, wallet);
+  var proof = await _buildProof(credHash as Uint8List, issuerDid, wallet,
+      proofOptions: _buildProofOptions(
+          type: type, verificationMethod: issuerDid, challenge: challenge));
   credential['proof'] = proof;
   return jsonEncode(credential);
 }
@@ -271,8 +281,14 @@ Future<String> signCredential(
 ///
 /// If [rpcUrl] is given and the credential contains a `credentialStatus` property, the revocation status is checked.
 Future<bool> verifyCredential(dynamic credential,
-    {Erc1056? erc1056, RevocationRegistry? revocationRegistry}) async {
-  Map<String, dynamic> credMap = credentialToMap(credential);
+    {Erc1056? erc1056,
+    RevocationRegistry? revocationRegistry,
+    String? expectedChallenge}) async {
+  Map<String, dynamic> credMap;
+  if (credential is VerifiableCredential)
+    credMap = credential.toJson();
+  else
+    credMap = credentialToMap(credential);
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
   }
@@ -294,6 +310,14 @@ Future<bool> verifyCredential(dynamic credential,
   credMap['proof'] = proof;
   var issuerDid = getIssuerDidFromCredential(credential);
   if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
+  if (expectedChallenge != null) {
+    var containingChallenge = proof['challenge'];
+    if (containingChallenge == null)
+      throw Exception('Expected challenge in this credential');
+    if (containingChallenge != expectedChallenge)
+      throw Exception(
+          'challenge in credential do not match expected challenge');
+  }
   return _verifyProof(proof, credHash as Uint8List, issuerDid);
 }
 
@@ -682,7 +706,11 @@ String buildJwsHeader(
 
 /// Collects the did of the issuer of a [credential].
 String getIssuerDidFromCredential(dynamic credential) {
-  var credentialMap = credentialToMap(credential);
+  var credentialMap;
+  if (credential is VerifiableCredential)
+    credentialMap = credential.toJson();
+  else
+    credentialMap = credentialToMap(credential);
 
   if (!credentialMap.containsKey('issuer'))
     return '';
@@ -979,7 +1007,8 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
               if (field.filter!.validate(matchList[0].value)) {
                 candidate.add(cred);
               }
-            }
+            } else
+              candidate.add(cred);
           }
         }
       }

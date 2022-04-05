@@ -51,7 +51,7 @@ class VerifiableCredential implements JsonObject {
     if (credential.containsKey('credentialSubject')) {
       {
         credentialSubject = credential['credentialSubject'];
-        if (!credentialSubject is Map<String, dynamic>)
+        if (!(credentialSubject is Map<String, dynamic>))
           throw FormatException(
               'Credential subject property must be a Map (dart json Object)');
       }
@@ -60,7 +60,7 @@ class VerifiableCredential implements JsonObject {
           'credential subject property is needed in verifiable credential');
 
     if (credential.containsKey('issuanceDate'))
-      issuanceDate = DateTime.parse(credential['issuer']);
+      issuanceDate = DateTime.parse(credential['issuanceDate']);
     else
       throw FormatException(
           'issuer property is needed in verifiable credential');
@@ -108,6 +108,7 @@ class LinkedDataProof implements JsonObject {
   late String verificationMethod;
   late DateTime created;
   String? proofValue;
+  String? challenge;
   String? jws;
   String? domain;
 
@@ -117,6 +118,7 @@ class LinkedDataProof implements JsonObject {
       required this.verificationMethod,
       required this.created,
       this.proofValue,
+      this.challenge,
       this.jws,
       this.domain});
 
@@ -148,6 +150,7 @@ class LinkedDataProof implements JsonObject {
       throw FormatException('one of proofValue or jws must be present');
 
     domain = proof['domain'];
+    challenge = proof['challenge'];
   }
 
   Map<String, dynamic> toJson() {
@@ -159,6 +162,7 @@ class LinkedDataProof implements JsonObject {
     if (proofValue != null) jsonObject['proofValue'] = proofValue;
     if (jws != null) jsonObject['jws'] = jws;
     if (domain != null) jsonObject['domain'] = domain;
+    if (challenge != null) jsonObject['challenge'] = challenge;
     return jsonObject;
   }
 
@@ -219,12 +223,12 @@ class VerifiablePresentation implements JsonObject {
   VerifiablePresentation.fromJson(dynamic jsonObject) {
     var presentation = credentialToMap(jsonObject);
     if (presentation.containsKey('@context'))
-      context = presentation['@context'];
+      context = presentation['@context'].cast<String>();
     else
       throw FormatException(
           'context property is needed in verifiable presentation');
     if (presentation.containsKey('type'))
-      type = presentation['type'];
+      type = presentation['type'].cast<String>();
     else
       throw FormatException(
           'type property is needed in verifiable presentation');

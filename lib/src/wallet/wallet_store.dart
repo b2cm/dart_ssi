@@ -68,7 +68,7 @@ class WalletStore {
   Future<bool> openBoxes([String? password]) async {
     //password to AES-Key
     if (password != null) {
-      var generator = new PBKDF2(hash: sha256);
+      var generator = PBKDF2(hash: sha256);
       var aesKey = generator.generateKey(password, "salt", 1000, 32);
       //only values are encrypted, keys are stored in plaintext
       _keyBox = await Hive.openBox('keyBox_$_nameExpansion',
@@ -190,7 +190,7 @@ class WalletStore {
       var key = master.derivePath('m/456/1/0');
       var issuerDid = await _bip32KeyToDid(key);
       await _keyBox!.put('issuerDid', issuerDid);
-      await _credentialBox!.put(issuerDid, new Credential('m/456/1/0', '', ''));
+      await _credentialBox!.put(issuerDid, Credential('m/456/1/0', '', ''));
       return issuerDid;
     } else if (keyType == KeyType.ed25519)
       return await _initializeIssuerEdKey();
@@ -204,8 +204,7 @@ class WalletStore {
         'm/457\'/1\'/2\'', _keyBox!.get('seed').toList());
     var issuerDid = await _edKeyToDid(key);
     await _keyBox!.put('issuerDidEd', issuerDid);
-    await _credentialBox!
-        .put(issuerDid, new Credential('m/457\'/1\'/2\'', '', ''));
+    await _credentialBox!.put(issuerDid, Credential('m/457\'/1\'/2\'', '', ''));
     return issuerDid;
   }
 
@@ -263,13 +262,13 @@ class WalletStore {
   /// - the [hdPath] to derive the key for the did the credential is issued for
   Future<void> storeCredential(
       String? w3cCred, String? plaintextCred, String? hdPath,
-      {String? credDid}) async {
+      {KeyType keyType = KeyType.secp256k1, String? credDid}) async {
     var did;
     if (credDid == null)
-      did = await getDid(hdPath!);
+      did = await getDid(hdPath!, keyType);
     else
       did = credDid;
-    var tmp = new Credential(hdPath!, w3cCred!, plaintextCred!);
+    var tmp = Credential(hdPath!, w3cCred!, plaintextCred!);
     await _credentialBox!.put(did, tmp);
   }
 
@@ -280,13 +279,13 @@ class WalletStore {
   /// - the [name] of the connection / the username used in this connection.
   /// - the [hdPath] to derive the key for the did of the communication
   Future<void> storeConnection(String otherDid, String name, String? hdPath,
-      {String? comDid}) async {
+      {KeyType keyType = KeyType.secp256k1, String? comDid}) async {
     var did;
     if (comDid == null)
-      did = await getDid(hdPath!);
+      did = await getDid(hdPath!, keyType);
     else
       did = comDid;
-    var tmp = new Connection(hdPath!, otherDid, name);
+    var tmp = Connection(hdPath!, otherDid, name);
     await _connection!.put(did, tmp);
   }
 
@@ -325,7 +324,7 @@ class WalletStore {
   /// Stores a credential issued to [holderDid].
   void toIssuingHistory(
       String holderDid, String plaintextCredential, String w3cCredential) {
-    var tmp = new Credential('', w3cCredential, plaintextCredential);
+    var tmp = Credential('', w3cCredential, plaintextCredential);
     _issuingHistory!.put(holderDid, tmp);
   }
 
@@ -387,7 +386,7 @@ class WalletStore {
 
     //store temporarily
     await _configBox!.put('lastCredentialDid', did);
-    await _credentialBox!.put(did, new Credential(path, '', ''));
+    await _credentialBox!.put(did, Credential(path, '', ''));
 
     return did;
   }
@@ -407,7 +406,7 @@ class WalletStore {
 
     //store temporarily
     await _configBox!.put('lastCredentialDidEd', did);
-    await _credentialBox!.put(did, new Credential(path, '', ''));
+    await _credentialBox!.put(did, Credential(path, '', ''));
 
     return did;
   }
@@ -439,7 +438,7 @@ class WalletStore {
 
     //store temporarily
     await _configBox!.put('lastConnectionDidX', did);
-    await _connection!.put(did, new Connection(path, '', ''));
+    await _connection!.put(did, Connection(path, '', ''));
 
     return did;
   }
@@ -459,7 +458,7 @@ class WalletStore {
 
     //store temporarily
     await _configBox!.put('lastConnectionDid', did);
-    await _connection!.put(did, new Connection(path, '', ''));
+    await _connection!.put(did, Connection(path, '', ''));
 
     return did;
   }
@@ -479,7 +478,7 @@ class WalletStore {
 
     //store temporarily
     await _configBox!.put('lastConnectionDidEd', did);
-    await _connection!.put(did, new Connection(path, '', ''));
+    await _connection!.put(did, Connection(path, '', ''));
 
     return did;
   }

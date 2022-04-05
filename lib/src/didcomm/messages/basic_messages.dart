@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:uuid/uuid.dart';
 
 import '../didcomm_jwm.dart';
@@ -106,7 +107,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
 
   OutOfBandMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
     if (type != 'https://didcomm.org/out-of-band/2.0/invitation')
-      throw Exception('Wring message type');
+      throw Exception('Wrong message type');
     if (from == null || attachments == null || attachments!.length == 0)
       throw FormatException('from and attachments property needed');
     if (typ != null && typ != DidcommMessageTyp.plain)
@@ -143,4 +144,13 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
   String toUrl(String protocol, String domain, String path) {
     return '$protocol://$domain/$path?_oob=${base64UrlEncode(utf8.encode(this.toString()))}';
   }
+}
+
+OutOfBandMessage oobMessageFromUrl(String url) {
+  var asUri = Uri.parse(url);
+  if (asUri.queryParameters.containsKey('_oob')) {
+    return OutOfBandMessage.fromJson(utf8.decode(
+        base64Decode(addPaddingToBase64(asUri.queryParameters['_oob']!))));
+  } else
+    throw Exception('No Out-Of-Band Message found');
 }

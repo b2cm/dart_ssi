@@ -16,11 +16,6 @@ DidDocument resolveDidKey(String did) {
   var multibaseIndicator = keyPart[0];
   keyPart = keyPart.substring(1);
 
-  if (multibaseIndicator != 'z')
-    throw UnimplementedError('Only Base58 is supported yet');
-  if (!keyPart.startsWith('6Mk'))
-    throw UnimplementedError('Only Ed25519 keys are supported now');
-
   var context = [
     "https://www.w3.org/ns/did/v1",
     "https://w3id.org/security/suites/ed25519-2020/v1",
@@ -29,6 +24,17 @@ DidDocument resolveDidKey(String did) {
 
   var id = did;
 
+  if (multibaseIndicator != 'z')
+    throw UnimplementedError('Only Base58 is supported yet');
+  if (keyPart.startsWith('6Mk'))
+    return _buildEDDoc(context, id, keyPart);
+  else if (keyPart.startsWith('6LS'))
+    return _buildXDoc(context, id, keyPart);
+  else
+    throw UnimplementedError('Only Ed25519 and X25519 keys are supported now');
+}
+
+DidDocument _buildEDDoc(List<String> context, String id, String keyPart) {
   var multiCodecXKey =
       _ed25519PublicToX25519Public(base58Bitcoin.decode(keyPart).sublist(2));
   if (!multiCodecXKey.startsWith('6LS'))
@@ -57,6 +63,20 @@ DidDocument resolveDidKey(String did) {
       authentication: [verificationKeyId],
       capabilityDelegation: [verificationKeyId],
       capabilityInvocation: [verificationKeyId]);
+}
+
+DidDocument _buildXDoc(List<String> context, String id, String keyPart) {
+  String verificationKeyId = '$id#z$keyPart';
+  var verification = VerificationMethod(
+      id: verificationKeyId,
+      controller: id,
+      type: 'X25519KeyAgreementKey2020',
+      publicKeyMultibase: 'z$keyPart');
+  return DidDocument(
+      context: context,
+      id: id,
+      verificationMethod: [verification],
+      keyAgreement: [verificationKeyId]);
 }
 
 //ported from https://github.com/oasisprotocol/ed25519/blob/master/extra/x25519/x25519.go
