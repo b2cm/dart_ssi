@@ -34,6 +34,7 @@
 .pub/
 .lock
 build/
+doc/
 
 # Android related
 **/android/**/gradle-wrapper.jar

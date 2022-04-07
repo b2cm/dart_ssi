@@ -1,3 +1,7 @@
-## [0.0.1] - TODO: Add release date.
-
-* TODO: Describe initial release.
+## 0.0.1
+- Initial release
+    - Support did:ethr
+    - Sign/Verify Credentials and Presentation (EcdsaSecp256k1RecoverySignature2020)
+    - hash based selective disclosure mechanism
+    - Support IWCE
+    - Simple Ethereum based Credential Revocation
