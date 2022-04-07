@@ -88,3 +88,6 @@ registration process for a new user wthin an online-service could include the fo
 
 1. User generates new Connection DID and submits this to service. That's enough to authenticate an user technically, when he/she returns (using digital signatures).
 2. To identify an user (Who is the person behind the identifier?) credentials are needed and submitted.
+
+## API Documentation
+To get a complete documentation of the API of this library use [`dart doc`](https://dart.dev/tools/dart-doc).
