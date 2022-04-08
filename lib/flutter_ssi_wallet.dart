@@ -1,5 +1,3 @@
-library flutter_ssi_wallet;
-
 export 'src/credentials/credential_operations.dart';
 export 'src/credentials/presentation_exchange.dart';
 export 'src/credentials/revocation.dart';

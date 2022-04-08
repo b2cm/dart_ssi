@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import 'package:dart_web3/crypto.dart';
 import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:test/test.dart';
-import 'package:web3dart/crypto.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';

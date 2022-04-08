@@ -1,10 +1,9 @@
-This Branch contains a script to estimate the execution-costs of the used SmartContracts 
-(ERC1056 and the Revocation-Contract) in euro. The script is called cost_estimation.dart and
-could be found in the examples directory.
-Run it with `dart examples/cost_estimation.dart`.
-
-Dart Package for SSI Wallet. This Package contains classes and functions for storing verifiable credentials
+# dart_ssi
+Dart Package supporting several standards in SSI space, inclusive a minimal wallet implementation. 
+This Package contains classes and functions for storing verifiable credentials
 and relating key-pairs; issue, verify and revoke credentials and presentations and interact with a erc1056 smartContract.
+Additional two exchange protocols ([IWCE](https://b2cm.github.io/iwce/) and 
+[DIDComm V2](https://identity.foundation/didcomm-messaging/spec/)) for verifiable Credentials and Presentations are supported.
 
 ## Getting Started
 
@@ -16,11 +15,15 @@ void main() {
   wallet.initialize();
 }
 ```
+
 ## Credentials
-Most important part of this package are the credentials supported by it. These credentials are able to support selective disclosure.
-Therefor every attribute of a credential is hashed with a salt and the verifiable credential signed by the issuer
-only contains the hashes. In the wallet of the holder both credentials - the one containing all disclosed values 
-with hashes and salts and the signed one - are stored. E.g. the first mentioned type - in the package referred to to as plaintext-credential -
+
+Most important part of this package are the credentials supported by it. These credentials are able to support selective disclosure 
+using a simple hash-based mechanism.
+Therefore every attribute of a credential is hashed with a salt. The verifiable credential signed by the issuer
+only contains the hashes. In the wallet of the holder both credentials - the one containing all values 
+with their salts and the signed one - are stored. 
+E.g. the first mentioned type - in the package referred to to as plaintext-credential -
 looks like this:
 ```
 {
@@ -59,7 +62,9 @@ and the corresponding signed verifiable credential like this:
         "jws":"ey..E="}
 }
 ```
-For now the only supported signature-suite for the proof-section is [EcdsaSecp256k1RecoverySignature2020](https://identity.foundation/EcdsaSecp256k1RecoverySignature2020/).
+For now the only supported signature-suites for the proof-section are
+[EcdsaSecp256k1RecoverySignature2020](https://identity.foundation/EcdsaSecp256k1RecoverySignature2020/) and 
+[Ed25519Signature2020](https://w3c-ccg.github.io/lds-ed25519-2020/).
 
 ## Usage of Credentials
 As the [W3C-Specification for Verifiable Credentials](https://www.w3.org/TR/vc-data-model/) describes, a credential is issued by an issuer, stored by a holder and presented to verifier. 
@@ -69,8 +74,10 @@ as shown in [credentialRevocation.dart](http://suc-1.hs-mittweida.de/startervorh
 For the revocation a simple Ethereum-SmartContract is used, that should be deployed for each issuer.
 
 ## Key- and Identifier Management
-The identifiers used here are [decentralized identifiers (DID)](https://www.w3.org/TR/did-core/) according to a [ethereum-specific DID-Method](https://github.com/decentralized-identity/ethr-did-resolver). These DIDs are ethereum-addresses prepended with `did:ethr`.
-Because of this a secp256k1- key pair belongs to each identifier. The keys are managed in a hierarchical-deterministic manner as known from Bitcoin wallets, because it is recommended to use
+The identifiers used here are [decentralized identifiers (DID)](https://www.w3.org/TR/did-core/) 
+according to [did:ethr Method](https://github.com/decentralized-identity/ethr-did-resolver) and [did:key Method](https://w3c-ccg.github.io/did-method-key/).
+In case of the later one, only Ed2219 and X2555 keys are supported now.
+All keys are managed in a hierarchical-deterministic manner as known from Bitcoin wallets, because it is recommended to use
 a new identifier for each credential or service you would like to interact with. To generate one use
 ```
 var newDID = await wallet.getNextCredentialDID();
@@ -79,12 +86,17 @@ var newDID = await wallet.getNextConnectionDID();
 ```
 This package only supports credentials that are issued to different dids each, because each credential is identified be it.
 
-With the [ERC1056-SmartContract (EtheremDIDRegistry)](https://eips.ethereum.org/EIPS/eip-1056) it is for
-example possible to rotate a key if it is lost/corrupted. An example for that could be found in [keyRotation.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/keyRotation.dart).  
+With the [ERC1056-SmartContract (EthereumDIDRegistry)](https://eips.ethereum.org/EIPS/eip-1056) it is for
+example possible to rotate a key if it is lost/corrupted.
+An example for that could be found in [keyRotation.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/keyRotation.dart).  
 
-The identifier could not only be used to bind credentials on it. They could also be used as an replacement for an 'normal' username. These are referred to as ConnectionDIDs in this package.
-A usage example for this could be found in [registration.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/registration.dart). Therefor a
-registration process for a new user wthin an online-service could include the following steps:   
+The identifier could not only be used to bind credentials on it. 
+They could also be used to encrypt didcomm messages with or as an replacement for an 'normal' username. 
+These are referred to as ConnectionDIDs in this package.
+A usage example for the second case could be found in 
+[registration.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/flutter_ssi_wallet/-/blob/master/examples/registration.dart). 
+Therefore a
+registration process for a new user within an online-service could include the following steps:   
 
 1. User generates new Connection DID and submits this to service. That's enough to authenticate an user technically, when he/she returns (using digital signatures).
 2. To identify an user (Who is the person behind the identifier?) credentials are needed and submitted.
