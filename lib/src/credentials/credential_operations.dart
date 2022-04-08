@@ -6,7 +6,6 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
@@ -15,6 +14,7 @@ import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 import 'presentation_exchange.dart';
 import 'revocation.dart';
+import 'verifiable_credential.dart';
 
 final _hashedAttributeSchemaMap = {
   "type": "object",
@@ -246,7 +246,7 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
   return _checkHashes(w3cMap, plainMap);
 }
 
-/// Signs a W3C-Standard conform [credential] with the private key for issuer-did in the credential.
+/// Signs a W3C-Standard conform [credentialToSign] with the private key for issuer-did in the credential.
 Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
     {String? challenge}) async {
   Map<String, dynamic> credential;
@@ -279,7 +279,7 @@ Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
 ///
 /// If an [erc1056] instance is given it is used to determine the current ethereum-Address behind a did.
 ///
-/// If [rpcUrl] is given and the credential contains a `credentialStatus` property, the revocation status is checked.
+/// If [revocationRegistry] is given and the credential contains a `credentialStatus` property, the revocation status is checked.
 Future<bool> verifyCredential(dynamic credential,
     {Erc1056? erc1056,
     RevocationRegistry? revocationRegistry,

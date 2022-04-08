@@ -1,4 +1,4 @@
-import 'package:flutter_ssi_wallet/src/util/types.dart';
+import 'package:dart_ssi/src/util/types.dart';
 
 enum DidcommProfiles { aip1, rfc19, rfc587, v2 }
 
@@ -25,6 +25,7 @@ extension DidcommMessageTypExt on DidcommMessageTyp {
 
 abstract class DidcommMessage implements JsonObject {}
 
+/// Combination of Key-Wrap and Key agreement algorithm
 enum KeyWrapAlgorithm { ecdhES, ecdh1PU }
 
 extension KeyWrapAlgorithmExt on KeyWrapAlgorithm {

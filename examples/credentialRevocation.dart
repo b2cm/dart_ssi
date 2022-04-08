@@ -1,4 +1,5 @@
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
+import 'package:dart_ssi/credentials.dart';
+import 'package:dart_ssi/src/wallet/wallet_store.dart';
 
 //This example shows how an issuer could revoke an issued credential
 //You should run the example issuance.dart before to make sure, the credential exists.

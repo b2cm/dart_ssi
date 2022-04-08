@@ -15,6 +15,7 @@ import 'didcomm_jws.dart';
 import 'messages/basic_messages.dart';
 import 'types.dart';
 
+///A didcomm encrypted message
 class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
   late String protectedHeader;
   late String tag;

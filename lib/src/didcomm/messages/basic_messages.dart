@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../util/utils.dart';
 import '../didcomm_jwm.dart';
 import '../types.dart';
 
@@ -58,6 +58,7 @@ class ProblemReport extends DidcommPlaintextMessage {
     escalateTo = body['escalate_to'];
   }
 
+  /// Replaces placeholders in comment with args
   String interpolateComment() {
     String interpolatedComment = '';
     if (comment != null) {
@@ -146,6 +147,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
   }
 }
 
+/// Converts Out-of-band message url [url] to OutOfBand message object.
 OutOfBandMessage oobMessageFromUrl(String url) {
   var asUri = Uri.parse(url);
   if (asUri.queryParameters.containsKey('_oob')) {

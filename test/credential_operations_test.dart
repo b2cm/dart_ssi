@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dart_web3/dart_web3.dart';
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
+import 'package:dart_ssi/credentials.dart';
+import 'package:dart_ssi/did.dart';
+import 'package:dart_ssi/wallet.dart';
 import 'package:http/http.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:test/test.dart';

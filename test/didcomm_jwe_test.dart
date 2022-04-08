@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:dart_web3/crypto.dart';
 import 'package:elliptic/elliptic.dart' as elliptic;
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
+import 'package:dart_ssi/didcomm.dart';
+import 'package:dart_ssi/util.dart';
 import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 import 'package:x25519/x25519.dart' as x25519;

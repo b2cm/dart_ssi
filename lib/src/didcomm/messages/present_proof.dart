@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter_ssi_wallet/src/credentials/verifiable_credential.dart';
+import 'package:dart_ssi/src/credentials/verifiable_credential.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../credentials/presentation_exchange.dart';

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter_ssi_wallet/src/credentials/presentation_exchange.dart';
+import 'package:dart_ssi/src/credentials/presentation_exchange.dart';
 
 import '../util/types.dart';
 import '../util/utils.dart';

@@ -10,6 +10,7 @@ import 'didcomm_jwe.dart';
 import 'didcomm_jwm.dart';
 import 'types.dart';
 
+/// A signed didcomm message
 class DidcommSignedMessage implements JsonObject, DidcommMessage {
   late DidcommMessage payload;
   late List<SignatureObject> signatures;
@@ -186,6 +187,7 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
   }
 }
 
+/// Signature of a didcomm signed message
 class SignatureObject implements JsonObject {
   Map<String, dynamic>? protected;
   Map<String, dynamic>? header;

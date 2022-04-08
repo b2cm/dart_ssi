@@ -1,4 +1,4 @@
-library flutter_ssi_wallet;
+library dart_ssi;
 
 import 'dart:typed_data';
 

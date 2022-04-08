@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_ssi_wallet/src/dids/did_key.dart';
+import 'package:dart_ssi/src/dids/did_key.dart';
 
 import '../util/types.dart';
 import '../util/utils.dart';
@@ -141,6 +141,7 @@ class DidDocument implements JsonObject {
     }
   }
 
+  /// Resolve all keys given by their ids to their VerificationMethod from verification method section
   DidDocument resolveKeyIds() {
     if (verificationMethod == null || verificationMethod!.length == 0) {
       return this;
@@ -189,6 +190,7 @@ class DidDocument implements JsonObject {
     return newList;
   }
 
+  /// If keys are given as multibase-keys convert to Json web keys (this format is widely used in this package)
   DidDocument convertAllKeysToJwk() {
     var newDdo = DidDocument(
         id: this.id,
@@ -362,6 +364,7 @@ class VerificationMethod implements JsonObject {
           'Verification Method must have an entry for a public key');
   }
 
+  /// Convert a multibase key to Json web Key
   VerificationMethod toPublicKeyJwk() {
     if (publicKeyMultibase != null) {
       var pkJwk = multibaseKeyToJwk(publicKeyMultibase!);
@@ -431,6 +434,9 @@ class ServiceEndpoint implements JsonObject {
   }
 }
 
+/// Resolves the Did-Document for [did].
+///
+/// Resolving if did:key cann be done internally, for all other did-methods an URL [resolverAddress] to an instance of a universal resolver is needed.
 Future<DidDocument> resolveDidDocument(String did,
     [String? resolverAddress]) async {
   if (did.startsWith('did:key:z6Mk') || did.startsWith('did:key:z6LS'))

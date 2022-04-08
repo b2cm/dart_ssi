@@ -4,6 +4,7 @@ import '../util/types.dart';
 import '../util/utils.dart';
 import 'types.dart';
 
+/// A plaintext-Message (json-web message) as per didcomm specification
 class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
   List<dynamic>? to;
   String? from;
@@ -18,15 +19,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
   FromPriorJWT? fromPrior;
   List<Attachment>? attachments;
   Map<String, dynamic>? additionalHeaders;
-
-  /// The header’s value is an array of strings that clarify when the ACK is
-  /// requested. Only the following value is defined by this version of
-  /// the spec: “receipt”.
   List<String>? pleaseAck;
-
-  ///  the value of the header is an array that contains the id of one or more
-  ///  messages being acknowledged. Values in this array MUST appear in the
-  ///  order received, from oldest to most recent.
   List<String>? ack;
 
   DidcommPlaintextMessage(
@@ -160,6 +153,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
   }
 }
 
+/// Attachment for a didcomm message
 class Attachment implements JsonObject {
   String? id;
   String? description;
@@ -218,6 +212,7 @@ class Attachment implements JsonObject {
   }
 }
 
+/// represents the data in a didcomm message attachment
 class AttachmentData implements JsonObject {
   dynamic jws;
   String? hash;
@@ -266,6 +261,7 @@ class AttachmentData implements JsonObject {
   }
 }
 
+/// json-web token used in form_prior header of didcomm message. (Not fully implemented)
 class FromPriorJWT {
   final String typ = 'JWT';
   late String sub;

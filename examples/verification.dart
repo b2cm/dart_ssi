@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
+import 'package:dart_ssi/credentials.dart';
+import 'package:dart_ssi/did.dart';
+import 'package:dart_ssi/wallet.dart';
 import 'package:uuid/uuid.dart';
 
 //This example shows how holder an verifier could interact.

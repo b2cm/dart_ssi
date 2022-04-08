@@ -2,17 +2,13 @@
 This Example demonstrates the usage of this library with the following story:
 Alice would buy a discounted Annual ticket for the Art museum. She gets the
 discount because she is a student at an university. So she has to present
-her student card to the museum. Before she shows her student card (personnel
-information to the museum, she would like if she talks to authentic system of
-this museum. Therefore she asks for identifying information
+her student card to the museum.
 After this the museum issues the Annual Ticket to Alice.
 
 On a high level the process looks like this:
 
   Alice                                       Museum
      <--request presentation (student-card)-------
-     ---request presentation (identifying info)-->
-     <--presentation(identifying info)------------
      ---presentation (student card)-------------->
      <--propose-credential (annual ticket)--------
      ---request-credential (annual ticket)------->
@@ -22,7 +18,11 @@ On a high level the process looks like this:
 import 'dart:convert';
 
 import 'package:dart_web3/crypto.dart';
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
+import 'package:dart_ssi/credentials.dart';
+import 'package:dart_ssi/did.dart';
+import 'package:dart_ssi/didcomm.dart';
+import 'package:dart_ssi/util.dart';
+import 'package:dart_ssi/wallet.dart';
 import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';

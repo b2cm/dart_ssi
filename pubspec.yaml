@@ -1,5 +1,5 @@
-name: flutter_ssi_wallet
-description: Flutter Package for SSI Wallet
+name: dart_ssi
+description: Dart Package for SSI Wallet
 version: 0.1.0
 author: Sarah Otto
 homepage: https://credentials.hs-mittweida.de

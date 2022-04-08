@@ -1,6 +1,6 @@
 import 'package:dart_web3/dart_web3.dart';
-import 'package:flutter_ssi_wallet/flutter_ssi_wallet.dart';
-import 'package:flutter_ssi_wallet/src/wallet/wallet_store.dart';
+import 'package:dart_ssi/did.dart';
+import 'package:dart_ssi/wallet.dart';
 import 'package:http/http.dart';
 
 void main() async {
