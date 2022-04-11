@@ -17,7 +17,6 @@ On a high level the process looks like this:
 
 import 'dart:convert';
 
-import 'package:dart_web3/crypto.dart';
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/didcomm.dart';
@@ -109,16 +108,10 @@ void main() async {
   //alice generates a did she encrypts the message with
   var connectionDidAlice = await alice.getNextConnectionDID(KeyType.x25519);
   var privateKey =
-      await alice.getPrivateKeyForConnectionDid(connectionDidAlice);
+      await alice.getPrivateKeyForConnectionDidAsJwk(connectionDidAlice);
   var encryptedMessage = DidcommEncryptedMessage.fromPlaintext(
       keyWrapAlgorithm: KeyWrapAlgorithm.ecdhES,
-      senderPrivateKeyJwk: {
-        'kty': 'OKP',
-        'crv': 'X25519',
-        'kid': '$connectionDidAlice#${connectionDidAlice.split(':')[2]}',
-        'd': removePaddingFromBase64(
-            base64UrlEncode(hexToBytes(privateKey!).sublist(0, 32)))
-      },
+      senderPrivateKeyJwk: privateKey!,
       recipientPublicKeyJwk: [ddoMuseum.keyAgreement![0].publicKeyJwk],
       plaintext: presentationMessage);
   //This message she could send to the museum
@@ -126,14 +119,9 @@ void main() async {
   //***** Museum *******
 
   //The museum receives the Message. Because its anoncrypted, the museum could encrypt it without looking up a did-Document
-  var museumPrivateKey = await museum.getPrivateKeyForConnectionDid(museumDid);
-  var decrypted = encryptedMessage.decrypt({
-    'kty': 'OKP',
-    'crv': 'X25519',
-    'kid': '$museumDid#${museumDid.split(':')[2]}',
-    'd': removePaddingFromBase64(
-        base64UrlEncode(hexToBytes(museumPrivateKey!).sublist(0, 32)))
-  });
+  var museumPrivateKey =
+      await museum.getPrivateKeyForConnectionDidAsJwk(museumDid);
+  var decrypted = encryptedMessage.decrypt(museumPrivateKey!);
 
   //To send message back, the museum looks for the sender in protected Header skid value
   Map<String, dynamic> decodedHeader = jsonDecode(utf8.decode(
@@ -189,28 +177,17 @@ void main() async {
         options: LdProofVcDetailOptions(proofType: 'Ed25519Signature2020'))
   ]);
 
-  var encryptedOffer =
-      DidcommEncryptedMessage.fromPlaintext(senderPrivateKeyJwk: {
-    'kty': 'OKP',
-    'crv': 'X25519',
-    'kid': '$museumDid#${museumDid.split(':')[2]}',
-    'd': removePaddingFromBase64(
-        base64UrlEncode(hexToBytes(museumPrivateKey).sublist(0, 32)))
-  }, recipientPublicKeyJwk: [
-    senderDDO.keyAgreement![0].publicKeyJwk
-  ], plaintext: offer);
+  var encryptedOffer = DidcommEncryptedMessage.fromPlaintext(
+      senderPrivateKeyJwk: museumPrivateKey,
+      recipientPublicKeyJwk: [senderDDO.keyAgreement![0].publicKeyJwk],
+      plaintext: offer);
 
   //This authcrypted Message is sent to alice
 
   //**** Alice *******
   //Alice decrypts the message (she know, that it is from the museum)
-  var decryptedOffer = encryptedOffer.decrypt({
-    'kty': 'OKP',
-    'crv': 'X25519',
-    'kid': '$connectionDidAlice#${connectionDidAlice.split(':')[2]}',
-    'd': removePaddingFromBase64(
-        base64UrlEncode(hexToBytes(privateKey).sublist(0, 32)))
-  }, ddoMuseum.keyAgreement![0].publicKeyJwk);
+  var decryptedOffer = encryptedOffer.decrypt(
+      privateKey, ddoMuseum.keyAgreement![0].publicKeyJwk);
 
   //Here aswell we know that it is plaintext Message and has a type of offer-credential
   var receivedOffer = OfferCredential.fromJson(decryptedOffer.toJson());
@@ -233,28 +210,18 @@ void main() async {
   var propose = ProposeCredential(detail: [
     LdProofVcDetail(credential: vc, options: receivedOffer.detail![0].options)
   ]);
-  var encryptedPropose =
-      DidcommEncryptedMessage.fromPlaintext(senderPrivateKeyJwk: {
-    'kty': 'OKP',
-    'crv': 'X25519',
-    'kid': '$connectionDidAlice#${connectionDidAlice.split(':')[2]}',
-    'd': removePaddingFromBase64(
-        base64UrlEncode(hexToBytes(privateKey).sublist(0, 32)))
-  }, recipientPublicKeyJwk: [
-    ddoMuseum.keyAgreement![0].publicKeyJwk
-  ], plaintext: propose);
+  var encryptedPropose = DidcommEncryptedMessage.fromPlaintext(
+      senderPrivateKeyJwk: privateKey,
+      recipientPublicKeyJwk: [ddoMuseum.keyAgreement![0].publicKeyJwk],
+      plaintext: propose);
   //This message could be sent to the museum
 
   //***** Museum ****
+
   //decrypt message and see, that it is an credential propose that do not differ much from the previous offer
-  // (not all chekcing steps are shown here because they are straigth forward)
-  var decryptedPropose = encryptedPropose.decrypt({
-    'kty': 'OKP',
-    'crv': 'X25519',
-    'kid': '$museumDid#${museumDid.split(':')[2]}',
-    'd': removePaddingFromBase64(
-        base64UrlEncode(hexToBytes(museumPrivateKey).sublist(0, 32)))
-  }, senderDDO.keyAgreement![0].publicKeyJwk);
+  // (not all checking steps are shown here because they are straight forward)
+  var decryptedPropose = encryptedPropose.decrypt(
+      museumPrivateKey, senderDDO.keyAgreement![0].publicKeyJwk);
   var receivedPropose = ProposeCredential.fromJson(decryptedPropose.toJson());
 
   //Therefore the museum construct a offer out of it

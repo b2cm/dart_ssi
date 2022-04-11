@@ -14,10 +14,10 @@ void main() {
   test('should increment index', () async {
     var wallet = new WalletStore('testNew');
     await wallet.openBoxes('password');
-    var indexBefore = wallet.getLastIndex()!;
+    var indexBefore = wallet.getLastCredentialIndex()!;
     var did = await wallet.getNextCredentialDID();
     print(did);
-    var indexAfter = wallet.getLastIndex();
+    var indexAfter = wallet.getLastCredentialIndex();
 
     expect(indexAfter, indexBefore + 1);
   });

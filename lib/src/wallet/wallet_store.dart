@@ -1,11 +1,13 @@
 library dart_ssi;
 
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:base_codecs/base_codecs.dart';
 import 'package:bip32/bip32.dart';
 import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';
+import 'package:dart_ssi/src/util/utils.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
@@ -339,7 +341,7 @@ class WalletStore {
   }
 
   /// Returns the last value of the next HD-path for the credential keys.
-  int? getLastIndex([KeyType keyType = KeyType.secp256k1]) {
+  int? getLastCredentialIndex([KeyType keyType = KeyType.secp256k1]) {
     if (keyType == KeyType.secp256k1)
       return _keyBox!.get('lastCredentialIndex');
     else if (keyType == KeyType.ed25519)
@@ -543,6 +545,33 @@ class WalletStore {
       throw Exception('Unknown KeyType');
   }
 
+  Future<Map<String, dynamic>> getPrivateKeyJwk(String hdPath,
+      [KeyType keyType = KeyType.secp256k1]) async {
+    var privateKeyHex = await getPrivateKey(hdPath, keyType);
+    var did = await getDid(hdPath, keyType);
+    Map<String, dynamic> key = {};
+    key['kid'] = '$did#${did.split(':').last}';
+    if (keyType == KeyType.secp256k1) {
+      key['kty'] = 'EC';
+      key['crv'] = 'secp256k1';
+      key['d'] =
+          removePaddingFromBase64(base64UrlEncode(hexToBytes(privateKeyHex)));
+    } else if (keyType == KeyType.x25519) {
+      key['kty'] = 'OKP';
+      key['crv'] = 'X25519';
+      key['d'] = removePaddingFromBase64(
+          base64UrlEncode(hexToBytes(privateKeyHex).sublist(0, 32)));
+    } else if (keyType == KeyType.ed25519) {
+      key['kty'] = 'OKP';
+      key['crv'] = 'Ed25519';
+      key['d'] = removePaddingFromBase64(
+          base64UrlEncode(hexToBytes(privateKeyHex).sublist(0, 32)));
+    } else
+      throw Exception('Unknown keyType');
+
+    return key;
+  }
+
   /// Returns the public key as hex-String associated with [hdPath].
   Future<String> getPublicKey(String hdPath,
       [KeyType keyType = KeyType.secp256k1]) async {
@@ -593,6 +622,32 @@ class WalletStore {
     return bytesToHex(key.privateKey!);
   }
 
+  Future<Map<String, dynamic>?> getPrivateKeyForCredentialDidAsJwk(
+      String did) async {
+    if (did.startsWith('did:ethr')) {
+      var private = await _getPrivateKeyForCredentialDidEthr(did);
+      if (private == null) return null;
+      Map<String, dynamic> key = {};
+      key['kid'] = '$did#${did.split(':').last}';
+      key['kty'] = 'EC';
+      key['crv'] = 'secp256k1';
+      key['d'] = removePaddingFromBase64(base64UrlEncode(hexToBytes(private)));
+      return key;
+    } else if (did.startsWith('did:key:z6Mk')) {
+      var private = await _getPrivateKeyForCredentialDidEd(did);
+      if (private == null) return null;
+      Map<String, dynamic> key = {};
+      key['kid'] = '$did#${did.split(':').last}';
+      key['kty'] = 'OKP';
+      key['crv'] = 'Ed25519';
+      key['d'] = removePaddingFromBase64(
+          base64UrlEncode(hexToBytes(private).sublist(0, 32)));
+      return key;
+    } else
+      throw Exception('Unknown KeyType');
+  }
+
+  /// Returns the private key as hex-String associated with [did].
   Future<String?> getPrivateKeyForConnectionDid(String did) async {
     if (did.startsWith('did:ethr'))
       return _getPrivateKeyForConnectionDidEthr(did);
@@ -604,7 +659,6 @@ class WalletStore {
       throw Exception('Unknown KeyType');
   }
 
-  /// Returns the private key as hex-String associated with [did].
   String? _getPrivateKeyForConnectionDidEthr(String did) {
     var com = getConnection(did);
     if (com == null) return null;
@@ -632,6 +686,41 @@ class WalletStore {
         _edPrivateToXPrivate(ed.newKeyFromSeed(Uint8List.fromList(key.key))));
   }
 
+  Future<Map<String, dynamic>?> getPrivateKeyForConnectionDidAsJwk(
+      String did) async {
+    if (did.startsWith('did:ethr')) {
+      var private = await _getPrivateKeyForConnectionDidEthr(did);
+      if (private == null) return null;
+      Map<String, dynamic> key = {};
+      key['kid'] = '$did#${did.split(':').last}';
+      key['kty'] = 'EC';
+      key['crv'] = 'secp256k1';
+      key['d'] = removePaddingFromBase64(base64UrlEncode(hexToBytes(private)));
+      return key;
+    } else if (did.startsWith('did:key:z6Mk')) {
+      var private = await _getPrivateKeyForConnectionDidEd(did);
+      if (private == null) return null;
+      Map<String, dynamic> key = {};
+      key['kid'] = '$did#${did.split(':').last}';
+      key['kty'] = 'OKP';
+      key['crv'] = 'Ed25519';
+      key['d'] = removePaddingFromBase64(
+          base64UrlEncode(hexToBytes(private).sublist(0, 32)));
+      return key;
+    } else if (did.startsWith('did:key:z6LS')) {
+      var private = await _getPrivateKeyForConnectionDidX(did);
+      if (private == null) return null;
+      Map<String, dynamic> key = {};
+      key['kid'] = '$did#${did.split(':').last}';
+      key['kty'] = 'OKP';
+      key['crv'] = 'X25519';
+      key['d'] = removePaddingFromBase64(
+          base64UrlEncode(hexToBytes(private).sublist(0, 32)));
+      return key;
+    } else
+      throw Exception('Unknown KeyType');
+  }
+
   Future<String?> getKeyAgreementKeyForDid(String did) async {
     if (did.startsWith('did:ethr'))
       throw Exception('Could not resolve an agreement key for did:ethr');
@@ -651,6 +740,27 @@ class WalletStore {
               con.hdPath, _keyBox!.get('seed').toList());
           return bytesToHex(_edPrivateToXPrivate(
               ed.newKeyFromSeed(Uint8List.fromList(key.key))));
+        } else
+          throw Exception('Could not find a key for this did');
+      }
+    } else
+      throw Exception('unsupported did');
+  }
+
+  Future<Map<String, dynamic>?> getKeyAgreementKeyForDidAsJwk(
+      String did) async {
+    if (did.startsWith('did:ethr'))
+      throw Exception('Could not resolve an agreement key for did:ethr');
+    else if (did.startsWith('did:key:z6LS'))
+      return getPrivateKeyForConnectionDidAsJwk(did);
+    else if (did.startsWith('did:key:z6Mk')) {
+      var cred = getCredential(did);
+      if (cred != null) {
+        return getPrivateKeyForCredentialDidAsJwk(did);
+      } else {
+        var con = getConnection(did);
+        if (con != null) {
+          return getPrivateKeyForConnectionDidAsJwk(did);
         } else
           throw Exception('Could not find a key for this did');
       }
