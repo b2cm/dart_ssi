@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../dids/did_document.dart';
 import '../util/types.dart';
 import '../util/utils.dart';
 import 'types.dart';
@@ -21,13 +22,15 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
   Map<String, dynamic>? additionalHeaders;
   List<String>? pleaseAck;
   List<String>? ack;
+  ServiceEndpoint? responseTo;
 
   DidcommPlaintextMessage(
       {required this.id,
       required this.type,
       required this.body,
+      this.responseTo,
       this.typ,
-      this.threadId,
+      String? threadId,
       this.parentThreadId,
       this.createdTime,
       this.expiresTime,
@@ -39,12 +42,17 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       this.ack,
       this.additionalHeaders}) {
     if (pleaseAck) this.pleaseAck = ['receipt'];
+    this.threadId = threadId ?? id;
   }
 
   DidcommPlaintextMessage.fromJson(dynamic message) {
     Map<String, dynamic> decoded = credentialToMap(message);
     id = decoded['id']!;
     type = decoded['type']!;
+    if (decoded.containsKey('response_to')) {
+      var res = decoded['response_to'];
+      responseTo = ServiceEndpoint.fromJson(res);
+    }
     if (decoded.containsKey('body'))
       body = decoded['body']!;
     else {
@@ -115,6 +123,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
     decoded.remove('attachments');
     decoded.remove('ack');
     decoded.remove('please_ack');
+    decoded.remove('response_to');
     if (decoded.length > 0) additionalHeaders = decoded;
   }
 
@@ -144,6 +153,8 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       for (var a in attachments!) tmp.add(a.toJson());
       message['attachments'] = tmp;
     }
+
+    if (responseTo != null) message['response_to'] = responseTo!.toJson();
 
     return message;
   }

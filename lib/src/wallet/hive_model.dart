@@ -1,3 +1,4 @@
+import 'package:dart_ssi/didcomm.dart';
 import 'package:hive/hive.dart';
 
 part 'hive_model.g.dart';
@@ -70,5 +71,25 @@ class ExchangeHistoryEntry {
   @override
   String toString() {
     return 'ExchangeHistoryEntry{timestamp: $timestamp, action: $action, otherParty: $otherParty, shownAttributes: $shownAttributes}';
+  }
+}
+
+@HiveType(typeId: 3)
+class DidcommConversation {
+  /// Did/name/url of party the credential was presented to
+  @HiveField(0)
+  DidcommPlaintextMessage lastMessage;
+
+  @HiveField(1)
+  DidcommProtocol protocol;
+
+  @HiveField(2)
+  String myDid;
+
+  DidcommConversation(this.lastMessage, this.protocol, this.myDid);
+
+  @override
+  String toString() {
+    return 'DidcommConversation{lastMessage: $lastMessage, protocol: $protocol, myDid: $myDid}';
   }
 }

@@ -121,7 +121,7 @@ void main() async {
   //The museum receives the Message. Because its anoncrypted, the museum could encrypt it without looking up a did-Document
   var museumPrivateKey =
       await museum.getPrivateKeyForConnectionDidAsJwk(museumDid);
-  var decrypted = encryptedMessage.decrypt(museumPrivateKey!);
+  var decrypted = await encryptedMessage.decrypt(museum);
 
   //To send message back, the museum looks for the sender in protected Header skid value
   Map<String, dynamic> decodedHeader = jsonDecode(utf8.decode(
@@ -178,7 +178,7 @@ void main() async {
   ]);
 
   var encryptedOffer = DidcommEncryptedMessage.fromPlaintext(
-      senderPrivateKeyJwk: museumPrivateKey,
+      senderPrivateKeyJwk: museumPrivateKey!,
       recipientPublicKeyJwk: [senderDDO.keyAgreement![0].publicKeyJwk],
       plaintext: offer);
 
@@ -186,7 +186,7 @@ void main() async {
 
   //**** Alice *******
   //Alice decrypts the message (she know, that it is from the museum)
-  var decryptedOffer = encryptedOffer.decrypt(
+  var decryptedOffer = encryptedOffer.decryptWithJwk(
       privateKey, ddoMuseum.keyAgreement![0].publicKeyJwk);
 
   //Here aswell we know that it is plaintext Message and has a type of offer-credential
@@ -220,7 +220,7 @@ void main() async {
 
   //decrypt message and see, that it is an credential propose that do not differ much from the previous offer
   // (not all checking steps are shown here because they are straight forward)
-  var decryptedPropose = encryptedPropose.decrypt(
+  var decryptedPropose = encryptedPropose.decryptWithJwk(
       museumPrivateKey, senderDDO.keyAgreement![0].publicKeyJwk);
   var receivedPropose = ProposeCredential.fromJson(decryptedPropose.toJson());
 

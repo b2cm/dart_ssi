@@ -1,12 +1,14 @@
 import 'dart:convert';
 
-import 'package:dart_ssi/src/credentials/verifiable_credential.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../credentials/presentation_exchange.dart';
+import '../../credentials/verifiable_credential.dart';
+import '../../dids/did_document.dart';
 import '../../util/types.dart';
 import '../../util/utils.dart';
 import '../didcomm_jwm.dart';
+import '../types.dart';
 
 class ProposePresentation extends DidcommPlaintextMessage {
   String? goalCode;
@@ -17,11 +19,33 @@ class ProposePresentation extends DidcommPlaintextMessage {
       {String? id,
       required this.presentationDefinition,
       this.goalCode,
-      this.comment})
+      this.comment,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/present-proof/3.0/propose-presentation',
-            body: {}) {
+            body: {},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     attachments = [];
@@ -70,11 +94,33 @@ class RequestPresentation extends DidcommPlaintextMessage {
       required this.presentationDefinition,
       this.willConfirm = false,
       this.goalCode,
-      this.comment})
+      this.comment,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/present-proof/3.0/request-presentation',
-            body: {}) {
+            body: {},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     body['will_confirm'] = willConfirm;
@@ -123,11 +169,33 @@ class Presentation extends DidcommPlaintextMessage {
       {String? id,
       required this.verifiablePresentation,
       this.goalCode,
-      this.comment})
+      this.comment,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/present-proof/3.0/presentation',
-            body: {}) {
+            body: {},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     attachments = [];

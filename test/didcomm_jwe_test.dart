@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:dart_web3/crypto.dart';
-import 'package:elliptic/elliptic.dart' as elliptic;
 import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_ssi/util.dart';
+import 'package:dart_web3/crypto.dart';
+import 'package:elliptic/elliptic.dart' as elliptic;
 import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 import 'package:x25519/x25519.dart' as x25519;
@@ -55,7 +55,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -95,7 +95,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -133,7 +133,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -164,7 +164,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -204,7 +204,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK, aliceJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -243,7 +243,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK, aliceJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -282,7 +282,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK, aliceJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -312,7 +312,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK, aliceJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -352,7 +352,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -391,7 +391,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -430,7 +430,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -460,7 +460,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -499,7 +499,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK, aliceJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -537,7 +537,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK, aliceJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -575,7 +575,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK, aliceJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -604,7 +604,7 @@ void main() async {
           senderPrivateKeyJwk: aliceJWK,
           recipientPublicKeyJwk: [bobJWK],
           plaintext: message);
-      var m2 = encrypted.decrypt(bobJWK, aliceJWK);
+      var m2 = encrypted.decryptWithJwk(bobJWK, aliceJWK);
       expect(m2 is DidcommPlaintextMessage, true);
       m2 = m2 as DidcommPlaintextMessage;
       expect(message.expiresTime, m2.expiresTime);
@@ -646,7 +646,7 @@ void main() async {
         "y": "X_3HJBcKFQEG35PZbEOBn8u9_z8V1F9V1Kv-Vh0aSzmH-y9aOuDJUE3D4Hvmi5l7"
       };
 
-      var m = encrypted.decrypt(bobKeyJWK);
+      var m = encrypted.decryptWithJwk(bobKeyJWK);
       expect(m is DidcommPlaintextMessage, true);
       m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
@@ -686,7 +686,7 @@ void main() async {
         "y": "W9LLaBjlWYcXUxOf6ECSfcXKaC3-K9z4hCoP0PS87Q_4ExMgIwxVCXUEB6nf0GDd"
       };
 
-      var m = encrypted.decrypt(bobKeyJWK);
+      var m = encrypted.decryptWithJwk(bobKeyJWK);
       expect(m is DidcommPlaintextMessage, true);
       m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
@@ -728,7 +728,7 @@ void main() async {
             "ATZVigRQ7UdGsQ9j-omyff6JIeeUv3CBWYsZ0l6x3C_SYqhqVV7dEG-TafCCNiIxs8qeUiXQ8cHWVclqkH4Lo1qH"
       };
 
-      var m = encrypted.decrypt(bobKeyJWK);
+      var m = encrypted.decryptWithJwk(bobKeyJWK);
       expect(m is DidcommPlaintextMessage, true);
       m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
@@ -770,7 +770,7 @@ void main() async {
             "AEJipR0Dc-aBZYDqN51SKHYSWs9hM58SmRY1MxgXANgZrPaq1EeGMGOjkbLMEJtBThdjXhkS5VlXMkF0cYhZELiH"
       };
 
-      var m = encrypted.decrypt(bobKeyJWK);
+      var m = encrypted.decryptWithJwk(bobKeyJWK);
       expect(m is DidcommPlaintextMessage, true);
       m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
@@ -820,7 +820,7 @@ void main() async {
         "x": "avH0O2Y4tqLAq8y9zpianr8ajii5m4F_mICrzNlatXs"
       };
 
-      var m = encrypted.decrypt(bobKeyJWK, aliceJwk);
+      var m = encrypted.decryptWithJwk(bobKeyJWK, aliceJwk);
       expect(m is DidcommPlaintextMessage, true);
       m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
@@ -870,7 +870,7 @@ void main() async {
         "x": "avH0O2Y4tqLAq8y9zpianr8ajii5m4F_mICrzNlatXs"
       };
 
-      var m = encrypted.decrypt(bobKeyJWK, aliceJwk);
+      var m = encrypted.decryptWithJwk(bobKeyJWK, aliceJwk);
       expect(m is DidcommPlaintextMessage, true);
       m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
@@ -920,7 +920,7 @@ void main() async {
         "x": "avH0O2Y4tqLAq8y9zpianr8ajii5m4F_mICrzNlatXs"
       };
 
-      var m = encrypted.decrypt(bobKeyJWK, aliceJwk);
+      var m = encrypted.decryptWithJwk(bobKeyJWK, aliceJwk);
       expect(m is DidcommPlaintextMessage, true);
       m = m as DidcommPlaintextMessage;
       expect(message.expiresTime, m.expiresTime);
@@ -1079,7 +1079,8 @@ void main() async {
           recipientPublicKeyJwk: [bobPublicKey],
           plaintext: signedMessage);
 
-      var decrypted = encrypted.decrypt(bobPublicKey, aliceEncryptionKey);
+      var decrypted =
+          encrypted.decryptWithJwk(bobPublicKey, aliceEncryptionKey);
       expect(decrypted is DidcommSignedMessage, true);
       decrypted = decrypted as DidcommSignedMessage;
 

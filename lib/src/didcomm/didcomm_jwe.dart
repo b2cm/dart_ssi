@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:crypto_keys/crypto_keys.dart';
+import 'package:dart_ssi/src/dids/did_document.dart';
+import 'package:dart_ssi/src/wallet/wallet_store.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:elliptic/ecdh.dart' as ecdh;
 import 'package:elliptic/elliptic.dart' as elliptic;
@@ -22,6 +24,12 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
   late String iv;
   late String ciphertext;
   late List<dynamic> recipients;
+  String? protectedHeaderApu;
+  String? protectedHeaderApv;
+  String? protectedHeaderAlg;
+  String? protectedHeaderSkid;
+  Map<String, dynamic>? protectedHeaderEpk;
+  String? protectedHeaderEnc;
 
   DidcommEncryptedMessage(
       {required this.protectedHeader,
@@ -37,6 +45,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     tag = decoded['tag']!;
     recipients = decoded['recipients']! as List;
     protectedHeader = decoded['protected']!;
+    _decodeProtected();
   }
 
   DidcommEncryptedMessage.fromPlaintext(
@@ -162,12 +171,43 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     this.recipients = recipients;
   }
 
-  DidcommMessage decrypt(Map<String, dynamic> privateKeyJwk,
-      [Map<String, dynamic>? senderPublicKeyJwk]) {
-    Map<String, dynamic> protectDecoded = jsonDecode(
-        utf8.decode(base64Decode(addPaddingToBase64(protectedHeader))));
+  Future<DidcommMessage> decrypt(WalletStore wallet) async {
+    _decodeProtected();
+    if (protectedHeaderAlg!.startsWith('ECDH-1PU')) {
+      if (protectedHeaderSkid == null)
+        throw Exception('sender id needed when using AuthCrypt');
+      var senderDDO =
+          (await resolveDidDocument(protectedHeaderSkid!.split('#').first))
+              .resolveKeyIds()
+              .convertAllKeysToJwk();
+      for (var key in senderDDO.keyAgreement!) {
+        if (key is VerificationMethod) {
+          if (key.publicKeyJwk!['kid'] == protectedHeader)
+            return decryptWithJwk(
+                await _searchPrivateKey(wallet), key.publicKeyJwk);
+        }
+      }
+      throw Exception('No key found in did document');
+    } else if (protectedHeaderAlg!.startsWith('ECDH-ES'))
+      return decryptWithJwk(await _searchPrivateKey(wallet));
+    else
+      throw Exception('Unknown algorithm');
+  }
 
-    var epk = protectDecoded['epk'] as Map<String, dynamic>;
+  Future<Map<String, dynamic>> _searchPrivateKey(WalletStore wallet) async {
+    for (var entry in recipients) {
+      String kid = entry['header']['kid']!;
+      var did = kid.split('#').first;
+      var key = await wallet.getPrivateKeyForConnectionDidAsJwk(did);
+      if (key != null) return key;
+    }
+    throw Exception('No Key Found');
+  }
+
+  DidcommMessage decryptWithJwk(Map<String, dynamic> privateKeyJwk,
+      [Map<String, dynamic>? senderPublicKeyJwk]) {
+    _decodeProtected();
+
     var crv = privateKeyJwk['crv'];
     elliptic.Curve? c;
     dynamic receiverPrivate, epkPublic;
@@ -189,24 +229,24 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       epkPublic = elliptic.PublicKey.fromPoint(
           c,
           elliptic.AffinePoint.fromXY(
-              bytesToUnsignedInt(base64Decode(addPaddingToBase64(epk['x']))),
-              bytesToUnsignedInt(base64Decode(addPaddingToBase64(epk['y'])))));
+              bytesToUnsignedInt(
+                  base64Decode(addPaddingToBase64(protectedHeaderEpk!['x']))),
+              bytesToUnsignedInt(
+                  base64Decode(addPaddingToBase64(protectedHeaderEpk!['y'])))));
     } else if (crv.startsWith('X')) {
       receiverPrivate = base64Decode(addPaddingToBase64(privateKeyJwk['d']));
-      epkPublic = base64Decode(addPaddingToBase64(epk['x']));
+      epkPublic = base64Decode(addPaddingToBase64(protectedHeaderEpk!['x']));
     } else
       throw UnimplementedError();
 
     //2) compute shared Secret
-    var alg = protectDecoded['alg']!;
-    var apv = protectDecoded['apv']!;
     List<int> sharedSecret;
-    if (alg.startsWith('ECDH-ES')) {
-      sharedSecret = _ecdhES(receiverPrivate, epkPublic, apv: apv);
-    } else if (alg.startsWith('ECDH-1PU')) {
+    if (protectedHeaderAlg!.startsWith('ECDH-ES')) {
+      sharedSecret =
+          _ecdhES(receiverPrivate, epkPublic, apv: protectedHeaderApv);
+    } else if (protectedHeaderAlg!.startsWith('ECDH-1PU')) {
       if (senderPublicKeyJwk == null)
         throw Exception('Public key of sender needed');
-      var apu = protectDecoded['apu']!;
       //var senderDid = base64Decode(addPaddingToBase64(apu));
       var senderPubKey;
       if (crv.startsWith('P'))
@@ -229,9 +269,9 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
           epkPublic,
           senderPubKey,
           base64Decode(addPaddingToBase64(this.tag)),
-          alg,
-          apu,
-          apv);
+          protectedHeaderAlg!,
+          protectedHeaderApu!,
+          protectedHeaderApv!);
     } else {
       throw UnimplementedError();
     }
@@ -260,10 +300,9 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     var cek = SymmetricKey(keyValue: decryptedCek);
     //4) Decrypt Body
     Encrypter e;
-    var encryptionAlgorithm = protectDecoded['enc'];
-    if (encryptionAlgorithm == 'A256CBC-HS512')
+    if (protectedHeaderEnc! == 'A256CBC-HS512')
       e = cek.createEncrypter(algorithms.encryption.aes.cbcWithHmac.sha512);
-    else if (encryptionAlgorithm == 'A256GCM')
+    else if (protectedHeaderEnc == 'A256GCM')
       e = cek.createEncrypter(algorithms.encryption.aes.gcm);
     else
       throw UnimplementedError();
@@ -306,6 +345,27 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
 
   String toString() {
     return jsonEncode(toJson());
+  }
+
+  _decodeProtected() {
+    Map<String, dynamic> protectedJson = jsonDecode(
+        utf8.decode(base64Decode(addPaddingToBase64(protectedHeader))));
+    if (protectedJson.containsKey('alg'))
+      protectedHeaderAlg = protectedJson['alg'];
+    if (protectedJson.containsKey('epk'))
+      protectedHeaderEpk = protectedJson['epk'];
+    if (protectedJson.containsKey('apv'))
+      protectedHeaderApv = protectedJson['apv'];
+    if (protectedJson.containsKey('skid'))
+      protectedHeaderSkid = protectedJson['skid'];
+    if (protectedJson.containsKey('enc'))
+      protectedHeaderEnc = protectedJson['enc'];
+    if (protectedJson.containsKey('apu')) {
+      protectedHeaderApu = protectedJson['apu'];
+      if (protectedHeaderSkid == null)
+        protectedHeaderSkid =
+            utf8.decode(base64Decode(addPaddingToBase64(protectedHeaderApu!)));
+    }
   }
 
   EncryptionResult _encryptSymmetricKey(

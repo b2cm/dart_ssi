@@ -2,16 +2,40 @@ import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
 
+import '../../dids/did_document.dart';
 import '../../util/utils.dart';
 import '../didcomm_jwm.dart';
 import '../types.dart';
 
 class EmptyMessage extends DidcommPlaintextMessage {
-  EmptyMessage({String? id})
+  EmptyMessage(
+      {String? id,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/reserved/2.0/empty',
-            body: {});
+            body: {},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ);
 
   EmptyMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
     if (type != 'https://didcomm.org/reserved/2.0/empty')
@@ -33,13 +57,33 @@ class ProblemReport extends DidcommPlaintextMessage {
       required this.code,
       this.comment,
       this.args,
-      this.escalateTo})
+      this.escalateTo,
+      ServiceEndpoint? responseTo,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/report-problem/2.0/problem-report',
             body: {},
             parentThreadId: parentThreadId,
-            ack: ack) {
+            ack: ack,
+            responseTo: responseTo,
+            threadId: threadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ) {
     body['code'] = code;
     if (comment != null) body['comment'] = comment;
     if (args != null) body['args'] = args;
@@ -91,14 +135,34 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
       this.goalCode,
       this.goal,
       this.accept = const [DidcommProfiles.v2],
-      required List<Attachment> attachments})
+      required List<Attachment> attachments,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
-            id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/out-of-band/2.0/invitation',
-            body: {},
-            typ: DidcommMessageTyp.plain,
-            from: from,
-            attachments: attachments) {
+          id: id ?? Uuid().v4(),
+          type: 'https://didcomm.org/out-of-band/2.0/invitation',
+          body: {},
+          typ: DidcommMessageTyp.plain,
+          from: from,
+          attachments: attachments,
+          responseTo: responseTo,
+          threadId: threadId,
+          parentThreadId: parentThreadId,
+          to: to,
+          createdTime: createdTime,
+          expiresTime: expiresTime,
+          pleaseAck: pleaseAck,
+          fromPrior: fromPrior,
+          additionalHeaders: additionalHeaders,
+        ) {
     if (goal != null) body['goal'] = goal;
     if (goalCode != null) body['goal_code'] = goalCode;
     List<String> tmp = [];

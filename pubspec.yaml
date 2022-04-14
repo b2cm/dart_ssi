@@ -19,7 +19,7 @@ dependencies:
   crypto_keys: ^0.3.0
   elliptic: ^0.3.7
   x25519: ^0.1.1
-  json_path: ^0.4.0
+  json_path: ^0.3.1
   base_codecs: ^1.0.1
   ed25519_edwards: ^0.3.1
   ed25519_hd_key: ^2.2.0

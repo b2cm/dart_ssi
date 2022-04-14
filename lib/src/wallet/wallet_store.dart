@@ -1,5 +1,3 @@
-library dart_ssi;
-
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -7,16 +5,16 @@ import 'package:base_codecs/base_codecs.dart';
 import 'package:bip32/bip32.dart';
 import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';
-import 'package:dart_ssi/src/util/utils.dart';
+import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:ed25519_hd_key/ed25519_hd_key.dart';
-//import 'package:hex/hex.dart';
 import 'package:hive/hive.dart';
 import 'package:x25519/x25519.dart' as x;
 
 import '../util/private_util.dart';
+import '../util/utils.dart';
 import 'hive_model.dart';
 
 /// A wallet storing credentials and keys permanently using Hive.
@@ -33,6 +31,7 @@ class WalletStore {
   Box<Credential>? _issuingHistory;
   Box<Connection>? _connection;
   Box<List<dynamic>>? _exchangeHistory;
+  Box<DidcommConversation>? _didcommConversations;
 
   ///The path used to derive credential keys
   final String standardCredentialPath = 'm/456/0/';
@@ -64,6 +63,8 @@ class WalletStore {
       Hive.registerAdapter(ConnectionAdapter());
     if (!Hive.isAdapterRegistered(ExchangeHistoryEntryAdapter().typeId))
       Hive.registerAdapter(ExchangeHistoryEntryAdapter());
+    if (!Hive.isAdapterRegistered(DidcommConversationAdapter().typeId))
+      Hive.registerAdapter(DidcommConversationAdapter());
   }
 
   /// Opens storage containers optional encrypted with [password]
@@ -93,6 +94,10 @@ class WalletStore {
           'exchangeHistory_$_nameExpansion',
           path: _walletPath,
           encryptionCipher: HiveAesCipher(aesKey));
+      _didcommConversations = await Hive.openBox<DidcommConversation>(
+          'didcommConversations_$_nameExpansion',
+          path: _walletPath,
+          encryptionCipher: HiveAesCipher(aesKey));
     } else {
       _keyBox = await Hive.openBox('keyBox_$_nameExpansion', path: _walletPath);
       _credentialBox = await Hive.openBox<Credential>(
@@ -109,13 +114,17 @@ class WalletStore {
       _exchangeHistory = await Hive.openBox<List<dynamic>>(
           'exchangeHistory_$_nameExpansion',
           path: _walletPath);
+      _didcommConversations = await Hive.openBox<DidcommConversation>(
+          'didcommConversations$_nameExpansion',
+          path: _walletPath);
     }
     return _keyBox != null &&
         _issuingHistory != null &&
         _credentialBox != null &&
         _configBox != null &&
         _connection != null &&
-        _exchangeHistory != null;
+        _exchangeHistory != null &&
+        _didcommConversations != null;
   }
 
   bool isWalletOpen() {
@@ -124,7 +133,8 @@ class WalletStore {
         _credentialBox == null ||
         _configBox == null ||
         _exchangeHistory == null ||
-        _connection == null)
+        _connection == null ||
+        _didcommConversations == null)
       return false;
     else
       return (_keyBox!.isOpen) &&
@@ -132,7 +142,8 @@ class WalletStore {
           (_credentialBox!.isOpen) &&
           (_configBox!.isOpen) &&
           (_exchangeHistory!.isOpen) &&
-          (_connection!.isOpen);
+          (_connection!.isOpen) &&
+          (_didcommConversations!.isOpen);
   }
 
   //Checks whether the wallet is initialized with master-seed.
@@ -147,6 +158,7 @@ class WalletStore {
       "configBox": _configBox!,
       "connection": _connection!,
       "issuingHistory": _issuingHistory!,
+      "didcommConversations": _didcommConversations!
     };
     return boxes;
   }
@@ -159,6 +171,7 @@ class WalletStore {
     await _connection!.close();
     await _issuingHistory!.close();
     await _exchangeHistory!.close();
+    await _didcommConversations!.close();
   }
 
   /// Initializes new hierarchical deterministic wallet or restores one from given mnemonic.
@@ -818,6 +831,30 @@ class WalletStore {
     var xPublic = List.filled(32, 0);
     x.ScalarBaseMult(xPublic, _edPrivateToXPrivate(private));
     return xPublic;
+  }
+
+  DidcommConversation? getConversationEntry(String threadId) {
+    return _didcommConversations!.get(threadId);
+  }
+
+  Future<void> storeConversationEntry(
+      DidcommPlaintextMessage message, String myDid) async {
+    var thid;
+    if (message.threadId != null)
+      thid = message.threadId;
+    else
+      thid = message.id;
+
+    var protocol;
+    if (message.type.contains('issue-credential'))
+      protocol = DidcommProtocol.issueCredential;
+    else if (message.type.contains('present-proof'))
+      protocol = DidcommProtocol.presentProof;
+    else
+      throw Exception('unsupported Protocol');
+
+    await _didcommConversations!
+        .put(thid, DidcommConversation(message, protocol, myDid));
   }
 }
 

@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
 import '../../credentials/verifiable_credential.dart';
+import '../../dids/did_document.dart';
 import '../../util/types.dart';
 import '../../util/utils.dart';
 import '../didcomm_jwm.dart';
+import '../types.dart';
 
 class ProposeCredential extends DidcommPlaintextMessage {
   String? goalCode;
@@ -18,11 +20,33 @@ class ProposeCredential extends DidcommPlaintextMessage {
       this.goalCode,
       this.comment,
       this.credentialPreview,
-      this.detail})
+      this.detail,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             type: 'https://didcomm.org/issue-credential/3.0/propose-credential',
             id: id ?? Uuid().v4(),
-            body: {}) {
+            body: {},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (credentialPreview != null)
@@ -81,11 +105,33 @@ class OfferCredential extends DidcommPlaintextMessage {
       this.goalCode,
       this.comment,
       this.credentialPreview,
-      this.detail})
+      this.detail,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             type: 'https://didcomm.org/issue-credential/3.0/offer-credential',
             id: id ?? Uuid().v4(),
-            body: {}) {
+            body: {},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (replacementId != null) body['replacement_id'] = replacementId;
@@ -139,11 +185,37 @@ class RequestCredential extends DidcommPlaintextMessage {
   String? comment;
   List<LdProofVcDetail>? detail;
 
-  RequestCredential({String? id, this.goalCode, this.comment, this.detail})
+  RequestCredential(
+      {String? id,
+      this.goalCode,
+      this.comment,
+      this.detail,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             type: 'https://didcomm.org/issue-credential/3.0/request-credential',
             id: id ?? Uuid().v4(),
-            body: {}) {
+            body: {},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (detail != null) {
@@ -195,11 +267,33 @@ class IssueCredential extends DidcommPlaintextMessage {
       this.goalCode,
       this.comment,
       this.replacementId,
-      this.credentials})
+      this.credentials,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             type: 'https://didcomm.org/issue-credential/3.0/issue-credential',
             id: id ?? Uuid().v4(),
-            body: {}) {
+            body: {},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (replacementId != null) body['replacement_id'] = replacementId;
@@ -241,11 +335,35 @@ class IssueCredential extends DidcommPlaintextMessage {
 class PreviewCredential extends DidcommPlaintextMessage {
   late List<PreviewCredentialAttribute> attributes;
 
-  PreviewCredential({String? id, required this.attributes})
+  PreviewCredential(
+      {String? id,
+      required this.attributes,
+      ServiceEndpoint? responseTo,
+      String? parentThreadId,
+      String? threadId,
+      String? from,
+      List<String>? to,
+      DateTime? createdTime,
+      DateTime? expiresTime,
+      bool pleaseAck = false,
+      FromPriorJWT? fromPrior,
+      Map<String, dynamic>? additionalHeaders,
+      DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/issue-credential/3.0/credential-preview',
-            body: {'attributes': attributes});
+            body: {'attributes': attributes},
+            responseTo: responseTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            from: from,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            typ: typ);
 
   PreviewCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
     if (type ==
