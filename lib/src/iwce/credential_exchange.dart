@@ -62,10 +62,16 @@ class CredentialRequest implements JsonObject {
   _fromJson(Map<String, dynamic> json) {
     if (json['type'] != _type)
       throw FormatException('Unsupported Request Type');
-
-    _location = json['endpoint']['location'];
+    if (json.containsKey('endpoint'))
+      _location = json['endpoint']['location'];
+    else
+      _location = json['accept']['endpoint']['location'];
     _challenge = json['challenge'];
-    var endpointType = json['endpoint']['type'];
+    var endpointType;
+    if (json.containsKey('endpoint'))
+      endpointType = json['endpoint']['type'];
+    else
+      endpointType = json['accept']['endpoint']['type'];
     if (endpointType == 'AppLink')
       _isAppLink = true;
     else
@@ -136,9 +142,9 @@ class CredentialRequest implements JsonObject {
       endpoint['type'] = 'WebAddress';
     endpoint['location'] = _location;
 
+    accept['endpoint'] = endpoint;
     json['type'] = _type;
     json['accept'] = accept;
-    json['endpoint'] = endpoint;
     json['challenge'] = _challenge;
     if (_domain != null) {
       json['domain'] = _domain;
