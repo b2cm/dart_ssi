@@ -113,7 +113,7 @@ From a message level perspective the following Message/Protocols are supported:
 - [Out-Of-Band Message](https://identity.foundation/didcomm-messaging/spec/#out-of-band-messages)
 - [issue-credential V3](https://github.com/decentralized-identity/waci-presentation-exchange/tree/main/issue_credential) with [JSON-LD Credential Attachment](https://github.com/hyperledger/aries-rfcs/tree/main/features/0593-json-ld-cred-attach)
 - [present-proof V3](https://github.com/decentralized-identity/waci-presentation-exchange/blob/main/present_proof/present-proof-v3.md) with [DIF Presentation Exchange Attachment](https://github.com/hyperledger/aries-rfcs/tree/main/features/0510-dif-pres-exch-attach) and the slightly change that this packages uses [V2 of presentation exchanges](https://identity.foundation/presentation-exchange/) and tries to support all features of it and not only the listed ones in the definition of the attachment format.
-- did-exchange
+
 
 A full example for issuing a credential and requesting a presentation using didcomm can be found in [didcomm.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/dart_ssi/-/blob/master/examples/didcomm.dart) 
 
@@ -128,7 +128,6 @@ A full example for issuing a credential and requesting a presentation using didc
     - `same_subject` property
     - `statuses` property
     - `predicate` property
-- support storing didcomm conversations in the wallet 
 - there are not many tests 
     
 

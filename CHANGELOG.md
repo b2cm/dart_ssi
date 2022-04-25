@@ -1,3 +1,6 @@
+## 0.1.1
+- support storing didcomm messages in wallet
+
 ## 0.1.0
 - add support for didcomm v2
 - support did:key

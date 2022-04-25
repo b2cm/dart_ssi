@@ -350,7 +350,7 @@ Future<String> buildPresentation(
         for (var descriptor in element.matchingDescriptorIds) {
           var map = InputDescriptorMappingObject(
               id: descriptor,
-              format: '',
+              format: 'ldp_vc',
               path: JsonPath(
                   '\$.verifiableCredential[${credMapList.length - 1}]'));
           mapping.add(map);
@@ -369,16 +369,23 @@ Future<String> buildPresentation(
       holderDids.add(getHolderDidFromCredential(credMap));
     }
   });
+
+  List<String> context = ['https://www.w3.org/2018/credentials/v1'];
+  List<String> type = ['VerifiablePresentation'];
+  if (submission != null) {
+    context.add(
+        'https://identity.foundation/presentation-exchange/submission/v1/');
+    type.add('PresentationSubmission');
+  }
+
   Map<String, dynamic> presentation = {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-    ],
-    'type': ['VerifiablePresentation'],
+    '@context': context,
+    'type': type,
     'verifiableCredential': credMapList
   };
 
   if (submission != null) {
-    presentation['presentation_submission'] = [submission!.toJson()];
+    presentation['presentation_submission'] = submission!.toJson();
   }
 
   if (disclosedCredentials != null) {

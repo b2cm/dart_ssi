@@ -221,7 +221,7 @@ class VerifiablePresentation implements JsonObject {
   late List<VerifiableCredential> verifiableCredential;
   String? holder;
   List<LinkedDataProof>? proof;
-  List<PresentationSubmission>? presentationSubmission;
+  PresentationSubmission? presentationSubmission;
 
   VerifiablePresentation(
       {required this.context,
@@ -264,11 +264,8 @@ class VerifiablePresentation implements JsonObject {
     }
 
     if (presentation.containsKey('presentation_submission')) {
-      presentationSubmission = [];
-      List tmp = presentation['presentation_submission'];
-      for (var c in tmp) {
-        presentationSubmission!.add(PresentationSubmission.fromJson(c));
-      }
+      var tmp = presentation['presentation_submission'];
+      presentationSubmission = PresentationSubmission.fromJson(tmp);
     }
   }
 
@@ -283,9 +280,7 @@ class VerifiablePresentation implements JsonObject {
     if (id != null) jsonObject['id'] = id;
     if (holder != null) jsonObject['holder'] = holder;
     if (presentationSubmission != null) {
-      tmp = [];
-      for (var s in presentationSubmission!) tmp.add(s.toJson());
-      jsonObject['presentation_submission'] = tmp;
+      jsonObject['presentation_submission'] = presentationSubmission!.toJson();
     }
     if (proof != null) {
       tmp = [];
