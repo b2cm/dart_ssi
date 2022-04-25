@@ -20,7 +20,8 @@ class EmptyMessage extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
-      DidcommMessageTyp? typ})
+      DidcommMessageTyp? typ,
+      List<String>? ack})
       : super(
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/reserved/2.0/empty',
@@ -35,7 +36,8 @@ class EmptyMessage extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
-            typ: typ);
+            typ: typ,
+            ack: ack);
 
   EmptyMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
     if (type != 'https://didcomm.org/reserved/2.0/empty')

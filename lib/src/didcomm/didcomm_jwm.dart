@@ -106,8 +106,9 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
         }
       }
     }
-    pleaseAck = decoded['please_ack'];
-    ack = decoded['ack'];
+    if (decoded.containsKey('please_ack'))
+      pleaseAck = decoded['please_ack'].cast<String>();
+    if (decoded.containsKey('ack')) ack = decoded['ack'].cast<String>();
 
     decoded.remove('to');
     decoded.remove('from');

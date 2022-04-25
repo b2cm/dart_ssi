@@ -406,7 +406,7 @@ class ServiceEndpoint implements JsonObject {
 
   ServiceEndpoint.fromJson(dynamic jsonObject) {
     var se = credentialToMap(jsonObject);
-    if (se.containsKey(['id']))
+    if (se.containsKey('id'))
       id = se['id'];
     else
       throw FormatException('id property is needed in serviceEndpoint');

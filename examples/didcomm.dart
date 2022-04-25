@@ -101,7 +101,8 @@ void main() async {
 
   //Alice realize, that she should show her Student card and build verifiable Presentation out of it
   var presentation = await buildPresentation(
-      [searchResult[0]], alice, request.presentationDefinition[0].challenge);
+      searchResult, alice, request.presentationDefinition[0].challenge);
+  print(presentation);
   //Now she puts this in a Presentation Message
   var presentationMessage = Presentation(
       verifiablePresentation: [VerifiablePresentation.fromJson(presentation)]);

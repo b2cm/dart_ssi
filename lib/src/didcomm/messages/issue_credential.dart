@@ -310,7 +310,7 @@ class IssueCredential extends DidcommPlaintextMessage {
   }
 
   IssueCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/issue-credential/3.0/request-credential')
+    if (type != 'https://didcomm.org/issue-credential/3.0/issue-credential')
       throw Exception('Unknown Message type or version');
     goalCode = body['goal_code'];
     comment = body['comment'];
@@ -318,7 +318,7 @@ class IssueCredential extends DidcommPlaintextMessage {
     if (attachments != null && attachments!.length > 0) {
       credentials = [];
       for (var a in attachments!) {
-        if (a.format != null && a.format == 'aries/ld-proof-vc-detail@v1.0') {
+        if (a.format != null && a.format == 'aries/ld-proof-vc@v1.0') {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             credentials!.add(VerifiableCredential.fromJson(a.data.json!));

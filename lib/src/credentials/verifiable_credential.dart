@@ -100,6 +100,18 @@ class VerifiableCredential implements JsonObject {
   String toString() {
     return jsonEncode(toJson());
   }
+
+  bool isOfSameType(VerifiableCredential other) {
+    if (this.credentialSchema != null && other.credentialSchema != null) {
+      return this.credentialSchema!.type == other.credentialSchema!.type &&
+          this.credentialSchema!.id == other.credentialSchema!.id;
+    } else {
+      for (String typeValue in this.type) {
+        if (!other.type.contains(typeValue)) return false;
+      }
+      return true;
+    }
+  }
 }
 
 class LinkedDataProof implements JsonObject {

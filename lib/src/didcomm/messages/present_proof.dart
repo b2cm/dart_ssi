@@ -200,9 +200,9 @@ class Presentation extends DidcommPlaintextMessage {
     if (comment != null) body['comment'] = comment;
     attachments = [];
     for (var d in verifiablePresentation) {
-      // if (d.presentationSubmission == null)
-      //   throw Exception(
-      //       'The verifiable Presentation used here must contain a presentation submission');
+      if (d.presentationSubmission == null)
+        throw Exception(
+            'The verifiable Presentation used here must contain a presentation submission');
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
@@ -225,9 +225,9 @@ class Presentation extends DidcommPlaintextMessage {
         if (a.format == 'dif/presentation-exchange/submission@v1.0') {
           a.data.resolveData();
           var tmp = VerifiablePresentation.fromJson(a.data.json);
-          // if (tmp.presentationSubmission == null)
-          //   throw Exception(
-          //       'The verifiable Presentation used here must contain a presentation submission');
+          if (tmp.presentationSubmission == null)
+            throw Exception(
+                'The verifiable Presentation used here must contain a presentation submission');
           verifiablePresentation.add(tmp);
         } else if (a.format == 'hlindy/proof@v2.0') {
           throw UnimplementedError('Indy proof request is not supported');

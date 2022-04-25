@@ -182,7 +182,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
               .convertAllKeysToJwk();
       for (var key in senderDDO.keyAgreement!) {
         if (key is VerificationMethod) {
-          if (key.publicKeyJwk!['kid'] == protectedHeader)
+          if (key.publicKeyJwk!['kid'] == protectedHeaderSkid)
             return decryptWithJwk(
                 await _searchPrivateKey(wallet), key.publicKeyJwk);
         }
@@ -199,7 +199,12 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       String kid = entry['header']['kid']!;
       var did = kid.split('#').first;
       var key = await wallet.getPrivateKeyForConnectionDidAsJwk(did);
-      if (key != null) return key;
+      if (key != null)
+        return key;
+      else {
+        key = await wallet.getKeyAgreementKeyForDidAsJwk(did);
+        if (key != null) return key;
+      }
     }
     throw Exception('No Key Found');
   }

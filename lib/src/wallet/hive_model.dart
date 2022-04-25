@@ -78,10 +78,10 @@ class ExchangeHistoryEntry {
 class DidcommConversation {
   /// Did/name/url of party the credential was presented to
   @HiveField(0)
-  DidcommPlaintextMessage lastMessage;
+  String lastMessage;
 
   @HiveField(1)
-  DidcommProtocol protocol;
+  String protocol;
 
   @HiveField(2)
   String myDid;

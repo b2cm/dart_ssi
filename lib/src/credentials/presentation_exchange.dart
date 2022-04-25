@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:dart_ssi/credentials.dart';
 import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
+import 'package:uuid/uuid.dart';
 
 import '../util/types.dart';
 import '../util/utils.dart';
@@ -15,12 +17,13 @@ class PresentationDefinition implements JsonObject {
   List<SubmissionRequirement>? submissionRequirement;
 
   PresentationDefinition(
-      {required this.id,
+      {String? id,
       required this.inputDescriptors,
       this.name,
       this.purpose,
       this.format,
-      this.submissionRequirement});
+      this.submissionRequirement})
+      : id = id ?? Uuid().v4();
 
   PresentationDefinition.fromJson(dynamic presentationDefinitionJson) {
     var definition = credentialToMap(presentationDefinitionJson);
@@ -94,12 +97,13 @@ class InputDescriptor implements JsonObject {
   List<String>? group;
 
   InputDescriptor(
-      {required this.id,
+      {String? id,
       this.name,
       this.purpose,
       this.format,
       this.constraints,
-      this.group});
+      this.group})
+      : id = id ?? Uuid().v4();
 
   InputDescriptor.fromJson(dynamic inputDescriptorJson) {
     var input = credentialToMap(inputDescriptorJson);
@@ -250,7 +254,12 @@ class InputDescriptorField implements JsonObject {
   Limiting? predicate;
 
   InputDescriptorField(
-      {required this.path, this.id, this.purpose, this.filter, this.predicate});
+      {required this.path,
+      String? id,
+      this.purpose,
+      this.filter,
+      this.predicate})
+      : id = id ?? Uuid().v4();
 
   InputDescriptorField.fromJson(dynamic fieldJson) {
     var field = credentialToMap(fieldJson);
@@ -604,6 +613,35 @@ enum Limiting { required, preferred }
 enum SubmissionRequirementRule { all, pick }
 enum StatusDirective { required, allowed, disallowed }
 
+/// Object used when a credential-List is filtered with a presentationDefinition
+class FilterResult implements JsonObject {
+  late List<VerifiableCredential> credentials;
+  late String presentationDefinitionId;
+  SubmissionRequirement? submissionRequirement;
+  late List<String> matchingDescriptorIds;
+
+  FilterResult(
+      {required this.credentials,
+      required this.matchingDescriptorIds,
+      this.submissionRequirement,
+      required this.presentationDefinitionId});
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> jsonObject = {};
+    List creds = [];
+    for (var c in credentials) creds.add(c.toJson());
+    jsonObject['credentials'] = creds;
+    if (submissionRequirement != null)
+      jsonObject['submissionRequirement'] = submissionRequirement!.toJson();
+    jsonObject['matchingDescriptorIds'] = matchingDescriptorIds;
+    return jsonObject;
+  }
+
+  String toString() {
+    return jsonEncode(toJson());
+  }
+}
+
 //************** Presentation Submission **************************************
 class PresentationSubmission implements JsonObject {
   late String id;
@@ -611,9 +649,10 @@ class PresentationSubmission implements JsonObject {
   late List<InputDescriptorMappingObject> descriptorMap;
 
   PresentationSubmission(
-      {required this.id,
+      {String? id,
       required this.presentationDefinitionId,
-      required this.descriptorMap});
+      required this.descriptorMap})
+      : id = id ?? Uuid().v4();
 
   PresentationSubmission.fromJson(dynamic jsonObject) {
     Map<String, dynamic> submission = credentialToMap(jsonObject);

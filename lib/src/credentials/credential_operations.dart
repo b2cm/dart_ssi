@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
+import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
@@ -335,18 +336,50 @@ Future<String> buildPresentation(
     {List<String>? additionalDids, List<dynamic>? disclosedCredentials}) async {
   List<Map<String, dynamic>?> credMapList = [];
   List<String?> holderDids = [];
+  PresentationSubmission? submission;
   credentials.forEach((element) {
-    var credMap = credentialToMap(element);
-    credMapList.add(credMap);
-    holderDids.add(getHolderDidFromCredential(credMap));
+    if (element is FilterResult) {
+      List<InputDescriptorMappingObject> mapping = [];
+      if (submission != null) {
+        mapping = submission!.descriptorMap;
+      }
+      for (var cred in element.credentials) {
+        var credEntry = cred.toJson();
+        credMapList.add(credEntry);
+        holderDids.add(getHolderDidFromCredential(credEntry));
+        for (var descriptor in element.matchingDescriptorIds) {
+          var map = InputDescriptorMappingObject(
+              id: descriptor,
+              format: '',
+              path: JsonPath(
+                  '\$.verifiableCredential[${credMapList.length - 1}]'));
+          mapping.add(map);
+        }
+      }
+      submission = PresentationSubmission(
+          presentationDefinitionId: element.presentationDefinitionId,
+          descriptorMap: mapping);
+    } else {
+      var credMap;
+      if (element is VerifiableCredential)
+        credMap = element.toJson();
+      else
+        credMap = credentialToMap(element);
+      credMapList.add(credMap);
+      holderDids.add(getHolderDidFromCredential(credMap));
+    }
   });
-  var presentation = {
+  Map<String, dynamic> presentation = {
     '@context': [
       'https://www.w3.org/2018/credentials/v1',
     ],
     'type': ['VerifiablePresentation'],
     'verifiableCredential': credMapList
   };
+
+  if (submission != null) {
+    presentation['presentation_submission'] = [submission!.toJson()];
+  }
 
   if (disclosedCredentials != null) {
     List<Map<String, dynamic>?> disclosedCreds = [];
@@ -402,7 +435,11 @@ Future<String> buildPresentation(
 /// It uses erc1056 to look up the current owner of the dids a proof is given in [presentation].
 Future<bool> verifyPresentation(dynamic presentation, String challenge,
     {Erc1056? erc1056, RevocationRegistry? revocationRegistry}) async {
-  var presentationMap = credentialToMap(presentation);
+  var presentationMap;
+  if (presentation is VerifiablePresentation)
+    presentationMap = presentation.toJson();
+  else
+    presentationMap = credentialToMap(presentation);
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
   var presentationHash =
@@ -879,7 +916,7 @@ Future<bool> verifyStringSignature(String jws, String expectedDid,
       expectedDid.split(':').last;
 }
 
-List<dynamic> searchCredentialsForPresentationDefinition(
+List<FilterResult> searchCredentialsForPresentationDefinition(
     List<Map<String, dynamic>> credentials,
     PresentationDefinition presentationDefinition) {
   var globalFormat = presentationDefinition.format;
@@ -915,33 +952,43 @@ List<dynamic> searchCredentialsForPresentationDefinition(
       filterResultPerDescriptor[descriptor.id] = filteredCreds;
     }
     //Evaluate submission requirements
-    List finalCredList = [];
+    List<FilterResult> finalCredList = [];
     for (var requirement in presentationDefinition.submissionRequirement!) {
-      finalCredList.add(_processSubmissionRequirement(
-          filterResultPerDescriptor, descriptorGroups, requirement));
+      finalCredList.add(_processSubmissionRequirement(filterResultPerDescriptor,
+          descriptorGroups, requirement, presentationDefinition.id));
     }
     return finalCredList;
   } else {
     List<Map<String, dynamic>> inputCreds = credentials;
+    List<String> allDescriptorIds = [];
     for (var descriptor in presentationDefinition.inputDescriptors) {
       //Without any requirements, all input_descriptors must be fulfilled
+      allDescriptorIds.add(descriptor.id);
       inputCreds =
           _processInputDescriptor(descriptor, globalFormat, inputCreds);
     }
-    return inputCreds;
+    List<VerifiableCredential> vcList = [];
+    for (var c in inputCreds) vcList.add(VerifiableCredential.fromJson(c));
+    return [
+      FilterResult(
+          credentials: vcList,
+          matchingDescriptorIds: allDescriptorIds,
+          presentationDefinitionId: presentationDefinition.id)
+    ];
   }
 }
 
-List<Map<String, dynamic>> _processSubmissionRequirement(
+FilterResult _processSubmissionRequirement(
     Map<String, dynamic> filterResultPerDescriptor,
     Map<String, dynamic> descriptorGroups,
-    SubmissionRequirement requirement) {
+    SubmissionRequirement requirement,
+    String definitionId) {
   if (requirement.fromNested != null) {
     //for (var nestedRequirement in requirement.fromNested!) {}
     //TODO:process path nested in submission requirement
     throw UnimplementedError('Cant process from nested entries yet');
   }
-  List accordingDescriptors = descriptorGroups[requirement.from];
+  List<String> accordingDescriptors = descriptorGroups[requirement.from];
   List<Map<String, dynamic>> creds = [];
   for (String d in accordingDescriptors) {
     var credsForDescriptor = filterResultPerDescriptor[d];
@@ -964,7 +1011,13 @@ List<Map<String, dynamic>> _processSubmissionRequirement(
     if (creds.length < notLower)
       throw Exception('Could not fullfill submission requirement');
   }
-  return creds;
+  List<VerifiableCredential> vcList = [];
+  for (var c in creds) vcList.add(VerifiableCredential.fromJson(c));
+  return FilterResult(
+      credentials: vcList,
+      matchingDescriptorIds: accordingDescriptors,
+      submissionRequirement: requirement,
+      presentationDefinitionId: definitionId);
 }
 
 List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,

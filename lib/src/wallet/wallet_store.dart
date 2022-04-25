@@ -769,7 +769,16 @@ class WalletStore {
     else if (did.startsWith('did:key:z6Mk')) {
       var cred = getCredential(did);
       if (cred != null) {
-        return getPrivateKeyForCredentialDidAsJwk(did);
+        var private = await getKeyAgreementKeyForDid(did);
+        if (private != null) {
+          Map<String, dynamic> key = {};
+          key['kid'] = '$did#${did.split(':').last}';
+          key['kty'] = 'OKP';
+          key['crv'] = 'X25519';
+          key['d'] = removePaddingFromBase64(
+              base64UrlEncode(hexToBytes(private).sublist(0, 32)));
+          return key;
+        }
       } else {
         var con = getConnection(did);
         if (con != null) {
@@ -779,6 +788,7 @@ class WalletStore {
       }
     } else
       throw Exception('unsupported did');
+    return null;
   }
 
   /// Stores a configuration Entry.
@@ -845,7 +855,7 @@ class WalletStore {
     else
       thid = message.id;
 
-    var protocol;
+    DidcommProtocol protocol;
     if (message.type.contains('issue-credential'))
       protocol = DidcommProtocol.issueCredential;
     else if (message.type.contains('present-proof'))
@@ -853,8 +863,8 @@ class WalletStore {
     else
       throw Exception('unsupported Protocol');
 
-    await _didcommConversations!
-        .put(thid, DidcommConversation(message, protocol, myDid));
+    await _didcommConversations!.put(
+        thid, DidcommConversation(message.toString(), protocol.value, myDid));
   }
 }
 

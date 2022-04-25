@@ -140,8 +140,8 @@ class DidcommConversationAdapter extends TypeAdapter<DidcommConversation> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return DidcommConversation(
-      fields[0] as DidcommPlaintextMessage,
-      fields[1] as DidcommProtocol,
+      fields[0] as String,
+      fields[1] as String,
       fields[2] as String,
     );
   }
