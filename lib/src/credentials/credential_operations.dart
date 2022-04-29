@@ -10,6 +10,7 @@ import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
+import '../dids/did_document.dart';
 import '../dids/did_ethr.dart';
 import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
@@ -801,9 +802,65 @@ String getHolderDidFromCredential(dynamic credential) {
 ///   "crit" : ["b64"]
 /// }
 /// ```
-/// If a custom one should be used, it has to be given in its json representation (dart String or Map) and the value of alg has to be ES256K-R,
+/// if did is of type did:ethr or
+/// ```
+/// {
+///   "alg" : "EdDSA",
+///   "crv" : Ed25519,
+/// }
+/// ```
+/// if did is of type did:key with appropriate key-Material
+/// If a custom one should be used, it has to be given in its json representation (dart String or Map) and the value of alg has to be ES256K-R or EdDSA with curve Ed25519,
 /// because for now this is the only supported signature algorithm.
 Future<String> signStringOrJson(
+    WalletStore wallet, String didToSignWith, dynamic toSign,
+    {bool detached = false, dynamic jwsHeader}) async {
+  if (didToSignWith.startsWith('did:ethr'))
+    return _signStringEthr(wallet, didToSignWith, toSign,
+        detached: detached, jwsHeader: jwsHeader);
+  else if (didToSignWith.startsWith('did:key:z6Mk'))
+    return _signStringEddsa(wallet, didToSignWith, toSign,
+        detached: detached, jwsHeader: jwsHeader);
+  else
+    throw UnimplementedError('Could not sign with this did');
+}
+
+Future<String> _signStringEddsa(
+    WalletStore wallet, String didToSignWith, dynamic toSign,
+    {bool detached = false, dynamic jwsHeader}) async {
+  Map<String, dynamic> header;
+  if (jwsHeader != null) {
+    header = credentialToMap(jwsHeader);
+    if (header['alg'] != 'EdDSA')
+      throw Exception('Unsupported Signature Algorithm ${header['alg']}');
+    if (header['crv'] != 'Ed25519')
+      throw Exception('Unsupported Curve ${header['crv']}');
+  } else {
+    header = {'alg': 'EdDSA', 'crv': 'Ed25519'};
+  }
+
+  String encodedHeader =
+      removePaddingFromBase64(base64UrlEncode(utf8.encode(jsonEncode(header))));
+  String encodedPayload = removePaddingFromBase64(base64UrlEncode(
+      utf8.encode(toSign is String ? toSign : jsonEncode(toSign))));
+  String signingInput = '$encodedHeader.$encodedPayload';
+
+  Map<String, dynamic>? key =
+      await wallet.getPrivateKeyForCredentialDidAsJwk(didToSignWith);
+  if (key == null)
+    key = await wallet.getPrivateKeyForConnectionDidAsJwk(didToSignWith);
+  if (key == null) throw Exception('No key found in Wallet');
+
+  var privateKey =
+      ed.newKeyFromSeed(base64Decode(addPaddingToBase64(key['d'])));
+
+  var sig = ed.sign(privateKey, ascii.encode(signingInput));
+  String encodedSig = removePaddingFromBase64(base64UrlEncode(sig));
+
+  return detached ? '$encodedHeader..$encodedSig' : '$signingInput.$encodedSig';
+}
+
+Future<String> _signStringEthr(
     WalletStore wallet, String didToSignWith, dynamic toSign,
     {bool detached = false, dynamic jwsHeader}) async {
   String header;
@@ -895,7 +952,44 @@ Future<String> getDidFromSignature(String jws,
 /// If a detached jws is given the signed string must be given separately as [toSign].
 /// [toSign] could be a String or a json-object (Dart Map).
 Future<bool> verifyStringSignature(String jws, String expectedDid,
-    {dynamic? toSign, Erc1056? erc1056}) async {
+    {dynamic toSign, Erc1056? erc1056}) async {
+  if (expectedDid.startsWith('did:ethr'))
+    return _verifyEthr(jws, expectedDid, erc1056: erc1056, toSign: toSign);
+  else if (expectedDid.startsWith('did:key:z6Mk'))
+    return _verifyEd(jws, expectedDid, toSign: toSign);
+  else
+    throw UnimplementedError('Unknown did method');
+}
+
+Future<bool> _verifyEd(String jws, String expectedDid, {dynamic toSign}) async {
+  var ddo = (await resolveDidDocument(expectedDid))
+      .resolveKeyIds()
+      .convertAllKeysToJwk();
+  Map<String, dynamic> signingKey = ddo.verificationMethod!.first.publicKeyJwk!;
+
+  var splitted = jws.split('.');
+  if (splitted.length != 3) throw Exception('maleformed jws');
+
+  String encodedPayload;
+  if (toSign != null)
+    encodedPayload = toSign is String
+        ? removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)))
+        : removePaddingFromBase64(
+            base64UrlEncode(utf8.encode(jsonEncode(credentialToMap(toSign)))));
+  else
+    encodedPayload = splitted[1];
+
+  var signingInput = '${splitted[0]}.$encodedPayload';
+
+  var publicKey =
+      ed.PublicKey(base64Decode(addPaddingToBase64(signingKey['x'])));
+
+  return ed.verify(publicKey, ascii.encode(signingInput),
+      base64Decode(addPaddingToBase64(splitted[2])));
+}
+
+Future<bool> _verifyEthr(String jws, String expectedDid,
+    {dynamic toSign, Erc1056? erc1056}) async {
   var splitted = jws.split('.');
   if (splitted.length != 3) throw Exception('Malformed JWS');
   var signature = _getSignatureFromJws(jws);

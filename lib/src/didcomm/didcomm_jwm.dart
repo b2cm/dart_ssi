@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
+import '../credentials/credential_operations.dart';
 import '../dids/did_document.dart';
 import '../util/types.dart';
 import '../util/utils.dart';
+import '../wallet/wallet_store.dart';
 import 'types.dart';
 
 /// A plaintext-Message (json-web message) as per didcomm specification
@@ -243,14 +246,33 @@ class AttachmentData implements JsonObject {
     json = decoded['json'];
   }
 
-  //TODO write this function: resolve Data from links; decode base64; check hash -> store everything in json;
-  void resolveData() {
+  //TODO check hash
+  Future<void> resolveData() async {
     if (json != null)
       return; //Nothing to resolve
     else if (base64 != null)
       json = jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(base64!))));
-    else
-      throw UnimplementedError('could not resolve link-data for now');
+    else if (links != null && links!.isNotEmpty) {
+      if (hash == null) throw Exception('If links are used hash must be given');
+      for (var link in links!) {
+        try {
+          var client = await HttpClient()
+              .getUrl(Uri.parse(link))
+              .timeout(Duration(seconds: 15));
+          var res = await client.close();
+          if (res.statusCode == 200) {
+            var contents = StringBuffer();
+            await for (var data in res.transform(utf8.decoder)) {
+              contents.write(data);
+            }
+            json = jsonDecode(contents.toString());
+            break;
+          }
+        } catch (e) {}
+      }
+      if (json == null) throw Exception('No data found');
+    } else
+      throw Exception('No data');
   }
 
   Map<String, dynamic> toJson() {
@@ -267,9 +289,31 @@ class AttachmentData implements JsonObject {
     return jsonEncode(toJson());
   }
 
-  //TODO: verify jws from Attachment
-  bool _verifyJws() {
-    return true;
+  //TODO: for now sign and verify only support json encodeable content
+  Future<void> sign(WalletStore wallet, didToSignWith) async {
+    Map<String, dynamic> payload;
+    if (json != null)
+      payload = json!;
+    else if (base64 != null)
+      payload =
+          jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(base64!))));
+    else
+      throw Exception('nothing to sign');
+    jws =
+        await signStringOrJson(wallet, didToSignWith, payload, detached: true);
+  }
+
+  Future<bool> verifyJws(String expectedDid) async {
+    if (jws == null) throw Exception('no signature found');
+    Map<String, dynamic> payload;
+    if (json != null)
+      payload = json!;
+    else if (base64 != null)
+      payload =
+          jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(base64!))));
+    else
+      throw Exception('nothing to sign');
+    return verifyStringSignature(jws, expectedDid, toSign: payload);
   }
 }
 

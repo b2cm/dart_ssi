@@ -1,3 +1,7 @@
+## 0.1.2
+- check signature of didcomm message attachments
+- resolve didcomm message attachment from given link
+
 ## 0.1.1
 - support storing didcomm messages in wallet
 
