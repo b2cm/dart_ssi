@@ -73,7 +73,7 @@ For now the only supported signature-suites for the proof-section are
 
 ## Usage of Credentials
 As the [W3C-Specification for Verifiable Credentials](https://www.w3.org/TR/vc-data-model/) describes, a credential is issued by an issuer, stored by a holder and presented to verifier. 
-How to achieve this using this package is shown in the examples [issuance.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/dart_ssi/-/blob/master/examples/issuance.dart) 
+How to achieve this using this package is shown in the examples [issuance.dart](https://github.com/b2cm/dart_ssi/blob/master/examples/issuance.dart) 
 and [verification.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/verification.dart). Beside this a credential could be revoked by its issuer
 as shown in [credentialRevocation.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/credentialRevocation.dart). 
 For the revocation a simple Ethereum-SmartContract is used, that should be deployed for each issuer.
@@ -81,7 +81,7 @@ For the revocation a simple Ethereum-SmartContract is used, that should be deplo
 ## Key- and Identifier Management
 The identifiers used here are [decentralized identifiers (DID)](https://www.w3.org/TR/did-core/) 
 according to [did:ethr Method](https://github.com/decentralized-identity/ethr-did-resolver) and [did:key Method](https://w3c-ccg.github.io/did-method-key/).
-In case of the later one, only Ed2219 and X2555 keys are supported now.
+In case of the later one, only Ed25519 and X25519 keys are supported now.
 All keys are managed in a hierarchical-deterministic manner as known from Bitcoin wallets, because it is recommended to use
 a new identifier for each credential or service you would like to interact with. To generate one use
 ```
@@ -93,7 +93,7 @@ This package only supports credentials that are issued to different dids each, b
 
 With the [ERC1056-SmartContract (EthereumDIDRegistry)](https://eips.ethereum.org/EIPS/eip-1056) it is for
 example possible to rotate a key if it is lost/corrupted.
-An example for that could be found in [keyRotation.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/dart_ssi/-/blob/master/examples/keyRotation.dart).  
+An example for that could be found in [keyRotation.dart](https://github.com/b2cm/dart_ssi/blob/master/examples/keyRotation.dart).  
 
 An identifier could not only be used to bind credentials on it. 
 They could also be used to encrypt/sign didcomm messages with or as an replacement for an 'normal' username. 
