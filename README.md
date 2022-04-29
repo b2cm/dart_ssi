@@ -5,6 +5,8 @@ and relating key-pairs; issue, verify and revoke credentials and presentations a
 Additional two exchange protocols ([IWCE](https://b2cm.github.io/iwce/) and 
 [DIDComm V2](https://identity.foundation/didcomm-messaging/spec/)) for verifiable Credentials and Presentations are supported.
 
+**Important Note**: This package is work-in-progress. The API is subject to change and the code was not tested extensively.
+
 ## API Documentation
 To get a complete documentation of the API of this library use [`dart doc`](https://dart.dev/tools/dart-doc).
 
@@ -72,8 +74,8 @@ For now the only supported signature-suites for the proof-section are
 ## Usage of Credentials
 As the [W3C-Specification for Verifiable Credentials](https://www.w3.org/TR/vc-data-model/) describes, a credential is issued by an issuer, stored by a holder and presented to verifier. 
 How to achieve this using this package is shown in the examples [issuance.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/dart_ssi/-/blob/master/examples/issuance.dart) 
-and [verification.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/dart_ssi/-/blob/master/examples/verification.dart). Beside this a credential could be revoked by its issuer
-as shown in [credentialRevocation.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/dart_ssi/-/blob/master/examples/credentialRevocation.dart). 
+and [verification.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/verification.dart). Beside this a credential could be revoked by its issuer
+as shown in [credentialRevocation.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/credentialRevocation.dart). 
 For the revocation a simple Ethereum-SmartContract is used, that should be deployed for each issuer.
 
 ## Key- and Identifier Management
@@ -97,7 +99,7 @@ An identifier could not only be used to bind credentials on it.
 They could also be used to encrypt/sign didcomm messages with or as an replacement for an 'normal' username. 
 These are referred to as ConnectionDIDs in this package.
 A usage example for the second case could be found in 
-[registration.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/dart_ssi/-/blob/master/examples/registration.dart). 
+[registration.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/registration.dart). 
 Therefore a
 registration process for a new user within an online-service could include the following steps:   
 
@@ -115,13 +117,13 @@ From a message level perspective the following Message/Protocols are supported:
 - [present-proof V3](https://github.com/decentralized-identity/waci-presentation-exchange/blob/main/present_proof/present-proof-v3.md) with [DIF Presentation Exchange Attachment](https://github.com/hyperledger/aries-rfcs/tree/main/features/0510-dif-pres-exch-attach) and the slightly change that this packages uses [V2 of presentation exchanges](https://identity.foundation/presentation-exchange/) and tries to support all features of it and not only the listed ones in the definition of the attachment format.
 
 
-A full example for issuing a credential and requesting a presentation using didcomm can be found in [didcomm.dart](http://suc-1.hs-mittweida.de/startervorhaben-3/dart_ssi/-/blob/master/examples/didcomm.dart) 
+A full example for issuing a credential and requesting a presentation using didcomm can be found in [didcomm.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/didcomm.dart) 
 
 ## TODOs/Future Plans
 - because of a missing json-ld processing api for dart all generated signature are not fully correct json-ld signatures. Therefore the plan for the near future is to develop an json-ld processor to get interoperable json-ld signatures.
 - support of [didcomm routing messages](https://identity.foundation/didcomm-messaging/spec/#routing)
 - `from_prior` header is not fully supported now
-- the signature of an attachment of a didcomm message is not checked yet
+- the hash in attachment data of a didcomm message is not checked yet 
 - not all features of Presentation Exchange are evaluated correctly now. These are:
     - `path_nested` property in `submission_requirement`
     - `is_holder` property
