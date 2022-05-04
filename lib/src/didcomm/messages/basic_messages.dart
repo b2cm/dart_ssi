@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
 
-import '../../dids/did_document.dart';
 import '../../util/utils.dart';
 import '../didcomm_jwm.dart';
 import '../types.dart';
@@ -10,7 +9,8 @@ import '../types.dart';
 class EmptyMessage extends DidcommPlaintextMessage {
   EmptyMessage(
       {String? id,
-      ServiceEndpoint? responseTo,
+      String? replyUrl,
+      List<String>? replyTo,
       String? parentThreadId,
       String? threadId,
       String? from,
@@ -26,7 +26,8 @@ class EmptyMessage extends DidcommPlaintextMessage {
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/reserved/2.0/empty',
             body: {},
-            responseTo: responseTo,
+            replyUrl: replyUrl,
+            replyTo: replyTo,
             threadId: threadId,
             parentThreadId: parentThreadId,
             from: from,
@@ -60,7 +61,8 @@ class ProblemReport extends DidcommPlaintextMessage {
       this.comment,
       this.args,
       this.escalateTo,
-      ServiceEndpoint? responseTo,
+      String? replyUrl,
+      List<String>? replyTo,
       String? threadId,
       String? from,
       List<String>? to,
@@ -76,7 +78,8 @@ class ProblemReport extends DidcommPlaintextMessage {
             body: {},
             parentThreadId: parentThreadId,
             ack: ack,
-            responseTo: responseTo,
+            replyUrl: replyUrl,
+            replyTo: replyTo,
             threadId: threadId,
             from: from,
             to: to,
@@ -138,7 +141,8 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
       this.goal,
       this.accept = const [DidcommProfiles.v2],
       required List<Attachment> attachments,
-      ServiceEndpoint? responseTo,
+      String? replyUrl,
+      List<String>? replyTo,
       String? parentThreadId,
       String? threadId,
       List<String>? to,
@@ -155,7 +159,8 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
           typ: DidcommMessageTyp.plain,
           from: from,
           attachments: attachments,
-          responseTo: responseTo,
+          replyUrl: replyUrl,
+          replyTo: replyTo,
           threadId: threadId,
           parentThreadId: parentThreadId,
           to: to,

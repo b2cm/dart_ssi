@@ -1,3 +1,6 @@
+## 0.2.0
+- change response_to header of plaintext messages to reply_url and reply_to (conformance to jwm spec)
+
 ## 0.1.2
 - check signature of didcomm message attachments
 - resolve didcomm message attachment from given link

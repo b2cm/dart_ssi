@@ -107,7 +107,7 @@ registration process for a new user within an online-service could include the f
 2. To identify an user (Who is the person behind the identifier?) credentials are needed and submitted.
 
 ## Didcomm
-This package supports the [Didcomm V2 message format](https://identity.foundation/didcomm-messaging/spec/). Except of the optional XChacha20Poly1305 Encryption all Encryption, Key Agreement, Key Wrap and signing
+This package supports the [Didcomm V2 message format](https://identity.foundation/didcomm-messaging/spec/). Except of the optional XChaCha20Poly1305 Encryption all Encryption, Key Agreement, Key Wrap and signing
 Algorithms mentioned in the spec are supported.
 From a message level perspective the following Message/Protocols are supported:
 - [Empty Message](https://identity.foundation/didcomm-messaging/spec/#the-empty-message)
@@ -118,6 +118,11 @@ From a message level perspective the following Message/Protocols are supported:
 
 
 A full example for issuing a credential and requesting a presentation using didcomm can be found in [didcomm.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/didcomm.dart) 
+
+### Differences to Didcomm spec
+- This library supports explizit two additional headers for the plaintext messages not mentioned in the spec. These are `reply_url` and `reply_to`. 
+  Both are described in [JWM-Spec](https://datatracker.ietf.org/doc/html/draft-looker-jwm-01), the didcomm plaintext messages are based on. 
+  They are useful, when didcomm is used with a did-method that do not support service endpoints or to clarify which service endpoint from a did-document should be used.
 
 ## TODOs/Future Plans
 - because of a missing json-ld processing api for dart all generated signature are not fully correct json-ld signatures. Therefore the plan for the near future is to develop an json-ld processor to get interoperable json-ld signatures.

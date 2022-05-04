@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../credentials/presentation_exchange.dart';
 import '../../credentials/verifiable_credential.dart';
-import '../../dids/did_document.dart';
 import '../../util/types.dart';
 import '../../util/utils.dart';
 import '../didcomm_jwm.dart';
@@ -20,7 +19,8 @@ class ProposePresentation extends DidcommPlaintextMessage {
       required this.presentationDefinition,
       this.goalCode,
       this.comment,
-      ServiceEndpoint? responseTo,
+      String? replyUrl,
+      List<String>? replyTo,
       String? parentThreadId,
       String? threadId,
       String? from,
@@ -35,7 +35,8 @@ class ProposePresentation extends DidcommPlaintextMessage {
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/present-proof/3.0/propose-presentation',
             body: {},
-            responseTo: responseTo,
+            replyUrl: replyUrl,
+            replyTo: replyTo,
             threadId: threadId,
             parentThreadId: parentThreadId,
             from: from,
@@ -95,7 +96,8 @@ class RequestPresentation extends DidcommPlaintextMessage {
       this.willConfirm = false,
       this.goalCode,
       this.comment,
-      ServiceEndpoint? responseTo,
+      String? replyUrl,
+      List<String>? replyTo,
       String? parentThreadId,
       String? threadId,
       String? from,
@@ -110,7 +112,8 @@ class RequestPresentation extends DidcommPlaintextMessage {
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/present-proof/3.0/request-presentation',
             body: {},
-            responseTo: responseTo,
+            replyUrl: replyUrl,
+            replyTo: replyTo,
             threadId: threadId,
             parentThreadId: parentThreadId,
             from: from,
@@ -170,7 +173,8 @@ class Presentation extends DidcommPlaintextMessage {
       required this.verifiablePresentation,
       this.goalCode,
       this.comment,
-      ServiceEndpoint? responseTo,
+      String? replyUrl,
+      List<String>? replyTo,
       String? parentThreadId,
       String? threadId,
       String? from,
@@ -185,7 +189,8 @@ class Presentation extends DidcommPlaintextMessage {
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/present-proof/3.0/presentation',
             body: {},
-            responseTo: responseTo,
+            replyUrl: replyUrl,
+            replyTo: replyTo,
             threadId: threadId,
             parentThreadId: parentThreadId,
             from: from,
