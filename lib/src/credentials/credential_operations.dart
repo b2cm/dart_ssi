@@ -1099,6 +1099,7 @@ FilterResult _processSubmissionRequirement(
       List<Map<String, dynamic>> toAdd = [];
       for (var c1 in creds) {
         for (var c2 in credsForDescriptor) {
+          //TODO find better criteria to compare
           if (c1['id'] != c2['id']) toAdd.add(c2);
         }
       }

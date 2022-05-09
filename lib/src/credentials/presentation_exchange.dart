@@ -469,7 +469,8 @@ class SubmissionRequirement implements JsonObject {
             throw Exception('max must be greater than min');
         }
         if (requirement.containsKey('count')) {
-          count = int.parse(requirement['count']);
+          var countTemp = requirement['count'];
+          count = countTemp is int ? countTemp : int.parse(countTemp);
           if (count! <= 0) throw Exception('count must greater than zero');
         }
       } else
