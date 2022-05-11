@@ -854,6 +854,23 @@ void main() async {
       expect(issInfo.runtimeType, String);
       expect(issInfo, 'did:ethr:0x12345678');
     });
+
+    test('multiple id values', () {
+      var plaintext = {
+        'alumniOf': {'id': 'did:ethr:314756'}
+      };
+      var hashedPlaintext =
+          buildPlaintextCredential(plaintext, 'did:ethr:0x452768');
+      var w3c =
+          buildW3cCredentialwithHashes(hashedPlaintext, 'did:ethr:0x25467');
+
+      var w3cMap = jsonDecode(w3c);
+      expect(w3cMap['credentialSubject']['id'], 'did:ethr:0x452768');
+      expect(
+          w3cMap['credentialSubject']['alumniOf']['id']
+              .startsWith('did:ethr:0x25467'),
+          false);
+    });
   });
 
   group('compare w3c credential and Plaintext', () {
@@ -1233,7 +1250,8 @@ void main() async {
       expect(signedMap['proof'].containsKey('created'), true);
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
+          await verifyCredential(signedMap,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
     });
 
@@ -1251,7 +1269,8 @@ void main() async {
       expect(signedMap['proof'].containsKey('created'), true);
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
+          await verifyCredential(signedMap,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 
@@ -1270,14 +1289,15 @@ void main() async {
       signedMap['proof']['created'] = DateTime.now().toUtc().toIso8601String();
 
       expect(
-          await verifyCredential(signedMap, erc1056: erc1056, revocationRegistry: revocationRegistry),
+          await verifyCredential(signedMap,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 
     test('call verify without proof', () {
       expect(
-          () async =>
-              await verifyCredential(w3c, erc1056: erc1056, revocationRegistry: revocationRegistry),
+          () async => await verifyCredential(w3c,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           throwsA(
               predicate((dynamic e) => e.message == 'no proof section found')));
     });
@@ -1294,8 +1314,8 @@ void main() async {
         var signed = signCredential(ganacheAccounts, w3cCred);
 
         //before revocation
-        var verified =
-            await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry);
+        var verified = await verifyCredential(signed,
+            erc1056: erc1056, revocationRegistry: revocationRegistry);
         expect(verified, true);
 
         //revocation
@@ -1328,7 +1348,9 @@ void main() async {
       var web3 = Web3Client(rpcUrl, Client());
 
       var signed = signCredential(wallet, w3c);
-      expect(await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry),
+      expect(
+          await verifyCredential(signed,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           true);
 
       var tx = Transaction(
@@ -1345,7 +1367,9 @@ void main() async {
       await erc1056.changeOwner(wallet.getStandardIssuerPrivateKey()!,
           wallet.getStandardIssuerDid()!, await wallet.getNextCredentialDID());
 
-      expect(await verifyCredential(signed, erc1056: erc1056, revocationRegistry: revocationRegistry),
+      expect(
+          await verifyCredential(signed,
+              erc1056: erc1056, revocationRegistry: revocationRegistry),
           false);
     });
 

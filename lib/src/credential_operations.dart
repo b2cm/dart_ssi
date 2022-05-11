@@ -151,7 +151,8 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
     DateTime? validUntil,
     String? revocationRegistryAddress}) {
   var plaintextMap = credentialToMap(credential);
-  var hashCred = _collectHashes(credential, id: plaintextMap['id']);
+  var hashCred =
+      _collectHashes(credential, id: plaintextMap['id'], firstLevel: true);
 
   List<String> credTypes = [];
   credTypes.add('VerifiableCredential');
@@ -782,9 +783,8 @@ Future<String> getDidFromSignature(String jws,
   var did = 'did:ethr:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
   if (erc1056 != null) {
     if (erc1056.networkName != 'mainnet') {
-      did = 'did:ethr:${erc1056.networkName}:${EthereumAddress
-          .fromPublicKey(pubKey)
-          .hexEip55}';
+      did =
+          'did:ethr:${erc1056.networkName}:${EthereumAddress.fromPublicKey(pubKey).hexEip55}';
     }
     var expectedDid = await erc1056.identityOwner(did);
     if (expectedDid != did) {
@@ -848,15 +848,18 @@ Map<String, dynamic> _hashStringOrNum(dynamic value) {
   return hashed;
 }
 
-String _collectHashes(dynamic credential, {String? id}) {
+String _collectHashes(dynamic credential,
+    {String? id, bool firstLevel = false}) {
   var credMap = credentialToMap(credential);
   Map<String, dynamic> hashCred = {};
   if (id != null) hashCred['id'] = id;
   credMap.forEach((key, value) {
     if (key != '@context') {
-      if (key == 'type' || key == '@type' || key == 'id')
+      if (key == 'type' || key == '@type')
         hashCred[key] = value;
-      else if (key == 'hashAlg') {
+      else if (key == 'id' && firstLevel) {
+        hashCred[key] = value;
+      } else if (key == 'hashAlg') {
       } else if (value is List) {
         List<dynamic> hashList = [];
         value.forEach((element) {
