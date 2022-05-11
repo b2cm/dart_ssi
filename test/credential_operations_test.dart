@@ -856,6 +856,23 @@ void main() async {
       expect(issInfo.runtimeType, String);
       expect(issInfo, 'did:ethr:0x12345678');
     });
+
+    test('multiple id values', () {
+      var plaintext = {
+        'alumniOf': {'id': 'did:ethr:314756'}
+      };
+      var hashedPlaintext =
+          buildPlaintextCredential(plaintext, 'did:ethr:0x452768');
+      var w3c =
+          buildW3cCredentialwithHashes(hashedPlaintext, 'did:ethr:0x25467');
+
+      var w3cMap = jsonDecode(w3c);
+      expect(w3cMap['credentialSubject']['id'], 'did:ethr:0x452768');
+      expect(
+          w3cMap['credentialSubject']['alumniOf']['id']
+              .startsWith('did:ethr:0x25467'),
+          false);
+    });
   });
 
   group('compare w3c credential and Plaintext', () {
@@ -1433,7 +1450,6 @@ void main() async {
       expect(presMap.containsKey('proof'), true);
       expect(presMap['proof'] is List, true);
       expect(presMap['proof'].length, 3);
-      // print(presMap);
 
       expect(presMap.containsKey('verifiableCredential'), true);
       expect(presMap['verifiableCredential'] is List, true);
