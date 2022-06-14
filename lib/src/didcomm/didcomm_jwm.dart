@@ -60,7 +60,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       body = decoded['body']!;
     else {
       body = {};
-      if (type != 'https://didcomm.org/reserved/2.0/empty')
+      if (type != 'https://didcomm.org/empty/1.0')
         throw Exception('Empty Body only allowed in Empty Message');
     }
     from = decoded['from'];

@@ -24,7 +24,7 @@ class EmptyMessage extends DidcommPlaintextMessage {
       List<String>? ack})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/reserved/2.0/empty',
+            type: 'https://didcomm.org/empty/1.0',
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -41,7 +41,7 @@ class EmptyMessage extends DidcommPlaintextMessage {
             ack: ack);
 
   EmptyMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/reserved/2.0/empty')
+    if (type != 'https://didcomm.org/empty/1.0')
       throw Exception('Wrong message type');
     if (body.length > 0) throw Exception('this message is not empty');
   }
