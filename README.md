@@ -112,6 +112,7 @@ Algorithms mentioned in the spec are supported.
 From a message level perspective the following Message/Protocols are supported:
 - [Empty Message](https://identity.foundation/didcomm-messaging/spec/#the-empty-message)
 - [Problem Report](https://identity.foundation/didcomm-messaging/spec/#problem-reports)
+- [Discover Feature 2.0](https://identity.foundation/didcomm-messaging/spec/#discover-features-protocol-20)
 - [Out-Of-Band Message](https://identity.foundation/didcomm-messaging/spec/#out-of-band-messages)
 - [issue-credential V3](https://github.com/decentralized-identity/waci-presentation-exchange/tree/main/issue_credential) with [JSON-LD Credential Attachment](https://github.com/hyperledger/aries-rfcs/tree/main/features/0593-json-ld-cred-attach)
 - [present-proof V3](https://github.com/decentralized-identity/waci-presentation-exchange/blob/main/present_proof/present-proof-v3.md) with [DIF Presentation Exchange Attachment](https://github.com/hyperledger/aries-rfcs/tree/main/features/0510-dif-pres-exch-attach) and the slightly change that this packages uses [V2 of presentation exchanges](https://identity.foundation/presentation-exchange/) and tries to support all features of it and not only the listed ones in the definition of the attachment format.

@@ -1,3 +1,7 @@
+## 0.3.0
+- new type name for empty messages
+- add support for discover feature protocol
+
 ## 0.2.0
 - change response_to header of plaintext messages to reply_url and reply_to (conformance to jwm spec)
 
