@@ -140,7 +140,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
       this.goalCode,
       this.goal,
       this.accept = const [DidcommProfiles.v2],
-      required List<Attachment> attachments,
+      List<Attachment>? attachments,
       String? replyUrl,
       List<String>? replyTo,
       String? parentThreadId,
@@ -180,8 +180,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
   OutOfBandMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
     if (type != 'https://didcomm.org/out-of-band/2.0/invitation')
       throw Exception('Wrong message type');
-    if (from == null || attachments == null || attachments!.length == 0)
-      throw FormatException('from and attachments property needed');
+    if (from == null) throw FormatException('from property needed');
     if (typ != null && typ != DidcommMessageTyp.plain)
       throw Exception(
           'Out of band Message is expected to be a Plaintext-message');
