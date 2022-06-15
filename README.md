@@ -70,6 +70,8 @@ and the corresponding signed verifiable credential like this:
 For now the only supported signature-suites for the proof-section are
 [EcdsaSecp256k1RecoverySignature2020](https://identity.foundation/EcdsaSecp256k1RecoverySignature2020/) and 
 [Ed25519Signature2020](https://w3c-ccg.github.io/lds-ed25519-2020/).
+If you need another one the API for signing in verifying credentials is extensible. How you could develop and use your own signature suites is described in 
+[extendSigners.md](https://github.com/b2cm/dart_ssi/blob/didcomm/extendSigners.md)
 
 ## Usage of Credentials
 As the [W3C-Specification for Verifiable Credentials](https://www.w3.org/TR/vc-data-model/) describes, a credential is issued by an issuer, stored by a holder and presented to verifier. 

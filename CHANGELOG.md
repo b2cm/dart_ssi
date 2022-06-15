@@ -1,3 +1,8 @@
+## 0.3.1
+- extensible API for credential/presentation signing and verification
+- Discover Feature protocol: new feature-type `attachment-format`
+- Out-of-Band messages: attachment are no required anymore (but optional)
+
 ## 0.3.0
 - new type name for empty messages
 - add support for discover feature protocol

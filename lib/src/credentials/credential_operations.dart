@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:base_codecs/base_codecs.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
@@ -14,6 +13,7 @@ import '../dids/did_document.dart';
 import '../dids/did_ethr.dart';
 import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
+import 'credential_signer.dart';
 import 'presentation_exchange.dart';
 import 'revocation.dart';
 import 'verifiable_credential.dart';
@@ -251,7 +251,7 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 
 /// Signs a W3C-Standard conform [credentialToSign] with the private key for issuer-did in the credential.
 Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
-    {String? challenge}) async {
+    {String? challenge, Signer? signer}) async {
   Map<String, dynamic> credential;
   if (credentialToSign is VerifiableCredential)
     credential = credentialToSign.toJson();
@@ -261,21 +261,28 @@ Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
   if (issuerDid == '') {
     throw new Exception('Could not examine IssuerDID');
   }
+  signer ??= _determineSignerForDid(issuerDid);
+  credential['proof'] = await signer.buildProof(credential, wallet, issuerDid,
+      challenge: challenge);
+  return jsonEncode(credential);
+}
 
-  SignatureType type;
-  if (issuerDid.startsWith('did:key:z6Mk'))
-    type = SignatureType.edDsa;
-  else if (issuerDid.startsWith('did:ethr'))
-    type = SignatureType.ecdsaRecovery;
+Signer _determineSignerForDid(String did) {
+  if (did.startsWith('did:key:z6Mk'))
+    return EdDsaSigner();
+  else if (did.startsWith('did:ethr'))
+    return EcdsaRecoverySignature();
   else
     throw Exception('could not examine signature type');
+}
 
-  var credHash = sha256.convert(utf8.encode(jsonEncode(credential))).bytes;
-  var proof = await _buildProof(credHash as Uint8List, issuerDid, wallet,
-      proofOptions: _buildProofOptions(
-          type: type, verificationMethod: issuerDid, challenge: challenge));
-  credential['proof'] = proof;
-  return jsonEncode(credential);
+Signer _determineSignerForType(String type) {
+  if (type == 'Ed25519Signature2020')
+    return EdDsaSigner();
+  else if (type == 'EcdsaSecp256k1RecoverySignature2020')
+    return EcdsaRecoverySignature();
+  else
+    throw Exception('could not examine signature type');
 }
 
 /// Verifies the signature for the given [credential].
@@ -286,7 +293,9 @@ Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
 Future<bool> verifyCredential(dynamic credential,
     {Erc1056? erc1056,
     RevocationRegistry? revocationRegistry,
-    String? expectedChallenge}) async {
+    String? expectedChallenge,
+    Signer Function(String typeMatch) signerSelector =
+        _determineSignerForType}) async {
   Map<String, dynamic> credMap;
   if (credential is VerifiableCredential)
     credMap = credential.toJson();
@@ -295,6 +304,8 @@ Future<bool> verifyCredential(dynamic credential,
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
   }
+
+  // check for Revocation
   if (revocationRegistry != null) {
     if (credMap.containsKey('credentialStatus')) {
       var credStatus = credMap['credentialStatus'];
@@ -307,21 +318,19 @@ Future<bool> verifyCredential(dynamic credential,
     }
   }
 
-  Map<String, dynamic> proof = credMap['proof'];
-  credMap.remove('proof');
-  var credHash = sha256.convert(utf8.encode(jsonEncode(credMap))).bytes;
-  credMap['proof'] = proof;
+  // determine issuer
   var issuerDid = getIssuerDidFromCredential(credential);
   if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
-  if (expectedChallenge != null) {
-    var containingChallenge = proof['challenge'];
-    if (containingChallenge == null)
-      throw Exception('Expected challenge in this credential');
-    if (containingChallenge != expectedChallenge)
-      throw Exception(
-          'challenge in credential do not match expected challenge');
-  }
-  return _verifyProof(proof, credHash as Uint8List, issuerDid);
+
+  // verify proof
+  Map<String, dynamic> proof = credMap['proof'];
+  var signer = signerSelector.call(proof['type']);
+  credMap.remove('proof');
+  var verified =
+      signer.verify(proof, credMap, issuerDid, challenge: expectedChallenge);
+  credMap['proof'] = proof;
+
+  return verified;
 }
 
 class RevokedException implements Exception {
@@ -334,7 +343,7 @@ class RevokedException implements Exception {
 /// If not only the ownership of the dids in the credentials should be proofed a List of [additionalDids]
 /// could be given and a proof section for each did is added.
 Future<String> buildPresentation(
-    List<dynamic> credentials, WalletStore? wallet, String challenge,
+    List<dynamic> credentials, WalletStore wallet, String challenge,
     {List<String>? additionalDids, List<dynamic>? disclosedCredentials}) async {
   List<Map<String, dynamic>?> credMapList = [];
   List<String?> holderDids = [];
@@ -406,33 +415,39 @@ Future<String> buildPresentation(
       sha256.convert(utf8.encode(jsonEncode(presentation))).bytes;
   List<Map<String, dynamic>> proofList = [];
   for (var element in holderDids) {
-    SignatureType type;
-    if (element!.startsWith('did:ethr'))
-      type = SignatureType.ecdsaRecovery;
-    else if (element.startsWith('did:key:z6Mk'))
-      type = SignatureType.edDsa;
-    else
-      throw Exception('Unknown did -method');
-    var proof = await _buildProof(
-        presentationHash as Uint8List, element, wallet!,
-        proofOptions: _buildProofOptions(
-            type: type, verificationMethod: element, challenge: challenge));
-    proofList.add(proof);
+    //   SignatureType type;
+    //   if (element!.startsWith('did:ethr'))
+    //     type = SignatureType.ecdsaRecovery;
+    //   else if (element.startsWith('did:key:z6Mk'))
+    //     type = SignatureType.edDsa;
+    //   else
+    //     throw Exception('Unknown did -method');
+    //   var proof = await _buildProof(
+    //       presentationHash as Uint8List, element, wallet!,
+    //       proofOptions: buildProofOptions(
+    //           type: type, verificationMethod: element, challenge: challenge));
+    var signer = _determineSignerForDid(element!);
+    proofList.add(await signer.buildProof(presentation, wallet, element,
+        challenge: challenge));
   }
   if (additionalDids != null) {
     for (var element in additionalDids) {
-      SignatureType type;
-      if (element.startsWith('did:ethr'))
-        type = SignatureType.ecdsaRecovery;
-      else if (element.startsWith('did:key:z6Mk'))
-        type = SignatureType.edDsa;
-      else
-        throw Exception('Unknown did -method');
-      var proof = await _buildProof(
-          presentationHash as Uint8List, element, wallet!,
-          proofOptions: _buildProofOptions(
-              type: type, verificationMethod: element, challenge: challenge));
-      proofList.add(proof);
+      // SignatureType type;
+      // if (element.startsWith('did:ethr'))
+      //   type = SignatureType.ecdsaRecovery;
+      // else if (element.startsWith('did:key:z6Mk'))
+      //   type = SignatureType.edDsa;
+      // else
+      //   throw Exception('Unknown did -method');
+      // var proof = await _buildProof(
+      //     presentationHash as Uint8List, element, wallet,
+      //     proofOptions: buildProofOptions(
+      //         type: type, verificationMethod: element, challenge: challenge));
+
+      var signer = _determineSignerForDid(element);
+      proofList.add(await signer.buildProof(presentation, wallet, element,
+          challenge: challenge));
+      // proofList.add(proof);
     }
   }
   presentation['proof'] = proofList;
@@ -443,22 +458,29 @@ Future<String> buildPresentation(
 ///
 /// It uses erc1056 to look up the current owner of the dids a proof is given in [presentation].
 Future<bool> verifyPresentation(dynamic presentation, String challenge,
-    {Erc1056? erc1056, RevocationRegistry? revocationRegistry}) async {
+    {Erc1056? erc1056,
+    RevocationRegistry? revocationRegistry,
+    Signer? signer,
+    Signer Function(String typeMatch) signerSelector =
+        _determineSignerForType}) async {
+  // datatype conversion
   var presentationMap;
   if (presentation is VerifiablePresentation)
     presentationMap = presentation.toJson();
   else
     presentationMap = credentialToMap(presentation);
+
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
-  var presentationHash =
-      sha256.convert(utf8.encode(jsonEncode(presentationMap))).bytes;
-  presentationMap['proof'] = proofs;
+
+  // verify credentials
   var credentials = presentationMap['verifiableCredential'] as List;
   List<String> holderDids = [];
   await Future.forEach(credentials, (dynamic element) async {
     bool verified = await verifyCredential(element,
-        erc1056: erc1056, revocationRegistry: revocationRegistry);
+        erc1056: erc1056,
+        revocationRegistry: revocationRegistry,
+        signerSelector: signerSelector);
     if (!verified)
       throw Exception('A credential could not been verified');
     else {
@@ -468,17 +490,21 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
     }
   });
 
+  //verify proofs from presentation
   await Future.forEach(proofs, (dynamic element) async {
     var verifMeth = element['verificationMethod'];
-    var includedNonce = element['challenge'];
-    if (includedNonce != challenge) throw Exception('Challenge does not match');
     if (erc1056 != null) verifMeth = await erc1056.identityOwner(verifMeth);
+    var signer = signerSelector.call(element['type']);
     if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
-    if (!_verifyProof(element, presentationHash as Uint8List, verifMeth))
+    if (!signer.verify(element, presentationMap, verifMeth,
+        challenge: challenge))
       throw Exception('Proof for $verifMeth could not been verified');
   });
   if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
 
+  presentationMap['proof'] = proofs;
+
+  //compare plaintext credentials
   if (presentationMap.containsKey('disclosedCredentials')) {
     var disclosedCredentials = presentationMap['disclosedCredentials'] as List;
     Map<String?, Map<String, dynamic>> credsToId = {};
@@ -1288,126 +1314,7 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
   return true;
 }
 
-Future<Map<String, dynamic>> _buildProof(
-    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
-    {dynamic proofOptions}) async {
-  if (didToSignWith.startsWith('did:ethr'))
-    return _buildEcdsaRecoveryProof(hashToSign, didToSignWith, wallet,
-        proofOptions: proofOptions);
-  else if (didToSignWith.startsWith('did:key:z6Mk'))
-    return await _buildEdDsaProof(hashToSign, didToSignWith, wallet,
-        proofOptions: proofOptions);
-  else
-    throw UnimplementedError('Other dids are not supported yet');
-}
-
-Future<Map<String, dynamic>> _buildEdDsaProof(
-    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
-    {dynamic proofOptions}) async {
-  String pOptions;
-  if (proofOptions == null) {
-    pOptions = _buildProofOptions(
-        type: SignatureType.edDsa, verificationMethod: didToSignWith);
-  } else {
-    if (proofOptions is String)
-      pOptions = proofOptions;
-    else
-      pOptions = jsonEncode(proofOptions);
-  }
-  var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
-  var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
-
-  var privateKey = await wallet.getPrivateKeyForCredentialDid(didToSignWith);
-  if (privateKey == null)
-    privateKey = await wallet.getPrivateKeyForConnectionDid(didToSignWith);
-  if (privateKey == null) throw Exception('Could not find a private key');
-  var signature = ed.sign(
-      ed.PrivateKey(hexToBytes(privateKey).toList()), Uint8List.fromList(hash));
-  Map<String, dynamic> optionsMap = jsonDecode(pOptions);
-  optionsMap['proofValue'] = 'z${base58BitcoinEncode(signature)}';
-
-  return optionsMap;
-}
-
-Future<Map<String, dynamic>> _buildEcdsaRecoveryProof(
-    Uint8List hashToSign, String didToSignWith, WalletStore wallet,
-    {dynamic proofOptions}) async {
-  String pOptions;
-  if (proofOptions == null) {
-    pOptions = _buildProofOptions(
-        type: SignatureType.ecdsaRecovery, verificationMethod: didToSignWith);
-  } else {
-    if (proofOptions is String)
-      pOptions = proofOptions;
-    else
-      pOptions = jsonEncode(proofOptions);
-  }
-
-  var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
-  var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
-  var privateKeyHex = await wallet.getPrivateKeyForCredentialDid(didToSignWith);
-  if (privateKeyHex == null)
-    privateKeyHex = await wallet.getPrivateKeyForConnectionDid(didToSignWith);
-  if (privateKeyHex == null) throw Exception('Could not find a private key');
-  var key = EthPrivateKey.fromHex(privateKeyHex);
-
-  var sigArray = _buildSignatureArray(hash as Uint8List, key);
-  while (sigArray.length != 65) {
-    sigArray = _buildSignatureArray(hash, key);
-  }
-  Map<String, dynamic> optionsMap = jsonDecode(pOptions);
-  var critical = new Map<String, dynamic>();
-  critical['b64'] = false;
-  optionsMap['jws'] = '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
-      '.${base64UrlEncode(sigArray)}';
-
-  return optionsMap;
-}
-
-bool _verifyProof(Map<String, dynamic> proof, Uint8List hash, String did) {
-  if (proof['type'] == SignatureType.ecdsaRecovery.value)
-    return _verifyEcdsaRecovery(proof, hash, did);
-  else if (proof['type'] == SignatureType.edDsa.value)
-    return _verifyEdDsa(proof, hash, did);
-  else
-    throw Exception('Proof type ${proof['type']} is not supported');
-}
-
-bool _verifyEdDsa(Map<String, dynamic> proof, Uint8List hash, String did) {
-  var proofValue = proof.remove('proofValue');
-
-  var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
-  var hashToSign = sha256.convert(proofHash + hash).bytes;
-
-  proof['proofValue'] = proofValue;
-
-  var encodedKey = did.split(':')[2];
-  var base58DecodedKey = base58BitcoinDecode(encodedKey.substring(1));
-  return ed.verify(
-      ed.PublicKey(base58DecodedKey.sublist(2)),
-      Uint8List.fromList(hashToSign),
-      base58BitcoinDecode(proofValue.substring(1)));
-}
-
-bool _verifyEcdsaRecovery(
-    Map<String, dynamic> proof, Uint8List hash, String did) {
-  var signature = _getSignatureFromJws(proof['jws']);
-
-  var jws = proof.remove('jws');
-  var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
-  var hashToSign = sha256.convert(proofHash + hash).bytes;
-
-  proof['jws'] = jws;
-
-  var pubKey = ecRecover(hashToSign as Uint8List, signature);
-
-  var givenAddress = EthereumAddress.fromHex(did.split(':').last);
-
-  return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
-      givenAddress.hexEip55;
-}
-
-String _buildProofOptions(
+String buildProofOptions(
     {required SignatureType type,
     required String verificationMethod,
     String? domain,

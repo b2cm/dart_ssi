@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dart_web3/dart_web3.dart';
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/wallet.dart';
+import 'package:dart_web3/dart_web3.dart';
 import 'package:http/http.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:test/test.dart';
@@ -1482,8 +1482,8 @@ void main() async {
       expect(
           () async => await verifyPresentation(presMap, challenge,
               erc1056: erc1056, revocationRegistry: revocationRegistry),
-          throwsA(predicate(
-              (dynamic e) => e.message == 'Challenge does not match')));
+          throwsA(predicate((dynamic e) =>
+              e.message == 'a challenge do not match expected challenge')));
     });
 
     test('manipulated proof', () async {

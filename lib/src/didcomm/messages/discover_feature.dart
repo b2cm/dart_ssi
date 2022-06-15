@@ -138,6 +138,8 @@ class Query implements JsonObject {
         featureType = FeatureType.goalCode;
       } else if (fType == FeatureType.protocol.value) {
         featureType = FeatureType.protocol;
+      } else if (fType == FeatureType.attachmentFormat.value) {
+        featureType = FeatureType.attachmentFormat;
       } else {
         throw Exception('unknown Feature-type');
       }
@@ -179,6 +181,8 @@ class Disclosure implements JsonObject {
         featureType = FeatureType.goalCode;
       } else if (fType == FeatureType.protocol.value) {
         featureType = FeatureType.protocol;
+      } else if (fType == FeatureType.attachmentFormat.value) {
+        featureType = FeatureType.attachmentFormat;
       } else {
         throw Exception('unknown Feature-type');
       }
@@ -211,13 +215,14 @@ class Disclosure implements JsonObject {
   }
 }
 
-enum FeatureType { protocol, goalCode, header }
+enum FeatureType { protocol, goalCode, header, attachmentFormat }
 
 extension FeatureTypeExt on FeatureType {
   static const Map<FeatureType, String> values = {
     FeatureType.goalCode: 'goal-code',
     FeatureType.header: 'header',
-    FeatureType.protocol: 'protocol'
+    FeatureType.protocol: 'protocol',
+    FeatureType.attachmentFormat: 'attachment-format'
   };
   String get value => values[this]!;
 }
