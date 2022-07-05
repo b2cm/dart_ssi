@@ -16,6 +16,7 @@ class VerifiableCredential implements JsonObject {
   DateTime? expirationDate;
   CredentialStatus? status;
   CredentialStatus? credentialSchema;
+  Map<String, dynamic>? _originalDoc;
 
   VerifiableCredential(
       {required this.context,
@@ -79,9 +80,12 @@ class VerifiableCredential implements JsonObject {
     if (credential.containsKey('credentialSchema'))
       credentialSchema =
           CredentialStatus.fromJson(credential['credentialSchema']);
+
+    _originalDoc = credential;
   }
 
   Map<String, dynamic> toJson() {
+    if (_originalDoc != null) return _originalDoc!;
     Map<String, dynamic> jsonObject = {};
     jsonObject['@context'] = context;
     if (id != null) jsonObject['id'] = id;
@@ -123,6 +127,7 @@ class LinkedDataProof implements JsonObject {
   String? challenge;
   String? jws;
   String? domain;
+  Map<String, dynamic>? _originalDoc;
 
   LinkedDataProof(
       {required this.type,
@@ -163,18 +168,22 @@ class LinkedDataProof implements JsonObject {
 
     domain = proof['domain'];
     challenge = proof['challenge'];
+
+    _originalDoc = proof;
   }
 
   Map<String, dynamic> toJson() {
+    if (_originalDoc != null) return _originalDoc!;
+
     Map<String, dynamic> jsonObject = {};
     jsonObject['type'] = type;
     jsonObject['proofPurpose'] = proofPurpose;
     jsonObject['verificationMethod'] = verificationMethod;
     jsonObject['created'] = created.toIso8601String();
-    if (proofValue != null) jsonObject['proofValue'] = proofValue;
-    if (jws != null) jsonObject['jws'] = jws;
     if (domain != null) jsonObject['domain'] = domain;
     if (challenge != null) jsonObject['challenge'] = challenge;
+    if (proofValue != null) jsonObject['proofValue'] = proofValue;
+    if (jws != null) jsonObject['jws'] = jws;
     return jsonObject;
   }
 
@@ -186,6 +195,7 @@ class LinkedDataProof implements JsonObject {
 class CredentialStatus implements JsonObject {
   late String id;
   late String type;
+  Map<String, dynamic>? _originalDoc;
 
   CredentialStatus(this.id, this.type);
 
@@ -198,10 +208,14 @@ class CredentialStatus implements JsonObject {
     if (status.containsKey('type'))
       type = status['type'];
     else
-      throw FormatException('tpe property is needed in credentialStatus');
+      throw FormatException('type property is needed in credentialStatus');
+
+    _originalDoc = status;
   }
 
   Map<String, dynamic> toJson() {
+    if (_originalDoc != null) return _originalDoc!;
+
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
     jsonObject['type'] = type;
@@ -222,6 +236,7 @@ class VerifiablePresentation implements JsonObject {
   String? holder;
   List<LinkedDataProof>? proof;
   PresentationSubmission? presentationSubmission;
+  Map<String, dynamic>? _originalDoc;
 
   VerifiablePresentation(
       {required this.context,
@@ -267,10 +282,13 @@ class VerifiablePresentation implements JsonObject {
       var tmp = presentation['presentation_submission'];
       presentationSubmission = PresentationSubmission.fromJson(tmp);
     }
+
+    _originalDoc = presentation;
   }
 
   @override
   Map<String, dynamic> toJson() {
+    if (_originalDoc != null) return _originalDoc!;
     Map<String, dynamic> jsonObject = {};
     jsonObject['@context'] = context;
     jsonObject['type'] = type;

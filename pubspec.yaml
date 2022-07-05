@@ -1,6 +1,6 @@
 name: dart_ssi
 description: Dart Package for SSI Wallet
-version: 0.3.1
+version: 0.3.2
 homepage: https://credentials.hs-mittweida.de
 
 environment:
@@ -27,8 +27,8 @@ dependencies:
 dev_dependencies:
   test: ^1.15.0
   test_process: ^2.0.0
-  hive_generator: 1.1.2
-  build_runner: 2.1.10
+  hive_generator: 1.1.3
+  build_runner: 2.1.11
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

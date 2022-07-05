@@ -611,7 +611,9 @@ class LinkedDataProofFormat implements JsonObject {
 }
 
 enum Limiting { required, preferred }
+
 enum SubmissionRequirementRule { all, pick }
+
 enum StatusDirective { required, allowed, disallowed }
 
 /// Object used when a credential-List is filtered with a presentationDefinition
@@ -648,6 +650,7 @@ class PresentationSubmission implements JsonObject {
   late String id;
   late String presentationDefinitionId;
   late List<InputDescriptorMappingObject> descriptorMap;
+  Map<String, dynamic>? _originalDoc;
 
   PresentationSubmission(
       {String? id,
@@ -679,9 +682,13 @@ class PresentationSubmission implements JsonObject {
     } else
       throw FormatException(
           'descriptor_map property is needed in presentation submission');
+
+    _originalDoc = submission;
   }
 
   Map<String, dynamic> toJson() {
+    if (_originalDoc != null) return _originalDoc!;
+
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
     jsonObject['definition_id'] = presentationDefinitionId;
@@ -700,6 +707,7 @@ class InputDescriptorMappingObject implements JsonObject {
   late String id;
   late String format;
   late JsonPath path;
+  Map<String, dynamic>? _originalDoc;
 
   InputDescriptorMappingObject(
       {required this.id, required this.format, required this.path});
@@ -720,9 +728,12 @@ class InputDescriptorMappingObject implements JsonObject {
       path = JsonPath(descriptor['path']);
     else
       throw Exception(' path property is needed in descriptor-map object');
+    _originalDoc = descriptor;
   }
 
   Map<String, dynamic> toJson() {
+    if (_originalDoc != null) return _originalDoc!;
+
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
     jsonObject['format'] = format;

@@ -1,3 +1,7 @@
+## 0.3.2
+- bugfixes and improvements
+- update dev-dependencies
+
 ## 0.3.1
 - extensible API for credential/presentation signing and verification
 - Discover Feature protocol: new feature-type `attachment-format`

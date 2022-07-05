@@ -410,44 +410,17 @@ Future<String> buildPresentation(
     type.add('DisclosedCredentialPresentation');
     presentation['type'] = type;
   }
-
-  var presentationHash =
-      sha256.convert(utf8.encode(jsonEncode(presentation))).bytes;
   List<Map<String, dynamic>> proofList = [];
   for (var element in holderDids) {
-    //   SignatureType type;
-    //   if (element!.startsWith('did:ethr'))
-    //     type = SignatureType.ecdsaRecovery;
-    //   else if (element.startsWith('did:key:z6Mk'))
-    //     type = SignatureType.edDsa;
-    //   else
-    //     throw Exception('Unknown did -method');
-    //   var proof = await _buildProof(
-    //       presentationHash as Uint8List, element, wallet!,
-    //       proofOptions: buildProofOptions(
-    //           type: type, verificationMethod: element, challenge: challenge));
     var signer = _determineSignerForDid(element!);
     proofList.add(await signer.buildProof(presentation, wallet, element,
         challenge: challenge));
   }
   if (additionalDids != null) {
     for (var element in additionalDids) {
-      // SignatureType type;
-      // if (element.startsWith('did:ethr'))
-      //   type = SignatureType.ecdsaRecovery;
-      // else if (element.startsWith('did:key:z6Mk'))
-      //   type = SignatureType.edDsa;
-      // else
-      //   throw Exception('Unknown did -method');
-      // var proof = await _buildProof(
-      //     presentationHash as Uint8List, element, wallet,
-      //     proofOptions: buildProofOptions(
-      //         type: type, verificationMethod: element, challenge: challenge));
-
       var signer = _determineSignerForDid(element);
       proofList.add(await signer.buildProof(presentation, wallet, element,
           challenge: challenge));
-      // proofList.add(proof);
     }
   }
   presentation['proof'] = proofList;
