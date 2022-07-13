@@ -30,10 +30,11 @@ class ProposePresentation extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/present-proof/3.0/propose-presentation',
+            type: DidcommMessages.proposePresentation.value,
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -46,6 +47,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
@@ -54,7 +56,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
-          format: 'dif/presentation-exchange/definitions@v1.0',
+          format: AttachmentFormat.presentationDefinition.value,
           mediaType: 'application/json');
       attachments!.add(attachment);
     }
@@ -62,7 +64,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
 
   ProposePresentation.fromJson(dynamic jsonObject)
       : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/present-proof/3.0/propose-presentation')
+    if (type != DidcommMessages.proposePresentation.value)
       throw Exception('Unsupported type or version');
     goalCode = body['goal_code'];
     comment = body['comment'];
@@ -71,11 +73,11 @@ class ProposePresentation extends DidcommPlaintextMessage {
       presentationDefinition = [];
 
       for (var a in attachments!) {
-        if (a.format == 'dif/presentation-exchange/definitions@v1.0') {
+        if (a.format == AttachmentFormat.presentationDefinition.value) {
           a.data.resolveData();
           presentationDefinition
               .add(PresentationDefinition.fromJson(a.data.json));
-        } else if (a.format == 'hlindy/proof-req@v2.0') {
+        } else if (a.format == AttachmentFormat.indyProofRequest.value) {
           throw UnimplementedError('Indy proof request is not supported');
         } else
           throw Exception('Unknown type');
@@ -107,10 +109,11 @@ class RequestPresentation extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/present-proof/3.0/request-presentation',
+            type: DidcommMessages.requestPresentation.value,
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -123,6 +126,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
@@ -132,7 +136,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
-          format: 'dif/presentation-exchange/definitions@v1.0',
+          format: AttachmentFormat.presentationDefinition.value,
           mediaType: 'application/json');
       attachments!.add(attachment);
     }
@@ -140,7 +144,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
 
   RequestPresentation.fromJson(dynamic jsonObject)
       : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/present-proof/3.0/request-presentation')
+    if (type != DidcommMessages.requestPresentation.value)
       throw Exception('Unsupported type or version');
     goalCode = body['goal_code'];
     comment = body['comment'];
@@ -150,11 +154,11 @@ class RequestPresentation extends DidcommPlaintextMessage {
       presentationDefinition = [];
 
       for (var a in attachments!) {
-        if (a.format == 'dif/presentation-exchange/definitions@v1.0') {
+        if (a.format == AttachmentFormat.presentationDefinition.value) {
           a.data.resolveData();
           presentationDefinition
               .add(PresentationDefinitionWithOptions.fromJson(a.data.json!));
-        } else if (a.format == 'hlindy/proof-req@v2.0') {
+        } else if (a.format == AttachmentFormat.indyProofRequest.value) {
           throw UnimplementedError('Indy proof request is not supported');
         } else
           throw Exception('Unknown type');
@@ -184,10 +188,11 @@ class Presentation extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/present-proof/3.0/presentation',
+            type: DidcommMessages.presentation.value,
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -200,6 +205,7 @@ class Presentation extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
@@ -211,14 +217,14 @@ class Presentation extends DidcommPlaintextMessage {
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
-          format: 'dif/presentation-exchange/submission@v1.0',
+          format: AttachmentFormat.presentationSubmission.value,
           mediaType: 'application/json');
       attachments!.add(attachment);
     }
   }
 
   Presentation.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/present-proof/3.0/presentation')
+    if (type != DidcommMessages.presentation.value)
       throw Exception('Unsupported type or version');
     goalCode = body['goal_code'];
     comment = body['comment'];
@@ -227,14 +233,14 @@ class Presentation extends DidcommPlaintextMessage {
       verifiablePresentation = [];
 
       for (var a in attachments!) {
-        if (a.format == 'dif/presentation-exchange/submission@v1.0') {
+        if (a.format == AttachmentFormat.presentationSubmission.value) {
           a.data.resolveData();
           var tmp = VerifiablePresentation.fromJson(a.data.json);
           if (tmp.presentationSubmission == null)
             throw Exception(
                 'The verifiable Presentation used here must contain a presentation submission');
           verifiablePresentation.add(tmp);
-        } else if (a.format == 'hlindy/proof@v2.0') {
+        } else if (a.format == AttachmentFormat.indyProof.value) {
           throw UnimplementedError('Indy proof request is not supported');
         } else
           throw Exception('Unknown type');

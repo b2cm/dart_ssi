@@ -57,12 +57,109 @@ extension JwsSignatureAlgorithmExt on JwsSignatureAlgorithm {
   String get value => values[this]!;
 }
 
-enum DidcommProtocol { issueCredential, presentProof }
+enum DidcommProtocol { issueCredential, presentProof, discoverFeature }
 
 extension DidcommProtocolsExt on DidcommProtocol {
   static const Map<DidcommProtocol, String> values = {
     DidcommProtocol.issueCredential: 'issue-credential',
-    DidcommProtocol.presentProof: 'present-proof'
+    DidcommProtocol.presentProof: 'present-proof',
+    DidcommProtocol.discoverFeature: 'discover-features'
+  };
+  String get value => values[this]!;
+}
+
+enum DidcommMessages {
+  proposeCredential,
+  offerCredential,
+  requestCredential,
+  issueCredential,
+  previewCredential,
+  emptyMessage,
+  presentation,
+  requestPresentation,
+  proposePresentation,
+  discoverFeatureQuery,
+  discoverFeatureDisclose,
+  invitation,
+  problemReport
+}
+
+extension DidcommMessagesExt on DidcommMessages {
+  static const Map<DidcommMessages, String> values = {
+    DidcommMessages.proposeCredential:
+        'https://didcomm.org/issue-credential/3.0/propose-credential',
+    DidcommMessages.offerCredential:
+        'https://didcomm.org/issue-credential/3.0/offer-credential',
+    DidcommMessages.requestCredential:
+        'https://didcomm.org/issue-credential/3.0/request-credential',
+    DidcommMessages.issueCredential:
+        'https://didcomm.org/issue-credential/3.0/issue-credential',
+    DidcommMessages.previewCredential:
+        'https://didcomm.org/issue-credential/3.0/credential-preview',
+    DidcommMessages.emptyMessage: 'https://didcomm.org/empty/1.0',
+    DidcommMessages.presentation:
+        'https://didcomm.org/present-proof/3.0/presentation',
+    DidcommMessages.requestPresentation:
+        'https://didcomm.org/present-proof/3.0/request-presentation',
+    DidcommMessages.proposePresentation:
+        'https://didcomm.org/present-proof/3.0/propose-presentation',
+    DidcommMessages.discoverFeatureQuery:
+        'https://didcomm.org/discover-features/2.0/queries',
+    DidcommMessages.discoverFeatureDisclose:
+        'https://didcomm.org/discover-features/1.0/disclose',
+    DidcommMessages.invitation:
+        'https://didcomm.org/out-of-band/2.0/invitation',
+    DidcommMessages.problemReport:
+        'https://didcomm.org/report-problem/2.0/problem-report'
+  };
+  String get value => values[this]!;
+  List<String> get allValues => values.values.toList();
+}
+
+enum AttachmentFormat {
+  presentationDefinition,
+  presentationDefinition2,
+  presentationSubmission,
+  ldProofVc,
+  ldProofVcDetail,
+  credentialManifest,
+  indyProofRequest,
+  indyProof,
+  indyCredential,
+  indyCredentialRequest,
+  indyCredentialAbstract,
+  indyCredentialFilter
+}
+
+extension AttachmentFormatExt on AttachmentFormat {
+  static const Map<AttachmentFormat, String> values = {
+    AttachmentFormat.presentationDefinition:
+        'dif/presentation-exchange/definitions@v1.0',
+    AttachmentFormat.presentationDefinition2:
+        'dif/presentation-exchange/definitions@v2.0',
+    AttachmentFormat.presentationSubmission:
+        'dif/presentation-exchange/submission@v1.0',
+    AttachmentFormat.ldProofVc: 'aries/ld-proof-vc@v1.0',
+    AttachmentFormat.ldProofVcDetail: 'aries/ld-proof-vc-detail@v1.0',
+    AttachmentFormat.credentialManifest: 'dif/credential-manifest@v1.0',
+    AttachmentFormat.indyProofRequest: 'hlindy/proof-req@v2.0',
+    AttachmentFormat.indyProof: 'hlindy/proof@v2.0',
+    AttachmentFormat.indyCredential: 'hlindy/cred@v2.0',
+    AttachmentFormat.indyCredentialRequest: 'hlindy/cred-req@v2.0',
+    AttachmentFormat.indyCredentialAbstract: 'hlindy/cred-abstract@v2.0',
+    AttachmentFormat.indyCredentialFilter: 'hlindy/cred-filter@v2.0'
+  };
+  String get value => values[this]!;
+  List<String> get allValues => values.values.toList();
+}
+
+enum AcknowledgeStatus { ok, fail, pending }
+
+extension AcknowledgeStatusExt on AcknowledgeStatus {
+  static const Map<AcknowledgeStatus, String> values = {
+    AcknowledgeStatus.ok: 'OK',
+    AcknowledgeStatus.pending: 'PENDING',
+    AcknowledgeStatus.fail: 'FAIL'
   };
   String get value => values[this]!;
 }

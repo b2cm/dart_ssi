@@ -860,6 +860,8 @@ class WalletStore {
       protocol = DidcommProtocol.issueCredential;
     else if (message.type.contains('present-proof'))
       protocol = DidcommProtocol.presentProof;
+    else if (message.type.contains('discover-features'))
+      protocol = DidcommProtocol.discoverFeature;
     else
       throw Exception('unsupported Protocol');
 

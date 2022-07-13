@@ -12,7 +12,7 @@ class QueryMessage extends DidcommPlaintextMessage {
 
   QueryMessage(
       {String? id,
-      required String parentThreadId,
+      String? parentThreadId,
       List<String>? ack,
       required this.queries,
       String? replyUrl,
@@ -25,10 +25,11 @@ class QueryMessage extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/discover-features/2.0/queries',
+            type: DidcommMessages.discoverFeatureQuery.value,
             body: {},
             parentThreadId: parentThreadId,
             threadId: threadId,
@@ -42,6 +43,7 @@ class QueryMessage extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             replyTo: replyTo,
             to: to,
+            webRedirect: webRedirect,
             typ: typ) {
     List<Map<String, dynamic>> q = [];
     for (var query in queries) {
@@ -51,7 +53,7 @@ class QueryMessage extends DidcommPlaintextMessage {
   }
 
   QueryMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/discover-features/2.0/queries')
+    if (type != DidcommMessages.discoverFeatureQuery.value)
       throw Exception('Wrong message type');
     if (body.containsKey('queries')) {
       var q = body['queries'] as List;
@@ -69,7 +71,7 @@ class DiscloseMessage extends DidcommPlaintextMessage {
 
   DiscloseMessage(
       {String? id,
-      required String parentThreadId,
+      String? parentThreadId,
       List<String>? ack,
       required this.disclosures,
       String? replyUrl,
@@ -82,10 +84,11 @@ class DiscloseMessage extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/discover-features/1.0/disclose',
+            type: DidcommMessages.discoverFeatureDisclose.value,
             body: {},
             parentThreadId: parentThreadId,
             threadId: threadId,
@@ -99,6 +102,7 @@ class DiscloseMessage extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             replyTo: replyTo,
             to: to,
+            webRedirect: webRedirect,
             typ: typ) {
     List<Map<String, dynamic>> d = [];
     for (var dis in disclosures) {
@@ -108,7 +112,7 @@ class DiscloseMessage extends DidcommPlaintextMessage {
   }
 
   DiscloseMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/discover-features/1.0/disclose')
+    if (type != DidcommMessages.discoverFeatureDisclose.value)
       throw Exception('Wrong message type');
     if (body.containsKey('disclosures')) {
       var d = body['disclosures'] as List;

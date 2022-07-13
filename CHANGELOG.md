@@ -1,3 +1,7 @@
+## 0.3.3
+- bugfixes
+- add web_redirect header
+
 ## 0.3.2
 - bugfixes and improvements
 - update dev-dependencies

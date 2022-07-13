@@ -21,10 +21,11 @@ class EmptyMessage extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       DidcommMessageTyp? typ,
+      WebRedirect? webRedirect,
       List<String>? ack})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/empty/1.0',
+            type: DidcommMessages.emptyMessage.value,
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -38,10 +39,11 @@ class EmptyMessage extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             typ: typ,
+            webRedirect: webRedirect,
             ack: ack);
 
   EmptyMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/empty/1.0')
+    if (type != DidcommMessages.emptyMessage.value)
       throw Exception('Wrong message type');
     if (body.length > 0) throw Exception('this message is not empty');
   }
@@ -71,10 +73,11 @@ class ProblemReport extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
-      DidcommMessageTyp? typ})
+      DidcommMessageTyp? typ,
+      WebRedirect? webRedirect})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/report-problem/2.0/problem-report',
+            type: DidcommMessages.problemReport.value,
             body: {},
             parentThreadId: parentThreadId,
             ack: ack,
@@ -88,6 +91,7 @@ class ProblemReport extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ) {
     body['code'] = code;
     if (comment != null) body['comment'] = comment;
@@ -96,7 +100,7 @@ class ProblemReport extends DidcommPlaintextMessage {
   }
 
   ProblemReport.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/report-problem/2.0/problem-report')
+    if (type != DidcommMessages.problemReport.value)
       throw Exception('Wrong message type');
     if (body.containsKey('code'))
       code = body['code'];
@@ -151,25 +155,26 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
-      DidcommMessageTyp? typ})
+      DidcommMessageTyp? typ,
+      WebRedirect? webRedirect})
       : super(
-          id: id ?? Uuid().v4(),
-          type: 'https://didcomm.org/out-of-band/2.0/invitation',
-          body: {},
-          typ: DidcommMessageTyp.plain,
-          from: from,
-          attachments: attachments,
-          replyUrl: replyUrl,
-          replyTo: replyTo,
-          threadId: threadId,
-          parentThreadId: parentThreadId,
-          to: to,
-          createdTime: createdTime,
-          expiresTime: expiresTime,
-          pleaseAck: pleaseAck,
-          fromPrior: fromPrior,
-          additionalHeaders: additionalHeaders,
-        ) {
+            id: id ?? Uuid().v4(),
+            type: DidcommMessages.invitation.value,
+            body: {},
+            typ: DidcommMessageTyp.plain,
+            from: from,
+            attachments: attachments,
+            replyUrl: replyUrl,
+            replyTo: replyTo,
+            threadId: threadId,
+            parentThreadId: parentThreadId,
+            to: to,
+            createdTime: createdTime,
+            expiresTime: expiresTime,
+            pleaseAck: pleaseAck,
+            fromPrior: fromPrior,
+            additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect) {
     if (goal != null) body['goal'] = goal;
     if (goalCode != null) body['goal_code'] = goalCode;
     List<String> tmp = [];
@@ -178,7 +183,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
   }
 
   OutOfBandMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/out-of-band/2.0/invitation')
+    if (type != DidcommMessages.invitation.value)
       throw Exception('Wrong message type');
     if (from == null) throw FormatException('from property needed');
     if (typ != null && typ != DidcommMessageTyp.plain)

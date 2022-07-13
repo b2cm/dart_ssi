@@ -1,6 +1,6 @@
 name: dart_ssi
 description: Dart Package for SSI Wallet
-version: 0.3.2
+version: 0.3.3
 homepage: https://credentials.hs-mittweida.de
 
 environment:

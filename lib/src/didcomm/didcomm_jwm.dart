@@ -26,6 +26,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
   List<String>? ack;
   String? replyUrl;
   List<String>? replyTo;
+  WebRedirect? webRedirect;
 
   DidcommPlaintextMessage(
       {required this.id,
@@ -44,6 +45,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       this.attachments,
       bool pleaseAck = false,
       this.ack,
+      this.webRedirect,
       this.additionalHeaders}) {
     if (pleaseAck) this.pleaseAck = ['receipt'];
     this.threadId = threadId ?? id;
@@ -113,6 +115,10 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       pleaseAck = decoded['please_ack'].cast<String>();
     if (decoded.containsKey('ack')) ack = decoded['ack'].cast<String>();
 
+    if (decoded.containsKey('web_redirect')) {
+      webRedirect = WebRedirect.fromJson(decoded['web_redirect']);
+    }
+
     decoded.remove('to');
     decoded.remove('from');
     decoded.remove('id');
@@ -129,6 +135,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
     decoded.remove('please_ack');
     decoded.remove('reply_to');
     decoded.remove('reply_url');
+    decoded.remove('web_redirect');
     if (decoded.length > 0) additionalHeaders = decoded;
   }
 
@@ -366,5 +373,48 @@ class FromPriorJWT {
   //TODO: Method to build this header
   String build() {
     return '';
+  }
+}
+
+class WebRedirect implements JsonObject {
+  late String redirectUrl;
+  late AcknowledgeStatus status;
+
+  WebRedirect({required this.redirectUrl, required this.status});
+
+  WebRedirect.fromJson(dynamic jsonObject) {
+    Map<String, dynamic> json = credentialToMap(jsonObject);
+    if (json.containsKey('status')) {
+      String s = json['status'];
+      switch (s) {
+        case 'FAIL':
+          status = AcknowledgeStatus.fail;
+          break;
+        case 'OK':
+          status = AcknowledgeStatus.ok;
+          break;
+        case 'PENDING':
+          status = AcknowledgeStatus.pending;
+          break;
+        default:
+          throw Exception('Unknown Status');
+      }
+    } else {
+      throw Exception('status attribute is needed');
+    }
+
+    if (json.containsKey('redirectUrl')) {
+      redirectUrl = json['redirectUrl'];
+    } else {
+      throw Exception('redirectUrl is needed');
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'status': status.value, 'redirectUrl': redirectUrl};
+  }
+
+  String toString() {
+    return jsonEncode(toJson());
   }
 }

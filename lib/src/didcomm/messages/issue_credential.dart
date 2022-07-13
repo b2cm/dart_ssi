@@ -31,9 +31,10 @@ class ProposeCredential extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
-            type: 'https://didcomm.org/issue-credential/3.0/propose-credential',
+            type: DidcommMessages.proposeCredential.value,
             id: id ?? Uuid().v4(),
             body: {},
             replyUrl: replyUrl,
@@ -47,6 +48,7 @@ class ProposeCredential extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -58,14 +60,14 @@ class ProposeCredential extends DidcommPlaintextMessage {
         attachments!.add(Attachment(
             data: AttachmentData(json: a.toJson()),
             id: Uuid().v4(),
-            format: 'aries/ld-proof-vc-detail@v1.0',
+            format: AttachmentFormat.ldProofVcDetail.value,
             mediaType: 'application/json'));
       }
     }
   }
 
   ProposeCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/issue-credential/3.0/propose-credential')
+    if (type != DidcommMessages.proposeCredential.value)
       throw Exception('Unknown Message type or version');
     goalCode = body['goal_code'];
     comment = body['comment'];
@@ -75,16 +77,18 @@ class ProposeCredential extends DidcommPlaintextMessage {
     if (attachments != null && attachments!.length > 0) {
       detail = [];
       for (var a in attachments!) {
-        if (a.format != null && a.format == 'aries/ld-proof-vc-detail@v1.0') {
+        if (a.format != null &&
+            a.format == AttachmentFormat.ldProofVcDetail.value) {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             detail!.add(LdProofVcDetail.fromJson(a.data.json!));
           }
         } else if (a.format != null &&
-            a.format == 'dif/credential-manifest@v1.0') {
+            a.format == AttachmentFormat.credentialManifest.value) {
           throw UnimplementedError(
               'dif credential Manifest Attachment is not supported yet');
-        } else if (a.format != null && a.format == 'hlindy/cred-filter@v2.0') {
+        } else if (a.format != null &&
+            a.format == AttachmentFormat.indyCredentialFilter.value) {
           throw UnimplementedError('indy Attachment is not supported');
         } else
           throw Exception('Unknown Attachment Format');
@@ -118,9 +122,10 @@ class OfferCredential extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
-            type: 'https://didcomm.org/issue-credential/3.0/offer-credential',
+            type: DidcommMessages.offerCredential.value,
             id: id ?? Uuid().v4(),
             body: {},
             replyUrl: replyUrl,
@@ -134,6 +139,7 @@ class OfferCredential extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -146,14 +152,14 @@ class OfferCredential extends DidcommPlaintextMessage {
         attachments!.add(Attachment(
             data: AttachmentData(json: a.toJson()),
             id: Uuid().v4(),
-            format: 'aries/ld-proof-vc-detail@v1.0',
+            format: AttachmentFormat.ldProofVcDetail.value,
             mediaType: 'application/json'));
       }
     }
   }
 
   OfferCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/issue-credential/3.0/offer-credential')
+    if (type != DidcommMessages.offerCredential.value)
       throw Exception('Unknown Message type or version');
     goalCode = body['goal_code'];
     comment = body['comment'];
@@ -164,17 +170,18 @@ class OfferCredential extends DidcommPlaintextMessage {
     if (attachments != null && attachments!.length > 0) {
       detail = [];
       for (var a in attachments!) {
-        if (a.format != null && a.format == 'aries/ld-proof-vc-detail@v1.0') {
+        if (a.format != null &&
+            a.format == AttachmentFormat.ldProofVcDetail.value) {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             detail!.add(LdProofVcDetail.fromJson(a.data.json!));
           }
         } else if (a.format != null &&
-            a.format == 'dif/credential-manifest@v1.0') {
+            a.format == AttachmentFormat.credentialManifest.value) {
           throw UnimplementedError(
               'dif credential Manifest Attachment is not supported yet');
         } else if (a.format != null &&
-            a.format == 'hlindy/cred-abstract@v2.0') {
+            a.format == AttachmentFormat.indyCredentialAbstract.value) {
           throw UnimplementedError('indy Attachment is not supported');
         } else
           throw Exception('Unknown Attachment Format');
@@ -204,9 +211,10 @@ class RequestCredential extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
-            type: 'https://didcomm.org/issue-credential/3.0/request-credential',
+            type: DidcommMessages.requestCredential.value,
             id: id ?? Uuid().v4(),
             body: {},
             replyUrl: replyUrl,
@@ -220,6 +228,7 @@ class RequestCredential extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -229,21 +238,22 @@ class RequestCredential extends DidcommPlaintextMessage {
         attachments!.add(Attachment(
             data: AttachmentData(json: a.toJson()),
             id: Uuid().v4(),
-            format: 'aries/ld-proof-vc-detail@v1.0',
+            format: AttachmentFormat.ldProofVcDetail.value,
             mediaType: 'application/json'));
       }
     }
   }
 
   RequestCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/issue-credential/3.0/request-credential')
+    if (type != DidcommMessages.requestCredential.value)
       throw Exception('Unknown Message type or version');
     goalCode = body['goal_code'];
     comment = body['comment'];
     if (attachments != null && attachments!.length > 0) {
       detail = [];
       for (var a in attachments!) {
-        if (a.format != null && a.format == 'aries/ld-proof-vc-detail@v1.0') {
+        if (a.format != null &&
+            a.format == AttachmentFormat.ldProofVcDetail.value) {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             detail!.add(LdProofVcDetail.fromJson(a.data.json!));
@@ -252,7 +262,8 @@ class RequestCredential extends DidcommPlaintextMessage {
             a.format == 'dif/credential-manifest@v1.0') {
           throw UnimplementedError(
               'dif credential Manifest Attachment is not supported yet');
-        } else if (a.format != null && a.format == 'hlindy/cred-req@v2.0') {
+        } else if (a.format != null &&
+            a.format == AttachmentFormat.indyCredentialRequest.value) {
           throw UnimplementedError('indy Attachment is not supported');
         } else
           throw Exception('Unknown Attachment Format');
@@ -284,9 +295,10 @@ class IssueCredential extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
-            type: 'https://didcomm.org/issue-credential/3.0/issue-credential',
+            type: DidcommMessages.issueCredential.value,
             id: id ?? Uuid().v4(),
             body: {},
             replyUrl: replyUrl,
@@ -300,6 +312,7 @@ class IssueCredential extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -310,14 +323,14 @@ class IssueCredential extends DidcommPlaintextMessage {
         attachments!.add(Attachment(
             data: AttachmentData(json: a.toJson()),
             id: Uuid().v4(),
-            format: 'aries/ld-proof-vc@v1.0',
+            format: AttachmentFormat.ldProofVc.value,
             mediaType: 'application/json'));
       }
     }
   }
 
   IssueCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/issue-credential/3.0/issue-credential')
+    if (type != DidcommMessages.issueCredential.value)
       throw Exception('Unknown Message type or version');
     goalCode = body['goal_code'];
     comment = body['comment'];
@@ -325,12 +338,13 @@ class IssueCredential extends DidcommPlaintextMessage {
     if (attachments != null && attachments!.length > 0) {
       credentials = [];
       for (var a in attachments!) {
-        if (a.format != null && a.format == 'aries/ld-proof-vc@v1.0') {
+        if (a.format != null && a.format == AttachmentFormat.ldProofVc.value) {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             credentials!.add(VerifiableCredential.fromJson(a.data.json!));
           }
-        } else if (a.format != null && a.format == 'hlindy/cred@v2.0') {
+        } else if (a.format != null &&
+            a.format == AttachmentFormat.indyCredential.value) {
           throw UnimplementedError('indy Attachment is not supported');
         } else
           throw Exception('Unknown Attachment Format');
@@ -356,10 +370,11 @@ class PreviewCredential extends DidcommPlaintextMessage {
       bool pleaseAck = false,
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
+      WebRedirect? webRedirect,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: 'https://didcomm.org/issue-credential/3.0/credential-preview',
+            type: DidcommMessages.previewCredential.value,
             body: {'attributes': attributes},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -372,12 +387,13 @@ class PreviewCredential extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
+            webRedirect: webRedirect,
             typ: typ);
 
   PreviewCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
     if (type ==
             'https://didcomm.org/issue-credential/3.0/credential-credential' ||
-        type == 'https://didcomm.org/issue-credential/3.0/credential-preview') {
+        type == DidcommMessages.previewCredential.value) {
       if (body.containsKey('attributes')) {
         List tmp = body['attributes'];
         attributes = [];
