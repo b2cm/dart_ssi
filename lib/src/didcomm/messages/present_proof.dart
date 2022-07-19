@@ -12,11 +12,11 @@ import '../types.dart';
 class ProposePresentation extends DidcommPlaintextMessage {
   String? goalCode;
   String? comment;
-  late List<PresentationDefinition> presentationDefinition;
+  List<PresentationDefinition>? presentationDefinition;
 
   ProposePresentation(
       {String? id,
-      required this.presentationDefinition,
+      this.presentationDefinition,
       this.goalCode,
       this.comment,
       String? replyUrl,
@@ -52,13 +52,15 @@ class ProposePresentation extends DidcommPlaintextMessage {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     attachments = [];
-    for (var d in presentationDefinition) {
-      var attachment = Attachment(
-          data: AttachmentData(json: d.toJson()),
-          id: Uuid().v4(),
-          format: AttachmentFormat.presentationDefinition.value,
-          mediaType: 'application/json');
-      attachments!.add(attachment);
+    if (presentationDefinition != null) {
+      for (var d in presentationDefinition!) {
+        var attachment = Attachment(
+            data: AttachmentData(json: d.toJson()),
+            id: Uuid().v4(),
+            format: AttachmentFormat.presentationDefinition.value,
+            mediaType: 'application/json');
+        attachments!.add(attachment);
+      }
     }
   }
 
@@ -75,7 +77,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
       for (var a in attachments!) {
         if (a.format == AttachmentFormat.presentationDefinition.value) {
           a.data.resolveData();
-          presentationDefinition
+          presentationDefinition!
               .add(PresentationDefinition.fromJson(a.data.json));
         } else if (a.format == AttachmentFormat.indyProofRequest.value) {
           throw UnimplementedError('Indy proof request is not supported');
@@ -243,7 +245,7 @@ class Presentation extends DidcommPlaintextMessage {
         } else if (a.format == AttachmentFormat.indyProof.value) {
           throw UnimplementedError('Indy proof request is not supported');
         } else
-          throw Exception('Unknown type');
+          throw Exception('Unknown type: ${a.format}');
       }
     }
   }
