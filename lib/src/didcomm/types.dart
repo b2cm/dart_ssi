@@ -1,4 +1,4 @@
-import 'package:dart_ssi/src/util/types.dart';
+import '../util/types.dart';
 
 enum DidcommProfiles { aip1, rfc19, rfc587, v2 }
 
@@ -122,7 +122,10 @@ enum AttachmentFormat {
   presentationSubmission,
   ldProofVc,
   ldProofVcDetail,
+  credentialManifestAries,
   credentialManifest,
+  credentialFulfillment,
+  credentialApplication,
   indyProofRequest,
   indyProof,
   indyCredential,
@@ -141,7 +144,13 @@ extension AttachmentFormatExt on AttachmentFormat {
         'dif/presentation-exchange/submission@v1.0',
     AttachmentFormat.ldProofVc: 'aries/ld-proof-vc@v1.0',
     AttachmentFormat.ldProofVcDetail: 'aries/ld-proof-vc-detail@v1.0',
-    AttachmentFormat.credentialManifest: 'dif/credential-manifest@v1.0',
+    AttachmentFormat.credentialManifestAries: 'dif/credential-manifest@v1.0',
+    AttachmentFormat.credentialManifest:
+        'dif/credential-manifest/manifest@v1.0',
+    AttachmentFormat.credentialFulfillment:
+        'dif/credential-manifest/fulfillment@v1.0',
+    AttachmentFormat.credentialApplication:
+        'dif/credential-manifest/application@v1.0',
     AttachmentFormat.indyProofRequest: 'hlindy/proof-req@v2.0',
     AttachmentFormat.indyProof: 'hlindy/proof@v2.0',
     AttachmentFormat.indyCredential: 'hlindy/cred@v2.0',

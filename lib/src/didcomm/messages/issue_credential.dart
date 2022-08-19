@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
 
+import '../../credentials/credential_manifest.dart';
 import '../../credentials/verifiable_credential.dart';
 import '../../util/types.dart';
 import '../../util/utils.dart';
@@ -84,7 +85,7 @@ class ProposeCredential extends DidcommPlaintextMessage {
             detail!.add(LdProofVcDetail.fromJson(a.data.json!));
           }
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialManifest.value) {
+            a.format == AttachmentFormat.credentialManifestAries.value) {
           throw UnimplementedError(
               'dif credential Manifest Attachment is not supported yet');
         } else if (a.format != null &&
@@ -103,6 +104,8 @@ class OfferCredential extends DidcommPlaintextMessage {
   String? replacementId;
   PreviewCredential? credentialPreview;
   List<LdProofVcDetail>? detail;
+  CredentialManifest? credentialManifest;
+  VerifiablePresentation? fulfillment;
 
   OfferCredential(
       {String? id,
@@ -111,6 +114,8 @@ class OfferCredential extends DidcommPlaintextMessage {
       this.comment,
       this.credentialPreview,
       this.detail,
+      this.credentialManifest,
+      this.fulfillment,
       String? replyUrl,
       List<String>? replyTo,
       String? parentThreadId,
@@ -156,6 +161,23 @@ class OfferCredential extends DidcommPlaintextMessage {
             mediaType: 'application/json'));
       }
     }
+    if (credentialManifest != null) {
+      attachments ??= [];
+      attachments!.add(Attachment(
+          data: AttachmentData(json: credentialManifest!.toJson()),
+          id: Uuid().v4(),
+          format: AttachmentFormat.credentialManifest.value,
+          mediaType: 'application/json'));
+    }
+
+    if (fulfillment != null) {
+      attachments ??= [];
+      attachments!.add(Attachment(
+          data: AttachmentData(json: fulfillment!.toJson()),
+          id: Uuid().v4(),
+          format: AttachmentFormat.credentialFulfillment.value,
+          mediaType: 'application/json'));
+    }
   }
 
   OfferCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
@@ -177,9 +199,19 @@ class OfferCredential extends DidcommPlaintextMessage {
             detail!.add(LdProofVcDetail.fromJson(a.data.json!));
           }
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialManifest.value) {
+            a.format == AttachmentFormat.credentialManifestAries.value) {
           throw UnimplementedError(
-              'dif credential Manifest Attachment is not supported yet');
+              'dif credential Manifest Attachment as specified in Aries RFC 0511 is not supported yet');
+        } else if (a.format != null &&
+            a.format == AttachmentFormat.credentialManifest) {
+          credentialManifest = CredentialManifest.fromJson(a.data.json);
+        } else if (a.format != null &&
+            a.format == AttachmentFormat.credentialFulfillment) {
+          fulfillment = VerifiablePresentation.fromJson(a.data.json);
+          if (fulfillment?.credentialFulfillment == null) {
+            throw Exception(
+                'the presentation used here must contain a credential fulfillment');
+          }
         } else if (a.format != null &&
             a.format == AttachmentFormat.indyCredentialAbstract.value) {
           throw UnimplementedError('indy Attachment is not supported');
@@ -194,12 +226,14 @@ class RequestCredential extends DidcommPlaintextMessage {
   String? goalCode;
   String? comment;
   List<LdProofVcDetail>? detail;
+  VerifiablePresentation? credentialApplication;
 
   RequestCredential(
       {String? id,
       this.goalCode,
       this.comment,
       this.detail,
+      this.credentialApplication,
       String? replyUrl,
       List<String>? replyTo,
       String? parentThreadId,
@@ -242,6 +276,14 @@ class RequestCredential extends DidcommPlaintextMessage {
             mediaType: 'application/json'));
       }
     }
+    if (credentialApplication != null) {
+      attachments ??= [];
+      attachments!.add(Attachment(
+          data: AttachmentData(json: credentialApplication!.toJson()),
+          id: Uuid().v4(),
+          format: AttachmentFormat.credentialApplication.value,
+          mediaType: 'application/json'));
+    }
   }
 
   RequestCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
@@ -261,7 +303,10 @@ class RequestCredential extends DidcommPlaintextMessage {
         } else if (a.format != null &&
             a.format == 'dif/credential-manifest@v1.0') {
           throw UnimplementedError(
-              'dif credential Manifest Attachment is not supported yet');
+              'dif credential Manifest Attachment as described in Aries RFC 511 is not supported yet');
+        } else if (a.format != null &&
+            a.format == AttachmentFormat.credentialApplication.value) {
+          credentialApplication = VerifiablePresentation.fromJson(a.data.json);
         } else if (a.format != null &&
             a.format == AttachmentFormat.indyCredentialRequest.value) {
           throw UnimplementedError('indy Attachment is not supported');
@@ -277,6 +322,7 @@ class IssueCredential extends DidcommPlaintextMessage {
   String? replacementId;
   String? comment;
   List<VerifiableCredential>? credentials;
+  VerifiablePresentation? credentialFulfillment;
 
   IssueCredential(
       {String? id,
@@ -284,6 +330,7 @@ class IssueCredential extends DidcommPlaintextMessage {
       this.comment,
       this.replacementId,
       this.credentials,
+      this.credentialFulfillment,
       String? replyUrl,
       List<String>? replyTo,
       String? parentThreadId,
@@ -327,6 +374,14 @@ class IssueCredential extends DidcommPlaintextMessage {
             mediaType: 'application/json'));
       }
     }
+    if (credentialFulfillment != null) {
+      attachments ??= [];
+      attachments!.add(Attachment(
+          data: AttachmentData(json: credentialFulfillment!.toJson()),
+          id: Uuid().v4(),
+          format: AttachmentFormat.credentialFulfillment.value,
+          mediaType: 'application/json'));
+    }
   }
 
   IssueCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
@@ -343,6 +398,9 @@ class IssueCredential extends DidcommPlaintextMessage {
             a.data.resolveData();
             credentials!.add(VerifiableCredential.fromJson(a.data.json!));
           }
+        } else if (a.format != null &&
+            a.format == AttachmentFormat.credentialFulfillment.value) {
+          credentialFulfillment = VerifiablePresentation.fromJson(a.data.json);
         } else if (a.format != null &&
             a.format == AttachmentFormat.indyCredential.value) {
           throw UnimplementedError('indy Attachment is not supported');

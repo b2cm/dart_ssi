@@ -1,3 +1,7 @@
+## 0.3.4
+- add support for credential manifest
+- Update README.md (Links to further examples)
+
 ## 0.3.3
 - bugfixes
 - add web_redirect header

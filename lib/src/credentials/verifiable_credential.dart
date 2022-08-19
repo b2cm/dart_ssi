@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:dart_ssi/src/credentials/presentation_exchange.dart';
-
 import '../util/types.dart';
 import '../util/utils.dart';
+import 'credential_manifest.dart';
+import 'presentation_exchange.dart';
 
 class VerifiableCredential implements JsonObject {
   late List<String> context;
@@ -236,6 +236,8 @@ class VerifiablePresentation implements JsonObject {
   String? holder;
   List<LinkedDataProof>? proof;
   PresentationSubmission? presentationSubmission;
+  CredentialFulfillment? credentialFulfillment;
+  CredentialApplication? credentialApplication;
   Map<String, dynamic>? _originalDoc;
 
   VerifiablePresentation(
@@ -245,7 +247,9 @@ class VerifiablePresentation implements JsonObject {
       this.id,
       this.holder,
       this.proof,
-      this.presentationSubmission});
+      this.presentationSubmission,
+      this.credentialFulfillment,
+      this.credentialApplication});
 
   VerifiablePresentation.fromJson(dynamic jsonObject) {
     var presentation = credentialToMap(jsonObject);
@@ -283,6 +287,16 @@ class VerifiablePresentation implements JsonObject {
       presentationSubmission = PresentationSubmission.fromJson(tmp);
     }
 
+    if (presentation.containsKey('credential_fulfillment')) {
+      credentialFulfillment = CredentialFulfillment.fromJson(
+          presentation['credential_fulfillment']);
+    }
+
+    if (presentation.containsKey('credential_application')) {
+      credentialApplication = CredentialApplication.fromJson(
+          presentation['credential_application']);
+    }
+
     _originalDoc = presentation;
   }
 
@@ -299,6 +313,12 @@ class VerifiablePresentation implements JsonObject {
     if (holder != null) jsonObject['holder'] = holder;
     if (presentationSubmission != null) {
       jsonObject['presentation_submission'] = presentationSubmission!.toJson();
+    }
+    if (credentialFulfillment != null) {
+      jsonObject['credential_fulfillment'] = credentialFulfillment!.toJson();
+    }
+    if (credentialApplication != null) {
+      jsonObject['credential_application'] = credentialApplication!.toJson();
     }
     if (proof != null) {
       tmp = [];

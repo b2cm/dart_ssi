@@ -139,6 +139,12 @@ A full example for issuing a credential and requesting a presentation using didc
     - `statuses` property
     - `predicate` property
 - there are not many tests 
+
+## More Examples
+With this library it is on the one hand side possible to build a mobile wallet application and on the other hand side to build agent software running on a server (e.g. for issuing credentials).
+For both there are small examples:
+- [wallet](https://github.com/b2cm/id_ideal_wallet)
+- [server software](https://github.com/b2cm/didcomm_examples)
     
 
 
