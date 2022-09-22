@@ -436,7 +436,7 @@ class ServiceEndpoint implements JsonObject {
 
 /// Resolves the Did-Document for [did].
 ///
-/// Resolving if did:key cann be done internally, for all other did-methods an URL [resolverAddress] to an instance of a universal resolver is needed.
+/// Resolving if did:key can be done internally, for all other did-methods an URL [resolverAddress] to an instance of a universal resolver is needed.
 Future<DidDocument> resolveDidDocument(String did,
     [String? resolverAddress]) async {
   if (did.startsWith('did:key:z6Mk') || did.startsWith('did:key:z6LS'))

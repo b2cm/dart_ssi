@@ -82,7 +82,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
           typ = DidcommMessageTyp.encrypted;
           break;
         default:
-          throw Exception('Unknown typ');
+          throw Exception('Unknown typ field ${typTmp}');
       }
     }
     var tmp = decoded['created_time'];
