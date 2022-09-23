@@ -1,7 +1,7 @@
 name: dart_ssi
 description: Dart Package for SSI Wallet
-version: 0.3.4
-homepage: https://credentials.hs-mittweida.de
+version: 1.0.0
+repository: https://github.com/b2cm/dart_ssi
 
 environment:
   sdk: '>=2.15.0 <3.0.0'
@@ -13,8 +13,8 @@ dependencies:
   dart_web3: ^0.0.3
   crypto: 3.0.2
   uuid: ^3.0.6
-  json_schema2: ^2.0.1+1
-  asn1lib: 1.1.0
+  json_schema2: ^2.0.2
+  asn1lib: ^1.1.0
   crypto_keys: ^0.3.0
   elliptic: ^0.3.7
   x25519: ^0.1.1
@@ -22,6 +22,8 @@ dependencies:
   base_codecs: ^1.0.1
   ed25519_edwards: ^0.3.1
   ed25519_hd_key: ^2.2.0
+  json_ld_processor: ^1.0.0
+
 
 
 dev_dependencies:

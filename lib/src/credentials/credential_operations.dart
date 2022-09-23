@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:dart_ssi/src/credentials/jsonLdContext/document_loader.dart';
 import 'package:dart_web3/credentials.dart';
 import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
+import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
@@ -251,7 +253,10 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
 
 /// Signs a W3C-Standard conform [credentialToSign] with the private key for issuer-did in the credential.
 Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
-    {String? challenge, Signer? signer}) async {
+    {String? challenge,
+    Signer? signer,
+    Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
+        loadDocumentStrict}) async {
   Map<String, dynamic> credential;
   if (credentialToSign is VerifiableCredential)
     credential = credentialToSign.toJson();
@@ -261,26 +266,28 @@ Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
   if (issuerDid == '') {
     throw new Exception('Could not examine IssuerDID');
   }
-  signer ??= _determineSignerForDid(issuerDid);
+  signer ??= _determineSignerForDid(issuerDid, loadDocumentFunction);
   credential['proof'] = await signer.buildProof(credential, wallet, issuerDid,
       challenge: challenge);
   return jsonEncode(credential);
 }
 
-Signer _determineSignerForDid(String did) {
+Signer _determineSignerForDid(String did,
+    Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction) {
   if (did.startsWith('did:key:z6Mk'))
-    return EdDsaSigner();
+    return EdDsaSigner(loadDocumentFunction);
   else if (did.startsWith('did:ethr'))
-    return EcdsaRecoverySignature();
+    return EcdsaRecoverySignature(loadDocumentFunction);
   else
     throw Exception('could not examine signature type');
 }
 
-Signer _determineSignerForType(String type) {
+Signer _determineSignerForType(String type,
+    Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction) {
   if (type == 'Ed25519Signature2020')
-    return EdDsaSigner();
+    return EdDsaSigner(loadDocumentFunction);
   else if (type == 'EcdsaSecp256k1RecoverySignature2020')
-    return EcdsaRecoverySignature();
+    return EcdsaRecoverySignature(loadDocumentFunction);
   else
     throw Exception('could not examine signature type');
 }
@@ -294,8 +301,13 @@ Future<bool> verifyCredential(dynamic credential,
     {Erc1056? erc1056,
     RevocationRegistry? revocationRegistry,
     String? expectedChallenge,
-    Signer Function(String typeMatch) signerSelector =
-        _determineSignerForType}) async {
+    Signer Function(
+            String typeMatch,
+            Function(Uri url, LoadDocumentOptions? options)
+                loadDocumentFunction)
+        signerSelector = _determineSignerForType,
+    Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
+        loadDocumentStrict}) async {
   Map<String, dynamic> credMap;
   if (credential is VerifiableCredential)
     credMap = credential.toJson();
@@ -324,7 +336,7 @@ Future<bool> verifyCredential(dynamic credential,
 
   // verify proof
   Map<String, dynamic> proof = credMap['proof'];
-  var signer = signerSelector.call(proof['type']);
+  var signer = signerSelector.call(proof['type'], loadDocumentFunction);
   credMap.remove('proof');
   var verified =
       signer.verify(proof, credMap, issuerDid, challenge: expectedChallenge);
@@ -344,7 +356,10 @@ class RevokedException implements Exception {
 /// could be given and a proof section for each did is added.
 Future<String> buildPresentation(
     List<dynamic> credentials, WalletStore wallet, String challenge,
-    {List<String>? additionalDids, List<dynamic>? disclosedCredentials}) async {
+    {List<String>? additionalDids,
+    List<dynamic>? disclosedCredentials,
+    Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
+        loadDocumentStrict}) async {
   List<Map<String, dynamic>?> credMapList = [];
   List<String?> holderDids = [];
   PresentationSubmission? submission;
@@ -412,13 +427,13 @@ Future<String> buildPresentation(
   }
   List<Map<String, dynamic>> proofList = [];
   for (var element in holderDids) {
-    var signer = _determineSignerForDid(element!);
+    var signer = _determineSignerForDid(element!, loadDocumentFunction);
     proofList.add(await signer.buildProof(presentation, wallet, element,
         challenge: challenge));
   }
   if (additionalDids != null) {
     for (var element in additionalDids) {
-      var signer = _determineSignerForDid(element);
+      var signer = _determineSignerForDid(element, loadDocumentFunction);
       proofList.add(await signer.buildProof(presentation, wallet, element,
           challenge: challenge));
     }
@@ -434,8 +449,13 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
     {Erc1056? erc1056,
     RevocationRegistry? revocationRegistry,
     Signer? signer,
-    Signer Function(String typeMatch) signerSelector =
-        _determineSignerForType}) async {
+    Signer Function(
+            String typeMatch,
+            Function(Uri url, LoadDocumentOptions? options)
+                loadDocumentFunction)
+        signerSelector = _determineSignerForType,
+    Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
+        loadDocumentStrict}) async {
   // datatype conversion
   var presentationMap;
   if (presentation is VerifiablePresentation)
@@ -467,9 +487,9 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   await Future.forEach(proofs, (dynamic element) async {
     var verifMeth = element['verificationMethod'];
     if (erc1056 != null) verifMeth = await erc1056.identityOwner(verifMeth);
-    var signer = signerSelector.call(element['type']);
+    var signer = signerSelector.call(element['type'], loadDocumentFunction);
     if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
-    if (!signer.verify(element, presentationMap, verifMeth,
+    if (!await signer.verify(element, presentationMap, verifMeth,
         challenge: challenge))
       throw Exception('Proof for $verifMeth could not been verified');
   });

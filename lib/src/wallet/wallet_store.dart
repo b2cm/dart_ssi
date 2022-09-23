@@ -17,6 +17,11 @@ import '../util/private_util.dart';
 import '../util/utils.dart';
 import 'hive_model.dart';
 
+class WalletException implements Exception {
+  String message;
+  WalletException(this.message);
+}
+
 /// A wallet storing credentials and keys permanently using Hive.
 ///
 /// Keys are stored and generated according to BIP32 standard.
@@ -74,30 +79,47 @@ class WalletStore {
       var generator = PBKDF2(hash: sha256);
       var aesKey = generator.generateKey(password, "salt", 1000, 32);
       //only values are encrypted, keys are stored in plaintext
-      _keyBox = await Hive.openBox('keyBox_$_nameExpansion',
-          path: _walletPath, encryptionCipher: HiveAesCipher(aesKey));
-      _credentialBox = await Hive.openBox<Credential>(
-          'credentialBox_$_nameExpansion',
-          path: _walletPath,
-          encryptionCipher: HiveAesCipher(aesKey));
-      _configBox = await Hive.openBox('configBox_$_nameExpansion',
-          path: _walletPath, encryptionCipher: HiveAesCipher(aesKey));
-      _issuingHistory = await Hive.openBox<Credential>(
-          'issuingHistory_$_nameExpansion',
-          path: _walletPath,
-          encryptionCipher: HiveAesCipher(aesKey));
-      _connection = await Hive.openBox<Connection>(
-          'connections_$_nameExpansion',
-          path: _walletPath,
-          encryptionCipher: HiveAesCipher(aesKey));
-      _exchangeHistory = await Hive.openBox<List<dynamic>>(
-          'exchangeHistory_$_nameExpansion',
-          path: _walletPath,
-          encryptionCipher: HiveAesCipher(aesKey));
-      _didcommConversations = await Hive.openBox<DidcommConversation>(
-          'didcommConversations_$_nameExpansion',
-          path: _walletPath,
-          encryptionCipher: HiveAesCipher(aesKey));
+      try {
+        _keyBox = await Hive.openBox('keyBox_$_nameExpansion',
+            path: _walletPath,
+            encryptionCipher: HiveAesCipher(aesKey),
+            crashRecovery: false);
+        _credentialBox = await Hive.openBox<Credential>(
+            'credentialBox_$_nameExpansion',
+            path: _walletPath,
+            encryptionCipher: HiveAesCipher(aesKey),
+            crashRecovery: false);
+        _configBox = await Hive.openBox('configBox_$_nameExpansion',
+            path: _walletPath,
+            encryptionCipher: HiveAesCipher(aesKey),
+            crashRecovery: false);
+        _issuingHistory = await Hive.openBox<Credential>(
+            'issuingHistory_$_nameExpansion',
+            path: _walletPath,
+            encryptionCipher: HiveAesCipher(aesKey),
+            crashRecovery: false);
+        _connection = await Hive.openBox<Connection>(
+            'connections_$_nameExpansion',
+            path: _walletPath,
+            encryptionCipher: HiveAesCipher(aesKey),
+            crashRecovery: false);
+        _exchangeHistory = await Hive.openBox<List<dynamic>>(
+            'exchangeHistory_$_nameExpansion',
+            path: _walletPath,
+            encryptionCipher: HiveAesCipher(aesKey),
+            crashRecovery: false);
+        _didcommConversations = await Hive.openBox<DidcommConversation>(
+            'didcommConversations_$_nameExpansion',
+            path: _walletPath,
+            encryptionCipher: HiveAesCipher(aesKey),
+            crashRecovery: false);
+      } catch (e) {
+        if (e is HiveError && e.message.contains('corrupted')) {
+          throw WalletException('Cant open boxes. Maybe wrong password?');
+        } else {
+          throw e;
+        }
+      }
     } else {
       _keyBox = await Hive.openBox('keyBox_$_nameExpansion', path: _walletPath);
       _credentialBox = await Hive.openBox<Credential>(

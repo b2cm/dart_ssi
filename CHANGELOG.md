@@ -1,3 +1,7 @@
+## 1.0.0
+- **Breaking Change**: all Signatures are now correct JSON-LD Signature because JSON-LD Processor is ready to use
+- fix little wallet bug (wallet was cleared when password was wrong)
+
 ## 0.3.4
 - add support for credential manifest
 - Update README.md (Links to further examples)

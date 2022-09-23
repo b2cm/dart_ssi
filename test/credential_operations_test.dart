@@ -1234,7 +1234,13 @@ void main() async {
         await wallet.initialize();
         await wallet.initializeIssuer();
       }
-      var cred = {'name': 'Max', 'age': 20, 'height': 1.78, 'student': true};
+      var cred = {
+        '@context': 'https://schema.org',
+        'name': 'Max',
+        'age': 20,
+        'height': 1.78,
+        'student': true
+      };
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       w3c = buildW3cCredentialwithHashes(
           plaintext, wallet.getStandardIssuerDid());
@@ -1408,6 +1414,7 @@ void main() async {
       await holder.initialize();
 
       var cred1 = {
+        '@context': 'https://schema.org',
         'name': 'Max Mustermann',
         'address': {
           'postalCode': '09648',
@@ -1415,12 +1422,17 @@ void main() async {
         }
       };
       var cred2 = {
+        '@context': 'https://schema.org',
         'grades': [
           {'course': 'Mathematik', 'grade': 1.0},
           {'course': 'Datenbanken', 'grade': 1.3}
         ]
       };
-      var cred3 = {'verein': 'Laufgruppe Döbeln', 'rolle': 'Mitglied'};
+      var cred3 = {
+        '@context': 'https://schema.org',
+        'verein': 'Laufgruppe Döbeln',
+        'rolle': 'Mitglied'
+      };
 
       didCred1 = await holder.getNextCredentialDID();
       didCred2 = await holder.getNextCredentialDID();
