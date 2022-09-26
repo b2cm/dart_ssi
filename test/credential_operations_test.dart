@@ -4,11 +4,11 @@ import 'dart:io';
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/wallet.dart';
-import 'package:dart_web3/dart_web3.dart';
 import 'package:http/http.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
+import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
@@ -23,12 +23,9 @@ void main() async {
       mnemonic:
           'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
 
-  var ganacheDid5 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/4');
   var ganacheDid6 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/5');
-  var ganacheDid7 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/6');
-  var ganacheDid8 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/7');
   var ganacheDid9 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/8');
-  var ganacheDid10 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/9');
+
   ganacheAccounts.storeCredential('', '', 'm/44\'/60\'/0\'/0/8');
   test('test get issuer did from Credential', () {
     String cred1 = '{"issuer": "did:ethr:123456"}';
@@ -1312,7 +1309,7 @@ void main() async {
 
     group('credential revocation', () {
       test('credential was revoked', () async {
-        var plaintext = {'name': 'Max', 'age': 20};
+        var plaintext = {'@context': 'schema.org', 'name': 'Max', 'age': 20};
         var rev = RevocationRegistry(rpcUrl);
         var revAddress = await rev
             .deploy(await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'));
@@ -1966,7 +1963,7 @@ void main() async {
     });
 
     test('sign a credential', () async {
-      var cred = {'name': 'Max', 'age': 23};
+      var cred = {'@context': 'schema.org', 'name': 'Max', 'age': 23};
       var holderDid = await wallet.getNextCredentialDID();
       var plain = buildPlaintextCredential(cred, holderDid);
       expect(

@@ -1,3 +1,8 @@
+## 1.0.1
+- dependency updates
+- change from dart_web3 to web3dart
+- bugfix
+
 ## 1.0.0
 - **Breaking Change**: all Signatures are now correct JSON-LD Signature because JSON-LD Processor is ready to use
 - fix little wallet bug (wallet was cleared when password was wrong)

@@ -5,11 +5,11 @@ import 'package:base_codecs/base_codecs.dart';
 import 'package:bip32/bip32.dart';
 import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';
-import 'package:dart_web3/credentials.dart';
-import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:ed25519_hd_key/ed25519_hd_key.dart';
 import 'package:hive/hive.dart';
+import 'package:web3dart/credentials.dart';
+import 'package:web3dart/crypto.dart';
 import 'package:x25519/x25519.dart' as x;
 
 import '../../didcomm.dart';

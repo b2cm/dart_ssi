@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:asn1lib/asn1lib.dart';
 import 'package:base_codecs/base_codecs.dart';
-import 'package:dart_web3/crypto.dart';
+import 'package:web3dart/crypto.dart';
 
 import '../credentials/credential_operations.dart';
 

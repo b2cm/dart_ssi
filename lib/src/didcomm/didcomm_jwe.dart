@@ -5,9 +5,9 @@ import 'package:crypto/crypto.dart';
 import 'package:crypto_keys/crypto_keys.dart';
 import 'package:dart_ssi/src/dids/did_document.dart';
 import 'package:dart_ssi/src/wallet/wallet_store.dart';
-import 'package:dart_web3/crypto.dart';
 import 'package:elliptic/ecdh.dart' as ecdh;
 import 'package:elliptic/elliptic.dart' as elliptic;
+import 'package:web3dart/crypto.dart';
 import 'package:x25519/x25519.dart' as x25519;
 
 import '../util/types.dart';

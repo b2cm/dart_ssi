@@ -3,13 +3,13 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:dart_ssi/src/credentials/jsonLdContext/document_loader.dart';
-import 'package:dart_web3/credentials.dart';
-import 'package:dart_web3/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
+import 'package:web3dart/credentials.dart';
+import 'package:web3dart/crypto.dart';
 
 import '../dids/did_document.dart';
 import '../dids/did_ethr.dart';

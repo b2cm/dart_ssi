@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:dart_web3/dart_web3.dart';
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:http/http.dart' as http;
+import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcRopsten =

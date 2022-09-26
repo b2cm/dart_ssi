@@ -6,7 +6,7 @@ import 'credential_manifest.dart';
 import 'presentation_exchange.dart';
 
 class VerifiableCredential implements JsonObject {
-  late List<String> context;
+  late List<dynamic> context;
   String? id;
   late List<String> type;
   dynamic credentialSubject;
@@ -33,7 +33,7 @@ class VerifiableCredential implements JsonObject {
   VerifiableCredential.fromJson(dynamic jsonObject) {
     var credential = credentialToMap(jsonObject);
     if (credential.containsKey('@context'))
-      context = credential['@context'].cast<String>();
+      context = credential['@context'];
     else
       throw FormatException(
           '@context property is needed in verifiable credential');

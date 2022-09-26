@@ -1,6 +1,10 @@
-import 'package:dart_ssi/credentials.dart';
-import 'package:dart_ssi/src/credentials/jsonLdContext/presentation_submission_context.dart';
 import 'package:json_ld_processor/json_ld_processor.dart';
+
+import 'credentials_v1.dart';
+import 'ecdsa_recovery_2020.dart';
+import 'ed25519_Signature.dart';
+import 'presentation_submission_context.dart';
+import 'schema_org.dart';
 
 RemoteDocument loadDocumentStrict(Uri url, LoadDocumentOptions? options) {
   if (url.toString() == CREDENTIALS_V1_IRI) {

@@ -4,16 +4,16 @@ import 'dart:typed_data';
 
 import 'package:base_codecs/base_codecs.dart';
 import 'package:crypto/crypto.dart';
-import 'package:dart_ssi/src/credentials/jsonLdContext/ecdsa_recovery_2020.dart';
-import 'package:dart_ssi/src/credentials/jsonLdContext/ed25519_Signature.dart';
-import 'package:dart_ssi/src/util/utils.dart';
-import 'package:dart_web3/credentials.dart';
-import 'package:dart_web3/crypto.dart' as web3Crypto;
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:json_ld_processor/json_ld_processor.dart';
+import 'package:web3dart/credentials.dart';
+import 'package:web3dart/crypto.dart' as web3Crypto;
 
+import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 import 'credential_operations.dart';
+import 'jsonLdContext/ecdsa_recovery_2020.dart';
+import 'jsonLdContext/ed25519_Signature.dart';
 
 abstract class Signer {
   late String typeName;
