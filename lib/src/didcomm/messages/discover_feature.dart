@@ -53,16 +53,18 @@ class QueryMessage extends DidcommPlaintextMessage {
   }
 
   QueryMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.discoverFeatureQuery.value)
+    if (type != DidcommMessages.discoverFeatureQuery.value) {
       throw Exception('Wrong message type');
+    }
     if (body.containsKey('queries')) {
       var q = body['queries'] as List;
       queries = [];
       for (var query in q) {
         queries.add(Query.fromJson(query));
       }
-    } else
+    } else {
       throw FormatException('queries property is needed in Query Message');
+    }
   }
 }
 
@@ -112,17 +114,19 @@ class DiscloseMessage extends DidcommPlaintextMessage {
   }
 
   DiscloseMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.discoverFeatureDisclose.value)
+    if (type != DidcommMessages.discoverFeatureDisclose.value) {
       throw Exception('Wrong message type');
+    }
     if (body.containsKey('disclosures')) {
       var d = body['disclosures'] as List;
       disclosures = [];
       for (var dis in d) {
         disclosures.add(Disclosure.fromJson(dis));
       }
-    } else
+    } else {
       throw FormatException(
           'disclosures property is needed in Disclosure Message');
+    }
   }
 }
 
@@ -147,13 +151,15 @@ class Query implements JsonObject {
       } else {
         throw Exception('unknown Feature-type');
       }
-    } else
+    } else {
       throw Exception('Property Feature-Type is needed');
+    }
 
     if (decoded.containsKey('match')) {
       match = decoded['match'];
-    } else
+    } else {
       throw Exception('Property match is needed');
+    }
   }
 
   @override
@@ -190,8 +196,9 @@ class Disclosure implements JsonObject {
       } else {
         throw Exception('unknown Feature-type');
       }
-    } else
+    } else {
       throw Exception('Property Feature-Type is needed');
+    }
 
     if (decoded.containsKey('id')) {
       id = decoded['id'];

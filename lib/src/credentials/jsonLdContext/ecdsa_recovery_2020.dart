@@ -1,6 +1,6 @@
-const String ECDSA_RECOVERY_CONTEXT_IRI =
+const String ecdsaRecoveryContextIri =
     'https://w3id.org/security/suites/secp256k1recovery-2020/v2';
-const Map<String, dynamic> ECDSA_RECOVERY_SIGNATURE_2020 = {
+const Map<String, dynamic> ecdsaRecoveryContext = {
   "@context": {
     "id": "@id",
     "type": "@type",

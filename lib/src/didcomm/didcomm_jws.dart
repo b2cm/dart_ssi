@@ -37,19 +37,22 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
           }
         }
       }
-    } else
+    } else {
       throw Exception('payload is needed in jws');
+    }
     if (sig.containsKey('signatures')) {
       List tmp = sig['signatures'];
-      if (tmp.length > 0) {
+      if (tmp.isNotEmpty) {
         signatures = [];
         for (var s in tmp) {
           signatures.add(SignatureObject.fromJson(s));
         }
-      } else
+      } else {
         throw Exception('Empty Signatures');
-    } else
+      }
+    } else {
       throw Exception('signature property is needed in jws');
+    }
   }
 
   DidcommSignedMessage.sign(
@@ -110,8 +113,9 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
       return SignatureObject(
           signature: removePaddingFromBase64(base64UrlEncode(sig)),
           protected: protected);
-    } else
+    } else {
       throw UnimplementedError('Other curves or algorithms are not supported');
+    }
   }
 
   bool verify(Map<String, dynamic> publicKeyJwk) {
@@ -120,9 +124,9 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
     bool valid = true;
     for (var s in signatures) {
       var alg = s.protected!['alg'];
-      if (alg == null)
+      if (alg == null) {
         throw Exception('alg property must be present');
-      else if (alg == JwsSignatureAlgorithm.edDsa.value) {
+      } else if (alg == JwsSignatureAlgorithm.edDsa.value) {
         if (crv != 'Ed25519') throw Exception('wrong curve for algorithm $alg');
         var publicKey =
             ed.PublicKey(base64Decode(addPaddingToBase64(publicKeyJwk['x'])));
@@ -149,8 +153,9 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
                 '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'),
             Signature(base64Decode(addPaddingToBase64(s.signature))));
       } else if (alg == JwsSignatureAlgorithm.es256k.value) {
-        if (crv != 'secp256k1')
+        if (crv != 'secp256k1') {
           throw Exception('wrong curve for algorithm $alg');
+        }
         var pubKey = EcPublicKey(
             xCoordinate: bytesToUnsignedInt(
                 base64Decode(addPaddingToBase64(publicKeyJwk['x']))),
@@ -164,12 +169,14 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
             ascii.encode(
                 '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'),
             Signature(base64Decode(addPaddingToBase64(s.signature))));
-      } else
+      } else {
         throw UnimplementedError('Other signing algorithms are not supported');
+      }
     }
     return valid;
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     jsonObject['payload'] = removePaddingFromBase64(
@@ -182,6 +189,7 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -197,26 +205,31 @@ class SignatureObject implements JsonObject {
 
   SignatureObject.fromJson(dynamic jsonObject) {
     var sig = credentialToMap(jsonObject);
-    if (sig.containsKey('protected'))
+    if (sig.containsKey('protected')) {
       protected = jsonDecode(
           utf8.decode(base64Decode(addPaddingToBase64(sig['protected']!))));
+    }
     header = sig['header'];
-    if (sig.containsKey('signature'))
+    if (sig.containsKey('signature')) {
       signature = sig['signature'];
-    else
+    } else {
       throw Exception('signature value is needed in SignatureObject');
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
-    if (protected != null)
+    if (protected != null) {
       jsonObject['protected'] = removePaddingFromBase64(
           base64UrlEncode(utf8.encode(jsonEncode(protected!))));
+    }
     if (header != null) jsonObject['header'] = header;
     jsonObject['signature'] = signature;
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }

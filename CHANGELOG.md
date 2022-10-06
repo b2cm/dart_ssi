@@ -1,3 +1,7 @@
+## 1.0.2
+- small bug-fixes
+- prepare for publishing (actual linting, etc.)
+
 ## 1.0.1
 - dependency updates
 - change from dart_web3 to web3dart

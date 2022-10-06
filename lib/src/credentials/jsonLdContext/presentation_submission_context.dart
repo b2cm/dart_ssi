@@ -1,6 +1,6 @@
-const String PRESENTATION_SUBMISSION_IRI =
+const String presentationSubmissionContextIri =
     'https://identity.foundation/presentation-exchange/submission/v1/';
-const Map<String, dynamic> PRESENTATION_SUBMISSION_CONTEXT = {
+const Map<String, dynamic> presentationSubmissionContext = {
   "@context": {
     "@version": 1.1,
     "PresentationSubmission": {

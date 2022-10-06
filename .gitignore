@@ -35,6 +35,8 @@
 .lock
 build/
 doc/
+exampleData/
+privateExample/
 
 # Android related
 **/android/**/gradle-wrapper.jar

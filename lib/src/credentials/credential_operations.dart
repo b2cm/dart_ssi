@@ -106,11 +106,12 @@ String buildPlaintextCredential(dynamic credential, String? holderDid,
       if (value is String) {
         if (!types.contains(value)) types.add(value);
       } else if (value is List) {
-        value.forEach((element) {
+        for (var element in value) {
           if (!types.contains(element)) types.add(element);
-        });
-      } else
+        }
+      } else {
         throw Exception('Unsupported datatype for type key');
+      }
       finalCred['type'] = types;
     }
   }
@@ -127,15 +128,16 @@ String buildPlaintextCredential(dynamic credential, String? holderDid,
       finalCred[key] = _hashStringOrNum(value);
     } else if (value is List) {
       List<Map<String, dynamic>?> newValue = [];
-      value.forEach((element) {
-        if (element is String || element is num || element is bool)
+      for (var element in value) {
+        if (element is String || element is num || element is bool) {
           newValue.add(_hashStringOrNum(element));
-        else if (element is Map<String, dynamic>) {
+        } else if (element is Map<String, dynamic>) {
           newValue.add(jsonDecode(
               buildPlaintextCredential(element, '', addHashAlg: false)));
-        } else
+        } else {
           throw Exception('unknown type with key $key');
-      });
+        }
+      }
       finalCred[key] = newValue;
     } else if (value is Map<String, dynamic>) {
       finalCred[key] =
@@ -174,38 +176,42 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
         type.remove('VerifiableCredential');
       }
       credTypes += type;
-    } else
+    } else {
       throw Exception('type has unknown datatype');
+    }
   }
 
   List<String> credContext = [];
   credContext.add('https://www.w3.org/2018/credentials/v1');
   if (context != null) {
     if (context is String) {
-      if (context != 'https://www.w3.org/2018/credentials/v1')
+      if (context != 'https://www.w3.org/2018/credentials/v1') {
         credContext.add(context);
+      }
     } else if (context is List<String>) {
       if (context.contains('https://www.w3.org/2018/credentials/v1')) {
         context.remove('https://www.w3.org/2018/credentials/v1');
       }
       credContext += context;
-    } else
+    } else {
       throw Exception('type has unknown datatype');
+    }
   }
   // adding context of Plaintext-credential
   var plaintextCredMap = credentialToMap(credential);
   if (plaintextCredMap.containsKey('@context')) {
     var context = plaintextCredMap['@context'];
     if (context is List) {
-      context.forEach((element) {
+      for (var element in context) {
         if (!credContext.contains(element)) {
           credContext.add(element);
         }
-      });
+      }
     } else if (context is String) {
       if (!credContext.contains(context)) credContext.add(context);
-    } else
+    } else {
       throw Exception('@context has unsupported type');
+    }
   }
 
   var issuerInfo = {};
@@ -218,7 +224,7 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
     '@context': credContext,
     'type': credTypes,
     'credentialSubject': jsonDecode(hashCred),
-    'issuer': issuerInfo.length == 0 ? issuerDid : issuerInfo,
+    'issuer': issuerInfo.isEmpty ? issuerDid : issuerInfo,
     'issuanceDate': DateTime.now().toUtc().toIso8601String()
   };
 
@@ -241,13 +247,16 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
 bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
   var w3cMap = credentialToMap(w3cCred);
   var plainMap = credentialToMap(plaintext);
-  if (w3cMap.containsKey('credentialSubject'))
+  if (w3cMap.containsKey('credentialSubject')) {
     w3cMap = w3cMap['credentialSubject'];
-  if (plainMap['id'] != w3cMap['id'])
+  }
+  if (plainMap['id'] != w3cMap['id']) {
     throw Exception('Ids of given credentials do not match');
-  if (plainMap['hashAlg'] != 'keccak-256')
+  }
+  if (plainMap['hashAlg'] != 'keccak-256') {
     throw Exception(
         'Hashing Algorithm ${plainMap['hashAlg']} is not supported');
+  }
   return _checkHashes(w3cMap, plainMap);
 }
 
@@ -258,13 +267,14 @@ Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
         loadDocumentStrict}) async {
   Map<String, dynamic> credential;
-  if (credentialToSign is VerifiableCredential)
+  if (credentialToSign is VerifiableCredential) {
     credential = credentialToSign.toJson();
-  else
+  } else {
     credential = credentialToMap(credentialToSign);
+  }
   String issuerDid = getIssuerDidFromCredential(credential);
   if (issuerDid == '') {
-    throw new Exception('Could not examine IssuerDID');
+    throw Exception('Could not examine IssuerDID');
   }
   signer ??= _determineSignerForDid(issuerDid, loadDocumentFunction);
   credential['proof'] = await signer.buildProof(credential, wallet, issuerDid,
@@ -274,22 +284,24 @@ Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
 
 Signer _determineSignerForDid(String did,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction) {
-  if (did.startsWith('did:key:z6Mk'))
+  if (did.startsWith('did:key:z6Mk')) {
     return EdDsaSigner(loadDocumentFunction);
-  else if (did.startsWith('did:ethr'))
+  } else if (did.startsWith('did:ethr')) {
     return EcdsaRecoverySignature(loadDocumentFunction);
-  else
+  } else {
     throw Exception('could not examine signature type');
+  }
 }
 
 Signer _determineSignerForType(String type,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction) {
-  if (type == 'Ed25519Signature2020')
+  if (type == 'Ed25519Signature2020') {
     return EdDsaSigner(loadDocumentFunction);
-  else if (type == 'EcdsaSecp256k1RecoverySignature2020')
+  } else if (type == 'EcdsaSecp256k1RecoverySignature2020') {
     return EcdsaRecoverySignature(loadDocumentFunction);
-  else
+  } else {
     throw Exception('could not examine signature type');
+  }
 }
 
 /// Verifies the signature for the given [credential].
@@ -309,10 +321,11 @@ Future<bool> verifyCredential(dynamic credential,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
         loadDocumentStrict}) async {
   Map<String, dynamic> credMap;
-  if (credential is VerifiableCredential)
+  if (credential is VerifiableCredential) {
     credMap = credential.toJson();
-  else
+  } else {
     credMap = credentialToMap(credential);
+  }
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
   }
@@ -321,8 +334,9 @@ Future<bool> verifyCredential(dynamic credential,
   if (revocationRegistry != null) {
     if (credMap.containsKey('credentialStatus')) {
       var credStatus = credMap['credentialStatus'];
-      if (credStatus['type'] != 'EthereumRevocationList')
+      if (credStatus['type'] != 'EthereumRevocationList') {
         throw Exception('Unknown Status-method : ${credStatus['type']}');
+      }
       revocationRegistry.setContract(credStatus['id']);
       var revoked = await revocationRegistry
           .isRevoked(getHolderDidFromCredential(credMap));
@@ -363,11 +377,11 @@ Future<String> buildPresentation(
   List<Map<String, dynamic>?> credMapList = [];
   List<String?> holderDids = [];
   PresentationSubmission? submission;
-  credentials.forEach((element) {
+  for (var element in credentials) {
     if (element is FilterResult) {
       List<InputDescriptorMappingObject> mapping = [];
       if (submission != null) {
-        mapping = submission!.descriptorMap;
+        mapping = submission.descriptorMap;
       }
       for (var cred in element.credentials) {
         var credEntry = cred.toJson();
@@ -386,15 +400,16 @@ Future<String> buildPresentation(
           presentationDefinitionId: element.presentationDefinitionId,
           descriptorMap: mapping);
     } else {
-      var credMap;
-      if (element is VerifiableCredential)
+      Map<String, dynamic> credMap;
+      if (element is VerifiableCredential) {
         credMap = element.toJson();
-      else
+      } else {
         credMap = credentialToMap(element);
+      }
       credMapList.add(credMap);
       holderDids.add(getHolderDidFromCredential(credMap));
     }
-  });
+  }
 
   List<String> context = ['https://www.w3.org/2018/credentials/v1'];
   List<String> type = ['VerifiablePresentation'];
@@ -411,15 +426,15 @@ Future<String> buildPresentation(
   };
 
   if (submission != null) {
-    presentation['presentation_submission'] = submission!.toJson();
+    presentation['presentation_submission'] = submission.toJson();
   }
 
   if (disclosedCredentials != null) {
     List<Map<String, dynamic>?> disclosedCreds = [];
-    disclosedCredentials.forEach((element) {
+    for (var element in disclosedCredentials) {
       var credMap = credentialToMap(element);
       disclosedCreds.add(credMap);
-    });
+    }
     presentation['disclosedCredentials'] = disclosedCreds;
     var type = presentation['type'] as List<String?>;
     type.add('DisclosedCredentialPresentation');
@@ -457,11 +472,12 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
         loadDocumentStrict}) async {
   // datatype conversion
-  var presentationMap;
-  if (presentation is VerifiablePresentation)
+  Map<String, dynamic> presentationMap;
+  if (presentation is VerifiablePresentation) {
     presentationMap = presentation.toJson();
-  else
+  } else {
     presentationMap = credentialToMap(presentation);
+  }
 
   var proofs = presentationMap['proof'] as List;
   presentationMap.remove('proof');
@@ -474,9 +490,9 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
         erc1056: erc1056,
         revocationRegistry: revocationRegistry,
         signerSelector: signerSelector);
-    if (!verified)
+    if (!verified) {
       throw Exception('A credential could not been verified');
-    else {
+    } else {
       var did = getHolderDidFromCredential(element);
       if (erc1056 != null) did = await erc1056.identityOwner(did);
       holderDids.add(did);
@@ -490,8 +506,9 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
     var signer = signerSelector.call(element['type'], loadDocumentFunction);
     if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
     if (!await signer.verify(element, presentationMap, verifMeth,
-        challenge: challenge))
+        challenge: challenge)) {
       throw Exception('Proof for $verifMeth could not been verified');
+    }
   });
   if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
 
@@ -501,13 +518,14 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   if (presentationMap.containsKey('disclosedCredentials')) {
     var disclosedCredentials = presentationMap['disclosedCredentials'] as List;
     Map<String?, Map<String, dynamic>> credsToId = {};
-    credentials.forEach((element) {
+    for (var element in credentials) {
       var did = getHolderDidFromCredential(element);
       credsToId[did] = element;
-    });
+    }
 
-    disclosedCredentials.forEach((element) =>
-        compareW3cCredentialAndPlaintext(credsToId[element['id']], element));
+    for (var element in disclosedCredentials) {
+      compareW3cCredentialAndPlaintext(credsToId[element['id']], element);
+    }
   }
   return true;
 }
@@ -597,7 +615,7 @@ String discloseValues(
         List<String> valuesSeen = [];
         List<String> valuesToDiscloseNew = [];
         //search in valuesToDisclose if sth. starts with key
-        valuesToDisclose.forEach((element) {
+        for (var element in valuesToDisclose) {
           if (valuesSeen.contains(element)) {
           }
           //key of Object is in List
@@ -610,7 +628,7 @@ String discloseValues(
             valuesToDiscloseNew.add(element.substring(key.length + 1));
             valuesSeen.add(element);
           }
-        });
+        }
         var newValue = jsonDecode(discloseValues(value, valuesToDiscloseNew));
         result[key] = newValue;
       }
@@ -619,7 +637,7 @@ String discloseValues(
         result[key] = value;
         int removed = 0;
         List<String> valuesSeen = [];
-        valuesToDisclose.forEach((element) {
+        for (var element in valuesToDisclose) {
           if (valuesSeen.contains(element)) {
           }
           //whole Array should be disclosed
@@ -643,7 +661,7 @@ String discloseValues(
             else if (_mapOfHashedAttributesSchema.validate(value[arrayIndex])) {
               //search in given keys, if sth. else should be disclosed
               List<String> valuesToDiscloseNew = [];
-              valuesToDisclose.forEach((element) {
+              for (var element in valuesToDisclose) {
                 if (element.split('.')[0] == key &&
                     int.parse(element.split('.')[1]) == arrayIndex) {
                   if (element.split('.').length > 2) {
@@ -657,7 +675,7 @@ String discloseValues(
                             .toList();
                   }
                 }
-              });
+              }
               result[key][arrayIndex] = jsonDecode(
                   discloseValues(value[arrayIndex], valuesToDiscloseNew));
             } else {
@@ -665,7 +683,7 @@ String discloseValues(
                   'Malformed array element in array with key $key at index $arrayIndex');
             }
           }
-        });
+        }
       } else {
         throw Exception('Unknown data type at key $key');
       }
@@ -684,28 +702,30 @@ List<String> getAllJsonPathsOfCredential(dynamic w3cCredential) {
         key == '@type' ||
         key == '@context' ||
         key == 'id')) {
-      if (value is String || value is num || value is bool)
+      if (value is String || value is num || value is bool) {
         paths.add(key);
-      else if (value is Map) {
+      } else if (value is Map) {
         var objectPaths = getAllJsonPathsOfCredential(value);
-        objectPaths.forEach((element) {
+        for (var element in objectPaths) {
           paths.add('$key.$element');
-        });
+        }
       } else if (value is List) {
         for (int i = 0; i < value.length; i++) {
-          if (value[i] is String || value[i] is num || value[i] is bool)
+          if (value[i] is String || value[i] is num || value[i] is bool) {
             paths.add('$key.$i');
-          else if (value[i] is Map) {
+          } else if (value[i] is Map) {
             var objectPaths = getAllJsonPathsOfCredential(value[i]);
-            objectPaths.forEach((element) {
+            for (var element in objectPaths) {
               paths.add('$key.$i.$element');
-            });
-          } else
+            }
+          } else {
             throw Exception(
                 'Malformed array element in array with key $key at index $i');
+          }
         }
-      } else
+      } else {
         throw Exception('Unknown data type at key $key');
+      }
     }
   });
 
@@ -723,7 +743,7 @@ String buildJwsHeader(
     String? x5tS256,
     String? typ,
     Map<String, dynamic>? extra}) {
-  Map<String, dynamic> jsonObject = new Map();
+  Map<String, dynamic> jsonObject = {};
 
   jsonObject.putIfAbsent('alg', () => alg);
 
@@ -771,27 +791,29 @@ String buildJwsHeader(
 
 /// Collects the did of the issuer of a [credential].
 String getIssuerDidFromCredential(dynamic credential) {
-  var credentialMap;
-  if (credential is VerifiableCredential)
+  Map<String, dynamic> credentialMap;
+  if (credential is VerifiableCredential) {
     credentialMap = credential.toJson();
-  else
+  } else {
     credentialMap = credentialToMap(credential);
+  }
 
-  if (!credentialMap.containsKey('issuer'))
+  if (!credentialMap.containsKey('issuer')) {
     return '';
-  else {
+  } else {
     var issuer = credentialMap['issuer'];
-    if (issuer is String)
+    if (issuer is String) {
       return issuer;
-    else {
-      if (!(issuer is Map))
+    } else {
+      if (issuer is! Map) {
         return '';
-      else {
+      } else {
         var id = issuer['id'];
-        if (id != null)
+        if (id != null) {
           return id;
-        else
+        } else {
           return '';
+        }
       }
     }
   }
@@ -801,14 +823,16 @@ String getIssuerDidFromCredential(dynamic credential) {
 String getHolderDidFromCredential(dynamic credential) {
   var credMap = credentialToMap(credential);
   if (credMap.containsKey('credentialSubject')) {
-    if (credMap['credentialSubject'].containsKey('id'))
+    if (credMap['credentialSubject'].containsKey('id')) {
       return credMap['credentialSubject']['id'];
-    else
+    } else {
       return '';
-  } else if (credMap.containsKey('id'))
+    }
+  } else if (credMap.containsKey('id')) {
     return credMap['id'];
-  else
+  } else {
     return '';
+  }
 }
 
 /// Signs the given String (normal or Json-Object) or Json-Object (Dart Map<String, dynamic>) [toSign] with key-pair of [didToSignWith].
@@ -835,14 +859,15 @@ String getHolderDidFromCredential(dynamic credential) {
 Future<String> signStringOrJson(
     WalletStore wallet, String didToSignWith, dynamic toSign,
     {bool detached = false, dynamic jwsHeader}) async {
-  if (didToSignWith.startsWith('did:ethr'))
+  if (didToSignWith.startsWith('did:ethr')) {
     return _signStringEthr(wallet, didToSignWith, toSign,
         detached: detached, jwsHeader: jwsHeader);
-  else if (didToSignWith.startsWith('did:key:z6Mk'))
+  } else if (didToSignWith.startsWith('did:key:z6Mk')) {
     return _signStringEddsa(wallet, didToSignWith, toSign,
         detached: detached, jwsHeader: jwsHeader);
-  else
+  } else {
     throw UnimplementedError('Could not sign with this did');
+  }
 }
 
 Future<String> _signStringEddsa(
@@ -851,10 +876,12 @@ Future<String> _signStringEddsa(
   Map<String, dynamic> header;
   if (jwsHeader != null) {
     header = credentialToMap(jwsHeader);
-    if (header['alg'] != 'EdDSA')
+    if (header['alg'] != 'EdDSA') {
       throw Exception('Unsupported Signature Algorithm ${header['alg']}');
-    if (header['crv'] != 'Ed25519')
+    }
+    if (header['crv'] != 'Ed25519') {
       throw Exception('Unsupported Curve ${header['crv']}');
+    }
   } else {
     header = {'alg': 'EdDSA', 'crv': 'Ed25519'};
   }
@@ -867,8 +894,7 @@ Future<String> _signStringEddsa(
 
   Map<String, dynamic>? key =
       await wallet.getPrivateKeyForCredentialDidAsJwk(didToSignWith);
-  if (key == null)
-    key = await wallet.getPrivateKeyForConnectionDidAsJwk(didToSignWith);
+  key ??= await wallet.getPrivateKeyForConnectionDidAsJwk(didToSignWith);
   if (key == null) throw Exception('No key found in Wallet');
 
   var privateKey =
@@ -886,16 +912,18 @@ Future<String> _signStringEthr(
   String header;
   if (jwsHeader != null) {
     Map<String, dynamic>? headerMap;
-    if (jwsHeader is String)
+    if (jwsHeader is String) {
       headerMap = jsonDecode(jwsHeader);
-    else
+    } else {
       headerMap = jwsHeader;
-    if (headerMap!['alg'] != 'ES256K-R')
+    }
+    if (headerMap!['alg'] != 'ES256K-R') {
       throw Exception('Unsupported signature algorithm ${headerMap['alg']}');
+    }
     header = removePaddingFromBase64(
         base64UrlEncode(utf8.encode(jsonEncode(headerMap))));
   } else {
-    var critical = new Map<String, dynamic>();
+    var critical = <String, dynamic>{};
     critical['b64'] = false;
     header = removePaddingFromBase64(
         buildJwsHeader(alg: 'ES256K-R', extra: critical));
@@ -916,8 +944,7 @@ Future<String> _signStringEthr(
   String? privateKeyHex;
 
   privateKeyHex = await wallet.getPrivateKeyForCredentialDid(didToSignWith);
-  if (privateKeyHex == null)
-    privateKeyHex = await wallet.getPrivateKeyForConnectionDid(didToSignWith);
+  privateKeyHex ??= await wallet.getPrivateKeyForConnectionDid(didToSignWith);
   if (privateKeyHex == null) throw Exception('Could not find private key');
   var key = EthPrivateKey.fromHex(privateKeyHex);
   var sigArray = _buildSignatureArray(hash as Uint8List, key);
@@ -925,12 +952,13 @@ Future<String> _signStringEthr(
     sigArray = _buildSignatureArray(hash, key);
   }
 
-  if (detached)
+  if (detached) {
     return '$header.'
         '.${removePaddingFromBase64(base64UrlEncode(sigArray))}';
-  else
+  } else {
     return '$header.$payload'
         '.${removePaddingFromBase64(base64UrlEncode(sigArray))}';
+  }
 }
 
 /// Extracts the did used for signing [jws].
@@ -943,12 +971,13 @@ Future<String> getDidFromSignature(String jws,
   if (splitted.length != 3) throw Exception('Malformed JWS');
   var signature = _getSignatureFromJws(jws);
   String payload;
-  if (splitted[1] != '')
+  if (splitted[1] != '') {
     payload = splitted[1];
-  else if (toSign != null)
+  } else if (toSign != null) {
     payload = removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)));
-  else
+  } else {
     throw Exception('No payload given');
+  }
   var signingInput = '${splitted[0]}.$payload';
   var hashToSign = sha256.convert(ascii.encode(signingInput)).bytes;
   var pubKey = ecRecover(hashToSign as Uint8List, signature);
@@ -973,12 +1002,13 @@ Future<String> getDidFromSignature(String jws,
 /// [toSign] could be a String or a json-object (Dart Map).
 Future<bool> verifyStringSignature(String jws, String expectedDid,
     {dynamic toSign, Erc1056? erc1056}) async {
-  if (expectedDid.startsWith('did:ethr'))
+  if (expectedDid.startsWith('did:ethr')) {
     return _verifyEthr(jws, expectedDid, erc1056: erc1056, toSign: toSign);
-  else if (expectedDid.startsWith('did:key:z6Mk'))
+  } else if (expectedDid.startsWith('did:key:z6Mk')) {
     return _verifyEd(jws, expectedDid, toSign: toSign);
-  else
+  } else {
     throw UnimplementedError('Unknown did method');
+  }
 }
 
 Future<bool> _verifyEd(String jws, String expectedDid, {dynamic toSign}) async {
@@ -991,13 +1021,14 @@ Future<bool> _verifyEd(String jws, String expectedDid, {dynamic toSign}) async {
   if (splitted.length != 3) throw Exception('maleformed jws');
 
   String encodedPayload;
-  if (toSign != null)
+  if (toSign != null) {
     encodedPayload = toSign is String
         ? removePaddingFromBase64(base64UrlEncode(utf8.encode(toSign)))
         : removePaddingFromBase64(
             base64UrlEncode(utf8.encode(jsonEncode(credentialToMap(toSign)))));
-  else
+  } else {
     encodedPayload = splitted[1];
+  }
 
   var signingInput = '${splitted[0]}.$encodedPayload';
 
@@ -1014,9 +1045,9 @@ Future<bool> _verifyEthr(String jws, String expectedDid,
   if (splitted.length != 3) throw Exception('Malformed JWS');
   var signature = _getSignatureFromJws(jws);
   String payload;
-  if (splitted[1] != '')
+  if (splitted[1] != '') {
     payload = splitted[1];
-  else if (toSign != null) {
+  } else if (toSign != null) {
     String signable = '';
     if (toSign is String) {
       signable = toSign;
@@ -1026,8 +1057,9 @@ Future<bool> _verifyEthr(String jws, String expectedDid,
       throw Exception('Unexpected Datatype ${toSign.runtimeType} for toSign');
     }
     payload = removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
-  } else
+  } else {
     throw Exception('No payload given');
+  }
   var signingInput = '${splitted[0]}.$payload';
   var hashToSign = sha256.convert(ascii.encode(signingInput)).bytes;
   var pubKey = ecRecover(hashToSign as Uint8List, signature);
@@ -1044,8 +1076,9 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
   if (globalFormat != null) {
     if (globalFormat.ldpVp == null &&
         globalFormat.ldp == null &&
-        globalFormat.ldpVc == null)
+        globalFormat.ldpVc == null) {
       throw Exception('Only supported Formats are Linked Data proofs');
+    }
   }
 
   if (presentationDefinition.submissionRequirement != null) {
@@ -1054,8 +1087,9 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
 
     //search things for all descriptors
     for (var descriptor in presentationDefinition.inputDescriptors) {
-      if (descriptor.group == null)
+      if (descriptor.group == null) {
         throw Exception('Ungrouped input descriptor');
+      }
 
       //input descriptors per group
       for (var g in descriptor.group!) {
@@ -1063,8 +1097,9 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
           List<dynamic> gl = descriptorGroups[g];
           gl.add(descriptor.id);
           descriptorGroups[g] = gl;
-        } else
+        } else {
           descriptorGroups[g] = [descriptor.id];
+        }
       }
 
       //credentials per descriptor
@@ -1089,7 +1124,9 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
           _processInputDescriptor(descriptor, globalFormat, inputCreds);
     }
     List<VerifiableCredential> vcList = [];
-    for (var c in inputCreds) vcList.add(VerifiableCredential.fromJson(c));
+    for (var c in inputCreds) {
+      vcList.add(VerifiableCredential.fromJson(c));
+    }
     return [
       FilterResult(
           credentials: vcList,
@@ -1113,9 +1150,9 @@ FilterResult _processSubmissionRequirement(
   List<Map<String, dynamic>> creds = [];
   for (String d in accordingDescriptors) {
     var credsForDescriptor = filterResultPerDescriptor[d];
-    if (creds.length == 0)
+    if (creds.isEmpty) {
       creds = credsForDescriptor;
-    else {
+    } else {
       List<Map<String, dynamic>> toAdd = [];
       for (var c1 in creds) {
         for (var c2 in credsForDescriptor) {
@@ -1130,11 +1167,14 @@ FilterResult _processSubmissionRequirement(
     int notLower = 0;
     if (requirement.count != null) notLower = requirement.count!;
     if (requirement.min != null) notLower = requirement.min!;
-    if (creds.length < notLower)
+    if (creds.length < notLower) {
       throw Exception('Could not fullfill submission requirement');
+    }
   }
   List<VerifiableCredential> vcList = [];
-  for (var c in creds) vcList.add(VerifiableCredential.fromJson(c));
+  for (var c in creds) {
+    vcList.add(VerifiableCredential.fromJson(c));
+  }
   return FilterResult(
       credentials: vcList,
       matchingDescriptorIds: accordingDescriptors,
@@ -1149,41 +1189,44 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
     if (descriptor.format != null) {
       if (descriptor.format!.ldpVp == null &&
           descriptor.format!.ldp == null &&
-          descriptor.format!.ldpVc == null)
+          descriptor.format!.ldpVc == null) {
         throw Exception('Only supported Formats are Linked Data proofs');
-    } else
+      }
+    } else {
       localFormat = descriptor.format;
+    }
   }
 
   List<Map<String, dynamic>> candidate = [];
   if (descriptor.constraints != null) {
-    if (descriptor.constraints!.isHolder != null)
-      // TODO: Evaluate Is_Holder property
+    if (descriptor.constraints!.isHolder != null) {
       throw UnimplementedError('is_holder property is not supported yet');
-    if (descriptor.constraints!.sameSubject != null)
-      // TODO: Evaluate same_subject property
+    }
+    if (descriptor.constraints!.sameSubject != null) {
       throw UnimplementedError('same_subject feature is not supported yet');
-    if (descriptor.constraints!.statuses != null)
-      // TODO: Evaluate statuses property
+    }
+    if (descriptor.constraints!.statuses != null) {
       throw UnimplementedError('statuses feature is not supported yet');
+    }
     if (descriptor.constraints!.fields != null) {
       var fields = descriptor.constraints!.fields!;
       for (var cred in creds) {
         for (var field in fields) {
-          if (field.predicate != null)
-            // TODO: Evaluate predicate property
+          if (field.predicate != null) {
             throw UnimplementedError(
                 'Evaluating predicate feature is not supported yet');
+          }
           for (var path in field.path) {
             var match = path.read(cred);
             var matchList = match.toList();
-            if (matchList.length == 0) continue;
+            if (matchList.isEmpty) continue;
             if (field.filter != null) {
               if (field.filter!.validate(matchList[0].value)) {
                 candidate.add(cred);
               }
-            } else
+            } else {
               candidate.add(cred);
+            }
           }
         }
       }
@@ -1196,8 +1239,9 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
     for (var cred in candidate) {
       String credProofFormat = cred['proof']['type'];
       if (localFormat.ldpVc != null) {
-        if (localFormat.ldpVc!.proofType.contains(credProofFormat))
+        if (localFormat.ldpVc!.proofType.contains(credProofFormat)) {
           candidateFormatFiltered.add(cred);
+        }
       }
     }
     return candidateFormatFiltered;
@@ -1209,7 +1253,7 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
 
 Map<String, dynamic> _hashStringOrNum(dynamic value) {
   var uuid = Uuid();
-  Map<String, dynamic> hashed = new Map();
+  Map<String, dynamic> hashed = {};
   var salt = uuid.v4();
   hashed.putIfAbsent('value', () => value);
   hashed.putIfAbsent('salt', () => salt);
@@ -1223,14 +1267,14 @@ String _collectHashes(dynamic credential,
   if (id != null) hashCred['id'] = id;
   credMap.forEach((key, value) {
     if (key != '@context') {
-      if (key == 'type' || key == '@type')
+      if (key == 'type' || key == '@type') {
         hashCred[key] = value;
-      else if (key == 'id' && firstLevel) {
+      } else if (key == 'id' && firstLevel) {
         hashCred[key] = value;
       } else if (key == 'hashAlg') {
       } else if (value is List) {
         List<dynamic> hashList = [];
-        value.forEach((element) {
+        for (var element in value) {
           if (element is Map<String, dynamic> &&
               _hashedAttributeSchema.validate(element)) {
             hashList.add(bytesToHex(
@@ -1243,7 +1287,7 @@ String _collectHashes(dynamic credential,
             throw Exception('unknown type  with key $key');
           }
           hashCred[key] = hashList;
-        });
+        }
       } else if (value is Map<String, dynamic> &&
           _hashedAttributeSchema.validate(value)) {
         hashCred[key] = bytesToHex(
@@ -1273,15 +1317,17 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
           var hash = bytesToHex(
               keccakUtf8(value['salt'] + value['value'].toString()),
               include0x: true);
-          if (hash != w3c[key])
+          if (hash != w3c[key]) {
             throw Exception(
                 'Given hash and calculated hash do ot match at $key');
+          }
         } else if (_mapOfHashedAttributesSchema.validate(value) &&
             _mapOfHashedAttributesSchema.validate(w3c[key])) {
           // a new Object
           _checkHashes(w3c[key], value);
-        } else if (value.length == 1)
+        } else if (value.length == 1) {
           throw Exception('malformed object with key $key');
+        }
       } else if (value is List) {
         List<dynamic> fromW3c = w3c[key];
         for (int i = 0; i < value.length; i++) {
@@ -1291,17 +1337,20 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
             var hash = bytesToHex(
                 keccakUtf8(value[i]['salt'] + value[i]['value'].toString()),
                 include0x: true);
-            if (!fromW3c.contains(hash))
+            if (!fromW3c.contains(hash)) {
               throw Exception(
                   'Calculated and given Hash in List at $key do not match');
+            }
           } else if (value[i] is Map<String, dynamic> &&
               _mapOfHashedAttributesSchema.validate(value[i])) {
             if (value[i].length > 0) _checkHashes(fromW3c[i], value[i]);
-          } else
+          } else {
             throw Exception('unknown datatype at List $key and index $i');
+          }
         }
-      } else
+      } else {
         throw Exception('unknown datatype with key $key');
+      }
     }
   });
   return true;
@@ -1312,7 +1361,7 @@ String buildProofOptions(
     required String verificationMethod,
     String? domain,
     String? challenge}) {
-  Map<String, dynamic> jsonObject = new Map();
+  Map<String, dynamic> jsonObject = {};
   jsonObject.putIfAbsent('type', () => type.value);
   jsonObject.putIfAbsent('proofPurpose', () => 'assertionMethod');
   jsonObject.putIfAbsent('verificationMethod', () => verificationMethod);
@@ -1343,11 +1392,12 @@ MsgSignature _getSignatureFromJws(String jws) {
   var splitJws = jws.split('.');
   Map<String, dynamic> header =
       jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(splitJws[0]))));
-  if (header['alg'] != 'ES256K-R')
+  if (header['alg'] != 'ES256K-R') {
     throw Exception('Unsupported signature Algorithm ${header['alg']}');
+  }
   var sigArray = base64Decode(addPaddingToBase64(splitJws[2]));
   if (sigArray.length != 65) throw Exception('wrong signature-length');
-  return new MsgSignature(bytesToUnsignedInt(sigArray.sublist(0, 32)),
+  return MsgSignature(bytesToUnsignedInt(sigArray.sublist(0, 32)),
       bytesToUnsignedInt(sigArray.sublist(32, 64)), sigArray[64] + 27);
 }
 

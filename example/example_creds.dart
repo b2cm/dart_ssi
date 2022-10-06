@@ -18,7 +18,7 @@ void main() async {
   var revocationRegistry = RevocationRegistry(rpcUrl);
 
   //init issuer
-  var issuer = new WalletStore('example/issuer');
+  var issuer = WalletStore('exampleData/issuer');
   await issuer.openBoxes('iss1passsword');
   await issuer.initialize(); //comment this line if trying a second time
   await issuer.initializeIssuer(); //comment this line if trying a second time
@@ -36,7 +36,7 @@ void main() async {
   issuer.storeConfigEntry('revAddress', revAddress);
 
   //init Holder
-  var holder = new WalletStore('example/holder');
+  var holder = WalletStore('exampleData/holder');
   await holder.openBoxes('holderPW');
   await holder.initialize(); //comment this line if trying a second time
 
@@ -73,13 +73,13 @@ void main() async {
 
   //Holder hashes all values an sends this to issuer
   var plaintextName = buildPlaintextCredential(name, nameDid);
-  await new File('example/plaintextName.json').writeAsString(plaintextName);
+  await File('example/plaintextName.json').writeAsString(plaintextName);
   var plaintextDriversLicense =
       buildPlaintextCredential(driversLicense, driversLicenseDid);
-  await new File('example/plaintextDriversLicense.json')
+  await File('example/plaintextDriversLicense.json')
       .writeAsString(plaintextDriversLicense);
   var plaintextEmail = buildPlaintextCredential(email, emailDid);
-  await new File('example/plaintextEmail.json').writeAsString(plaintextEmail);
+  await File('example/plaintextEmail.json').writeAsString(plaintextEmail);
 
   //Issuer checks the values and builds a W3C Verifiable credential over
   //a hashes of each attribute value
@@ -95,12 +95,12 @@ void main() async {
 
   //Issuer signs the credential and sends it to the Holder
   var signedName = await signCredential(issuer, w3cName);
-  await new File('example/signedName.json').writeAsString(signedName);
+  await File('example/signedName.json').writeAsString(signedName);
   var signedDriversLicense = await signCredential(issuer, w3cDiversLicense);
-  await new File('example/signedDiversLicense.json')
+  await File('example/signedDiversLicense.json')
       .writeAsString(signedDriversLicense);
   var signedEmail = await signCredential(issuer, w3cEmail);
-  await new File('example/signedEmail.json').writeAsString(signedEmail);
+  await File('example/signedEmail.json').writeAsString(signedEmail);
 
   //Issuer stores it in its own history to be able to revoke it
   issuer.toIssuingHistory(nameDid, plaintextName, signedName);
@@ -124,40 +124,40 @@ void main() async {
       signedEmail, plaintextEmail, holder.getCredential(emailDid)!.hdPath);
 
   // generates challenge for presentations
-  var challenge1 = new Uuid().v4();
+  var challenge1 = Uuid().v4();
   print('name-challenge: $challenge1');
-  var challenge2 = new Uuid().v4();
+  var challenge2 = Uuid().v4();
   print('name-challenge: $challenge2');
-  var challenge3 = new Uuid().v4();
+  var challenge3 = Uuid().v4();
   print('email-challenge: $challenge3');
 
   //disclose values in credentials
   var disclosedName = discloseValues(plaintextName, ['familyName']);
-  await new File('example/DisclosedName.json').writeAsString(disclosedName);
+  await File('example/DisclosedName.json').writeAsString(disclosedName);
 
   var disclosedDL = discloseValues(
       plaintextDriversLicense, ['allowedVehicleCategories.0', 'issuanceDate']);
-  await new File('example/DisclosedDL.json').writeAsString(disclosedDL);
+  await File('example/DisclosedDL.json').writeAsString(disclosedDL);
 
   var disclosedEmail =
       discloseValues(plaintextEmail, ['givenName', 'familyName']);
-  await new File('example/DisclosedEmail.json').writeAsString(disclosedEmail);
+  await File('example/DisclosedEmail.json').writeAsString(disclosedEmail);
 
   //build Presentation with one credential without disclosed credential
   var presentationOne =
       await buildPresentation([signedName], holder, challenge1);
-  await new File('example/PresentationOne.json').writeAsString(presentationOne);
+  await File('example/PresentationOne.json').writeAsString(presentationOne);
 
   //build Presentation with both credentials without disclosed ones
   var presentationTwo = await buildPresentation(
       [signedName, signedDriversLicense], holder, challenge2);
-  await new File('example/PresentationTwo.json').writeAsString(presentationTwo);
+  await File('example/PresentationTwo.json').writeAsString(presentationTwo);
 
   //build presentation with disclosed credentials
   var presentationThree = await buildPresentation(
       [signedEmail], holder, challenge3,
       disclosedCredentials: [disclosedEmail]);
-  await new File('example/PresentationThree.json')
+  await File('example/PresentationThree.json')
       .writeAsString(presentationThree);
 
   print(

@@ -27,33 +27,37 @@ class PresentationDefinition implements JsonObject {
 
   PresentationDefinition.fromJson(dynamic presentationDefinitionJson) {
     var definition = credentialToMap(presentationDefinitionJson);
-    if (definition.containsKey('presentation_definition'))
+    if (definition.containsKey('presentation_definition')) {
       definition = definition['presentation_definition'];
-    if (definition.containsKey('id'))
+    }
+    if (definition.containsKey('id')) {
       id = definition['id'];
-    else
+    } else {
       throw FormatException('id property required in presentation definition');
+    }
 
     if (definition.containsKey('input_descriptors')) {
       List tmp = definition['input_descriptors'];
       inputDescriptors = [];
-      if (tmp.length > 0) {
+      if (tmp.isNotEmpty) {
         for (var i in tmp) {
           inputDescriptors.add(InputDescriptor.fromJson(i));
         }
       }
-    } else
+    } else {
       throw FormatException(
           'input_descriptors property is required in presentation definition');
+    }
 
     if (definition.containsKey('name')) name = definition['name'];
     if (definition.containsKey('purpose')) purpose = definition['purpose'];
-    if (definition.containsKey('format'))
+    if (definition.containsKey('format')) {
       format = FormatProperty.fromJson(definition['format']);
+    }
 
     if (definition.containsKey('submission_requirements')) {
       List tmp = definition['submission_requirements'];
-      if (tmp.length > 0) {
+      if (tmp.isNotEmpty) {
         submissionRequirement = [];
         for (var s in tmp) {
           submissionRequirement!.add(SubmissionRequirement.fromJson(s));
@@ -62,6 +66,7 @@ class PresentationDefinition implements JsonObject {
     }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
@@ -83,6 +88,7 @@ class PresentationDefinition implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -107,18 +113,21 @@ class InputDescriptor implements JsonObject {
 
   InputDescriptor.fromJson(dynamic inputDescriptorJson) {
     var input = credentialToMap(inputDescriptorJson);
-    if (input.containsKey('id'))
+    if (input.containsKey('id')) {
       id = input['id'];
-    else
+    } else {
       throw FormatException('Input descriptor needs id property');
+    }
 
     if (input.containsKey('name')) name = input['name'];
     if (input.containsKey('purpose')) purpose = input['purpose'];
-    if (input.containsKey('constraints'))
+    if (input.containsKey('constraints')) {
       constraints = InputDescriptorConstraints.fromJson(input['constraints']);
+    }
     if (input.containsKey('group')) group = input['group'].cast<String>();
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
@@ -130,6 +139,7 @@ class InputDescriptor implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -164,18 +174,19 @@ class InputDescriptorConstraints implements JsonObject {
     var constraints = credentialToMap(constraintsJson);
     if (constraints.containsKey('limit_disclosure')) {
       var ld = constraints['limit_disclosure'];
-      if (ld == 'required')
+      if (ld == 'required') {
         limitDisclosure = Limiting.required;
-      else if (ld == 'preferred')
+      } else if (ld == 'preferred') {
         limitDisclosure = Limiting.preferred;
-      else
+      } else {
         throw Exception('Unknown value in limit_disclosure');
+      }
     }
 
     if (constraints.containsKey('fields')) {
       fields = [];
       List tmp = constraints['fields'];
-      if (tmp.length > 0) {
+      if (tmp.isNotEmpty) {
         for (var f in tmp) {
           fields!.add(InputDescriptorField.fromJson(f));
         }
@@ -184,25 +195,30 @@ class InputDescriptorConstraints implements JsonObject {
 
     if (constraints.containsKey('subject_is_issuer')) {
       String sii = constraints['subject_is_issuer'];
-      if (sii == 'required')
+      if (sii == 'required') {
         subjectIsIssuer = Limiting.required;
-      else if (sii == 'preferred')
+      } else if (sii == 'preferred') {
         subjectIsIssuer = Limiting.preferred;
-      else
+      } else {
         throw Exception('Unknown value in limit_disclosure');
+      }
     }
 
-    if (constraints.containsKey('is_holder'))
+    if (constraints.containsKey('is_holder')) {
       isHolder = HolderSubjectConstraint.fromJson(constraints['is_holder']);
+    }
 
-    if (constraints.containsKey('same_subject'))
+    if (constraints.containsKey('same_subject')) {
       sameSubject =
           HolderSubjectConstraint.fromJson(constraints['same_subject']);
+    }
 
-    if (constraints.containsKey('statuses'))
+    if (constraints.containsKey('statuses')) {
       statuses = StatusObject.fromJson(constraints['status']);
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     if (fields != null) {
@@ -214,17 +230,19 @@ class InputDescriptorConstraints implements JsonObject {
     }
 
     if (limitDisclosure != null) {
-      if (limitDisclosure == Limiting.preferred)
+      if (limitDisclosure == Limiting.preferred) {
         jsonObject['limit_disclosure'] = 'preferred';
-      else
+      } else {
         jsonObject['limit_disclosure'] = 'required';
+      }
     }
 
     if (subjectIsIssuer != null) {
-      if (subjectIsIssuer == Limiting.preferred)
+      if (subjectIsIssuer == Limiting.preferred) {
         jsonObject['subject_is_issuer'] = 'preferred';
-      else
+      } else {
         jsonObject['subject_is_issuer'] = 'required';
+      }
     }
 
     if (isHolder != null) jsonObject['is_holder'] = isHolder!.toJson();
@@ -236,6 +254,7 @@ class InputDescriptorConstraints implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -269,24 +288,28 @@ class InputDescriptorField implements JsonObject {
       for (var p in pathString) {
         path.add(JsonPath(p));
       }
-    } else
+    } else {
       throw FormatException('InputDescriptor need path property');
+    }
 
     if (field.containsKey('id')) id = field['id'];
     if (field.containsKey('purpose')) purpose = field['purpose'];
-    if (field.containsKey('filter'))
+    if (field.containsKey('filter')) {
       filter = JsonSchema.createSchema(field['filter']);
+    }
     if (field.containsKey('predicate')) {
       String p = field['predicate'];
-      if (p == 'preferred')
+      if (p == 'preferred') {
         predicate = Limiting.preferred;
-      else if (p == 'required')
+      } else if (p == 'required') {
         predicate = Limiting.required;
-      else
+      } else {
         throw Exception('Unknown value for predicate');
+      }
     }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     List<String> paths = [];
@@ -300,14 +323,16 @@ class InputDescriptorField implements JsonObject {
 
     if (filter != null) jsonObject['filter'] = jsonDecode(filter!.toJson());
     if (predicate != null) {
-      if (predicate == Limiting.required)
+      if (predicate == Limiting.required) {
         jsonObject['predicate'] = 'required';
-      else
+      } else {
         jsonObject['predicate'] = 'preferred';
+      }
     }
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -327,35 +352,41 @@ class HolderSubjectConstraint implements JsonObject {
 
   HolderSubjectConstraint.fromJson(dynamic isHolderObject) {
     Map<String, dynamic> ih = credentialToMap(isHolderObject);
-    if (ih.containsKey('field_id'))
+    if (ih.containsKey('field_id')) {
       fieldId = ih['field_id'].cast<String>();
-    else
+    } else {
       throw FormatException(
           'field_id property is required for is_holder Object');
+    }
 
     if (ih.containsKey('directive')) {
       String value = ih['directive'];
-      if (value == 'preferred')
+      if (value == 'preferred') {
         directive = Limiting.preferred;
-      else if (value == 'required')
+      } else if (value == 'required') {
         directive = Limiting.required;
-      else
+      } else {
         throw Exception('Unknown value for directive property');
-    } else
+      }
+    } else {
       throw FormatException(
           'directive property is required for is_holder object');
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     jsonObject['field_id'] = fieldId;
-    if (directive == Limiting.required)
+    if (directive == Limiting.required) {
       jsonObject['directive'] = 'required';
-    else
+    } else {
       jsonObject['directive'] = 'preferred';
+    }
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -367,62 +398,74 @@ class StatusObject implements JsonObject {
   StatusDirective? revoked;
 
   StatusObject({this.active, this.suspended, this.revoked}) {
-    if (revoked == null && suspended == null && active == null)
+    if (revoked == null && suspended == null && active == null) {
       throw FormatException(
           'One property out of active, revoked and suspended must be given');
+    }
   }
 
   StatusObject.fromJson(dynamic statusInput) {
     Map<String, dynamic> stat = credentialToMap(statusInput);
-    if (stat.containsKey('active'))
+    if (stat.containsKey('active')) {
       active = _determineDirective(stat['active']['directive']);
-    if (stat.containsKey('suspended'))
+    }
+    if (stat.containsKey('suspended')) {
       suspended = _determineDirective(stat['suspended']['directive']);
-    if (stat.containsKey('revoked'))
+    }
+    if (stat.containsKey('revoked')) {
       revoked = _determineDirective(stat['revoked']['directive']);
+    }
 
-    if (revoked == null && suspended == null && active == null)
+    if (revoked == null && suspended == null && active == null) {
       throw FormatException(
           'One property out of active, revoked and suspended must be given');
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
-    if (active != null)
+    if (active != null) {
       jsonObject['active'] = {'directive': _determineDirectiveString(active!)};
-    if (suspended != null)
+    }
+    if (suspended != null) {
       jsonObject['suspended'] = {
         'directive': _determineDirectiveString(suspended!)
       };
-    if (revoked != null)
+    }
+    if (revoked != null) {
       jsonObject['revoked'] = {
         'directive': _determineDirectiveString(revoked!)
       };
+    }
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
 
   StatusDirective _determineDirective(String directive) {
-    if (directive == 'required')
+    if (directive == 'required') {
       return StatusDirective.required;
-    else if (directive == 'allowed')
+    } else if (directive == 'allowed') {
       return StatusDirective.allowed;
-    else if (directive == 'disallowed')
+    } else if (directive == 'disallowed') {
       return StatusDirective.disallowed;
-    else
+    } else {
       throw Exception('Unknown Status-Directive value');
+    }
   }
 
   String _determineDirectiveString(StatusDirective directive) {
-    if (directive == StatusDirective.disallowed)
+    if (directive == StatusDirective.disallowed) {
       return 'disallowed';
-    else if (directive == StatusDirective.allowed)
+    } else if (directive == StatusDirective.allowed) {
       return 'allowed';
-    else
+    } else {
       return 'required';
+    }
   }
 }
 
@@ -443,45 +486,51 @@ class SubmissionRequirement implements JsonObject {
       this.max,
       this.count,
       this.min}) {
-    if (from == null && fromNested == null)
+    if (from == null && fromNested == null) {
       throw FormatException('Need either from or fromNested');
-    if (from != null && fromNested != null)
+    }
+    if (from != null && fromNested != null) {
       throw FormatException('Do nut use  from and fromNested together');
+    }
   }
 
   SubmissionRequirement.fromJson(dynamic requirementJson) {
     var requirement = credentialToMap(requirementJson);
     if (requirement.containsKey('rule')) {
       var tmpRule = requirement['rule'];
-      if (tmpRule == 'all')
+      if (tmpRule == 'all') {
         rule = SubmissionRequirementRule.all;
-      else if (tmpRule == 'pick') {
+      } else if (tmpRule == 'pick') {
         rule = SubmissionRequirementRule.pick;
         if (requirement.containsKey('min')) {
           min = int.parse(requirement['min']);
-          if (min! < 0)
+          if (min! < 0) {
             throw Exception('min value must be greater than or equal to zero');
+          }
         }
         if (requirement.containsKey('max')) {
           max = int.parse(requirement['max']);
           if (max! <= 0) throw Exception('max value must be greater than zero');
-          if (min != null && max! <= min!)
+          if (min != null && max! <= min!) {
             throw Exception('max must be greater than min');
+          }
         }
         if (requirement.containsKey('count')) {
           var countTemp = requirement['count'];
           count = countTemp is int ? countTemp : int.parse(countTemp);
           if (count! <= 0) throw Exception('count must greater than zero');
         }
-      } else
+      } else {
         throw Exception('Unknown value for rule');
-    } else
+      }
+    } else {
       throw FormatException('Rule property is required');
+    }
 
     if (requirement.containsKey('from')) from = requirement['from'];
     if (requirement.containsKey('from_nested')) {
       List tmp = requirement['from_nested'];
-      if (tmp.length > 0) {
+      if (tmp.isNotEmpty) {
         fromNested = [];
         for (var s in tmp) {
           fromNested!.add(SubmissionRequirement.fromJson(s));
@@ -489,20 +538,24 @@ class SubmissionRequirement implements JsonObject {
       }
     }
 
-    if (from == null && fromNested == null)
+    if (from == null && fromNested == null) {
       throw FormatException('Need either from or fromNested');
-    if (from != null && fromNested != null)
+    }
+    if (from != null && fromNested != null) {
       throw FormatException('Do nut use  from and fromNested together');
+    }
 
     if (requirement.containsKey('name')) name = requirement['name'];
     if (requirement.containsKey('purpose')) purpose = requirement['purpose'];
   }
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
-    if (rule == SubmissionRequirementRule.pick)
+    if (rule == SubmissionRequirementRule.pick) {
       jsonObject['rule'] = 'pick';
-    else
+    } else {
       jsonObject['rule'] = 'all';
+    }
     if (from != null) jsonObject['from'] = from;
     if (fromNested != null) {
       List tmp = [];
@@ -520,6 +573,7 @@ class SubmissionRequirement implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -539,18 +593,24 @@ class FormatProperty implements JsonObject {
   FormatProperty.fromJson(dynamic formatJson) {
     var format = credentialToMap(formatJson);
     if (format.containsKey('jwt')) jwt = JwtFormat.fromJson(format['jwt']);
-    if (format.containsKey('jwt_vc'))
+    if (format.containsKey('jwt_vc')) {
       jwtVc = JwtFormat.fromJson(format['jwt_vc']);
-    if (format.containsKey(['jwt_vp']))
+    }
+    if (format.containsKey(['jwt_vp'])) {
       jwtVp = JwtFormat.fromJson(format['jwt_vp']);
-    if (format.containsKey(['ldp']))
+    }
+    if (format.containsKey(['ldp'])) {
       ldp = LinkedDataProofFormat.fromJson(format['ldp']);
-    if (format.containsKey(['ldp_vc']))
+    }
+    if (format.containsKey(['ldp_vc'])) {
       ldpVc = LinkedDataProofFormat.fromJson(format['ldp_vc']);
-    if (format.containsKey('ldp_vp'))
+    }
+    if (format.containsKey('ldp_vp')) {
       ldpVp = LinkedDataProofFormat.fromJson(format['ldp_vp']);
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     if (jwt != null) jsonObject['jwt'] = jwt!.toJson();
@@ -562,6 +622,7 @@ class FormatProperty implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -574,16 +635,19 @@ class JwtFormat implements JsonObject {
 
   JwtFormat.fromJson(dynamic jwtFormatJson) {
     var jwtAlg = credentialToMap(jwtFormatJson);
-    if (jwtAlg.containsKey('alg'))
+    if (jwtAlg.containsKey('alg')) {
       algorithms = jwtAlg['alg'].cast<String>();
-    else
+    } else {
       throw FormatException('JwtFormat needs alg property');
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {'alg': algorithms};
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -595,16 +659,19 @@ class LinkedDataProofFormat implements JsonObject {
   LinkedDataProofFormat({required this.proofType});
   LinkedDataProofFormat.fromJson(dynamic proofTypeJson) {
     var proofTypeTmp = credentialToMap(proofTypeJson);
-    if (proofTypeTmp.containsKey('proof_type'))
+    if (proofTypeTmp.containsKey('proof_type')) {
       proofType = proofTypeTmp['proof_type'].cast<String>();
-    else
+    } else {
       throw FormatException('JwtFormat needs alg property');
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {'proof_type': proofType};
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -629,17 +696,22 @@ class FilterResult implements JsonObject {
       this.submissionRequirement,
       required this.presentationDefinitionId});
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     List creds = [];
-    for (var c in credentials) creds.add(c.toJson());
+    for (var c in credentials) {
+      creds.add(c.toJson());
+    }
     jsonObject['credentials'] = creds;
-    if (submissionRequirement != null)
+    if (submissionRequirement != null) {
       jsonObject['submissionRequirement'] = submissionRequirement!.toJson();
+    }
     jsonObject['matchingDescriptorIds'] = matchingDescriptorIds;
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -660,32 +732,36 @@ class PresentationSubmission implements JsonObject {
 
   PresentationSubmission.fromJson(dynamic jsonObject) {
     Map<String, dynamic> submission = credentialToMap(jsonObject);
-    if (submission.containsKey('id'))
+    if (submission.containsKey('id')) {
       id = submission['id'];
-    else
+    } else {
       throw FormatException('Id Property is needed in presentation submission');
+    }
 
-    if (submission.containsKey('definition_id'))
+    if (submission.containsKey('definition_id')) {
       presentationDefinitionId = submission['definition_id'];
-    else
+    } else {
       throw FormatException(
           'Definition id is needed in presentation submission');
+    }
 
     if (submission.containsKey('descriptor_map')) {
       List tmp = submission['descriptor_map'];
       descriptorMap = [];
-      if (tmp.length > 0) {
+      if (tmp.isNotEmpty) {
         for (var d in tmp) {
           descriptorMap.add(InputDescriptorMappingObject.fromJson(d));
         }
       }
-    } else
+    } else {
       throw FormatException(
           'descriptor_map property is needed in presentation submission');
+    }
 
     _originalDoc = submission;
   }
 
+  @override
   Map<String, dynamic> toJson() {
     if (_originalDoc != null) return _originalDoc!;
 
@@ -693,11 +769,14 @@ class PresentationSubmission implements JsonObject {
     jsonObject['id'] = id;
     jsonObject['definition_id'] = presentationDefinitionId;
     List tmp = [];
-    for (var d in descriptorMap) tmp.add(d.toJson());
+    for (var d in descriptorMap) {
+      tmp.add(d.toJson());
+    }
     jsonObject['descriptor_map'] = tmp;
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -714,23 +793,27 @@ class InputDescriptorMappingObject implements JsonObject {
 
   InputDescriptorMappingObject.fromJson(dynamic jsonObject) {
     Map<String, dynamic> descriptor = credentialToMap(jsonObject);
-    if (descriptor.containsKey('id'))
+    if (descriptor.containsKey('id')) {
       id = descriptor['id'];
-    else
+    } else {
       throw Exception('Id property is needed in descriptor-Map Object');
+    }
 
-    if (descriptor.containsKey('format'))
+    if (descriptor.containsKey('format')) {
       format = descriptor['format'];
-    else
+    } else {
       throw Exception('Format property is needed in descriptor-map object');
+    }
 
-    if (descriptor.containsKey('path'))
+    if (descriptor.containsKey('path')) {
       path = JsonPath(descriptor['path']);
-    else
+    } else {
       throw Exception(' path property is needed in descriptor-map object');
+    }
     _originalDoc = descriptor;
   }
 
+  @override
   Map<String, dynamic> toJson() {
     if (_originalDoc != null) return _originalDoc!;
 
@@ -741,6 +824,7 @@ class InputDescriptorMappingObject implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }

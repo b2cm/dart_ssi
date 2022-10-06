@@ -1,10 +1,10 @@
 name: dart_ssi
-description: Dart Package for SSI Wallet
-version: 1.0.1
-repository: https://github.com/b2cm/dart_ssi
+description: Dart Package supporting Verifiable Credentials, Dids, a wallet for them, Didcomm and IWCE
+version: 1.0.2
+repository: https://github.com/b2cm/dart_ssi/
 
 environment:
-  sdk: '>=2.15.0 <3.0.0'
+  sdk: '>=2.17.0 <3.0.0'
 
 dependencies:
   hive: ^2.1.0
@@ -28,10 +28,11 @@ dependencies:
 
 
 dev_dependencies:
-  test: ^1.21.4
-  test_process: ^2.0.0
+  test: ^1.21.6
+  test_process: ^2.0.3
   hive_generator: ^1.1.3
   build_runner: ^2.2.1
+  lints: ^2.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

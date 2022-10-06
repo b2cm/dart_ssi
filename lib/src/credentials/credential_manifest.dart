@@ -19,7 +19,7 @@ class CredentialManifest implements JsonObject {
       required this.outputDescriptor,
       this.format,
       this.presentationDefinition})
-      : this.id = id ?? Uuid().v4();
+      : id = id ?? Uuid().v4();
 
   CredentialManifest.fromJson(dynamic jsonObject) {
     var map = credentialToMap(jsonObject);
@@ -80,10 +80,11 @@ class IssuerProperty implements JsonObject {
   dynamic styles;
 
   IssuerProperty({String? id, this.name, this.styles})
-      : this.id = id ?? Uuid().v4() {
+      : id = id ?? Uuid().v4() {
     if (styles != null) {
-      if (styles is! String || styles is! EntityStyles)
+      if (styles is! String || styles is! EntityStyles) {
         throw Exception('unexpected Datatype for styles property');
+      }
     }
   }
 
@@ -142,10 +143,11 @@ class OutputDescriptor implements JsonObject {
       this.description,
       this.styles,
       this.display})
-      : this.id = id ?? Uuid().v4() {
+      : id = id ?? Uuid().v4() {
     if (styles != null) {
-      if (styles is! String || styles is! EntityStyles)
+      if (styles is! String || styles is! EntityStyles) {
         throw Exception('unexpected Datatype for styles property');
+      }
     }
   }
 
@@ -422,7 +424,7 @@ class CredentialApplication implements JsonObject {
 
   CredentialApplication(
       {String? id, required this.manifestId, required this.format})
-      : this.id = id ?? Uuid().v4();
+      : id = id ?? Uuid().v4();
 
   CredentialApplication.fromJson(dynamic jsonObject) {
     var map = credentialToMap(jsonObject);
@@ -472,7 +474,7 @@ class CredentialFulfillment implements JsonObject {
       required this.manifestId,
       this.applicationId,
       required this.descriptorMap})
-      : this.id = id ?? Uuid().v4();
+      : id = id ?? Uuid().v4();
 
   CredentialFulfillment.fromJson(dynamic jsonObject) {
     var map = credentialToMap(jsonObject);

@@ -8,7 +8,7 @@ import 'package:web3dart/web3dart.dart';
 
 /// Represents an ethereum-smartcontract to revoke credentials.
 class RevocationRegistry {
-  String _abi = '[{"inputs": [],"stateMutability": "nonpayable","type": '
+  final String _abi = '[{"inputs": [],"stateMutability": "nonpayable","type": '
       '"constructor"},{"anonymous": false,"inputs": [{"indexed": true,'
       '"internalType": "address","name": "credential","type": "address"}],'
       '"name": "RevokedEvent","type": "event"},{"inputs": [{"internalType":'
@@ -22,7 +22,7 @@ class RevocationRegistry {
       '_credential","type": "address"}],"name": "revoke","outputs": [],'
       '"stateMutability": "nonpayable","type": "function"}]';
 
-  String _bytecode =
+  final String _bytecode =
       '608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555043600181905550610396806100676000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c806374a8f103146100515780638da5cb5b14610095578063a6f9dae1146100c9578063f905c15a1461010d575b600080fd5b6100936004803603602081101561006757600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919050505061012b565b005b61009d610232565b604051808273ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b61010b600480360360208110156100df57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610256565b005b61011561035a565b6040518082815260200191505060405180910390f35b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146101ec576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260088152602001807f6e6f206f776e657200000000000000000000000000000000000000000000000081525060200191505060405180910390fd5b8073ffffffffffffffffffffffffffffffffffffffff167fa4e30c0434a0fd06abd5093463a1a4a0e8886a6b803f82bc06e56d799668099960405160405180910390a250565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614610317576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260088152602001807f6e6f206f776e657200000000000000000000000000000000000000000000000081525060200191505060405180910390fd5b806000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b6001548156fea2646970667358221220d3b1720f8ebb198a64a353f3ba110eb4f71210c4af5b56dee1be962355aade1b64736f6c63430007050033';
 
   late Web3Client web3Client;
@@ -53,16 +53,20 @@ class RevocationRegistry {
     if (res == '') {
       return '';
     }
-    var receipt;
+    TransactionReceipt? receipt;
     try {
       receipt = await web3Client.getTransactionReceipt(res);
-    } catch (e) {}
+    } catch (e) {
+      print('Transaction not in chain');
+    }
 
     while (receipt == null) {
       sleep(Duration(seconds: 1));
       try {
         receipt = await web3Client.getTransactionReceipt(res);
-      } catch (e) {}
+      } catch (e) {
+        print('Transaction not in chain');
+      }
     }
 
     _contract = DeployedContract(
@@ -143,8 +147,9 @@ class RevocationRegistry {
       ]);
       return DateTime.fromMillisecondsSinceEpoch(
           hexToDartInt(res.result['timestamp']) * 1000);
-    } else
+    } else {
       throw Exception('Credential was not revoked');
+    }
   }
 
   Future<void> changeOwner(String privateKeyFrom, String didNewOwner) async {

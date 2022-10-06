@@ -1,5 +1,5 @@
-const String SCHEMA_ORG_IRI = 'https://schema.org';
-const Map<String, dynamic> SCHEMA_ORG = {
+const String schemaOrgIri = 'https://schema.org';
+const Map<String, dynamic> schemaOrgContext = {
   "@context": {
     "type": "@type",
     "id": "@id",

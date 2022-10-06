@@ -7,7 +7,7 @@ import 'package:dart_ssi/src/wallet/wallet_store.dart';
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
 
-  var issuer = WalletStore('example/issuer');
+  var issuer = WalletStore('exampleData/issuer');
   await issuer.openBoxes('iss1passsword');
 
   //get address of own revocation contract

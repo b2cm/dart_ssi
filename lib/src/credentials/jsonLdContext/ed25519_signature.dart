@@ -1,6 +1,6 @@
-const String ED25519_SIGNATURE_CONTEXT_IRI =
+const String ed25519ContextIri =
     'https://w3id.org/security/suites/ed25519-2020/v1';
-const Map<String, dynamic> ED25519_SIGNATURE = {
+const Map<String, dynamic> ed25519SignatureContext = {
   "@context": {
     "id": "@id",
     "type": "@type",

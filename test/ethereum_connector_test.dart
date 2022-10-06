@@ -10,7 +10,7 @@ void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
   String contractAddress = '0xF7551cC988437d0D33A615cCE4716D8384Aa8AEB';
   var erc1056 = Erc1056(rpcUrl, contractAddress: contractAddress);
-  var ganacheAccounts = new WalletStore('ganacheNew');
+  var ganacheAccounts = WalletStore('ganacheNew');
   await ganacheAccounts.openBoxes('ganache');
   ganacheAccounts.initialize(
       mnemonic:

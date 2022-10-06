@@ -11,7 +11,7 @@ void main() async {
   var erc1056 = Erc1056(rpcUrl,
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
 
-  var holder = WalletStore('example/holder');
+  var holder = WalletStore('exampleData/holder');
   await holder.openBoxes('holderPW');
 
   //get the did the keys should be rotated for

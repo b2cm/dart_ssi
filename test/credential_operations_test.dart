@@ -17,7 +17,7 @@ void main() async {
   var erc1056 = Erc1056(rpcUrl,
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
   var revocationRegistry = RevocationRegistry(rpcUrl);
-  var ganacheAccounts = new WalletStore('ganache');
+  var ganacheAccounts = WalletStore('ganache');
   await ganacheAccounts.openBoxes('ganache');
   await ganacheAccounts.initialize(
       mnemonic:
@@ -40,7 +40,7 @@ void main() async {
   });
 
   test('test build JWS Header', () {
-    var critical = new Map<String, dynamic>();
+    var critical = <String, dynamic>{};
     critical.putIfAbsent('b64', () => false);
     var header = buildJwsHeader(alg: 'ES256K-R', extra: critical);
     expect(
@@ -1975,8 +1975,9 @@ void main() async {
     });
 
     tearDown(() {
-      if (Directory('other').existsSync())
+      if (Directory('other').existsSync()) {
         Directory('other').delete(recursive: true);
+      }
     });
   });
 

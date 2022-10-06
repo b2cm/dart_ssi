@@ -11,7 +11,8 @@ class CredentialRequest implements JsonObject {
 
   String? _location;
 
-  String? _challenge;
+  /// Long random String /String representation of number that has to be included in the Verifiable presentation the response contains.
+  String? challenge;
 
   String? _domain;
 
@@ -19,13 +20,13 @@ class CredentialRequest implements JsonObject {
 
   bool? _isAppLink;
 
-  String _type = 'CredentialRequest';
+  final String _type = 'CredentialRequest';
 
-  String _acceptType = 'CredentialResponse';
+  final String _acceptType = 'CredentialResponse';
 
-  String _vpType = 'VerifiablePresentation';
+  final String _vpType = 'VerifiablePresentation';
 
-  String _selectiveDisclosureType = 'HashedPlaintextCredential2021';
+  final String _selectiveDisclosureType = 'HashedPlaintextCredential2021';
 
   CredentialRequest(
       {required List<dynamic> credentialTypes,
@@ -37,7 +38,6 @@ class CredentialRequest implements JsonObject {
       Map<String, dynamic>? domainSpecificExtension})
       : _credentialTypes = credentialTypes,
         _location = location,
-        _challenge = challenge,
         _requiredProperties = requiredProperties,
         _isAppLink = isAppLink,
         _domain = domain,
@@ -47,8 +47,9 @@ class CredentialRequest implements JsonObject {
   ///
   /// Expected key is 'iwce'
   CredentialRequest.fromQuery(Map<String, dynamic> queryParameters) {
-    if (!queryParameters.containsKey('iwce'))
+    if (!queryParameters.containsKey('iwce')) {
       throw FormatException('Could not find expected query parameter');
+    }
     Map<String, dynamic> json = jsonDecode(utf8.decode(
         base64Decode(Base64Codec().normalize(queryParameters['iwce']))));
     _fromJson(json);
@@ -60,35 +61,42 @@ class CredentialRequest implements JsonObject {
   }
 
   _fromJson(Map<String, dynamic> json) {
-    if (json['type'] != _type)
+    if (json['type'] != _type) {
       throw FormatException('Unsupported Request Type');
-    if (json.containsKey('endpoint'))
+    }
+    if (json.containsKey('endpoint')) {
       _location = json['endpoint']['location'];
-    else
+    } else {
       _location = json['accept']['endpoint']['location'];
-    _challenge = json['challenge'];
-    var endpointType;
-    if (json.containsKey('endpoint'))
+    }
+    challenge = json['challenge'];
+    dynamic endpointType;
+    if (json.containsKey('endpoint')) {
       endpointType = json['endpoint']['type'];
-    else
+    } else {
       endpointType = json['accept']['endpoint']['type'];
-    if (endpointType == 'AppLink')
+    }
+    if (endpointType == 'AppLink') {
       _isAppLink = true;
-    else
+    } else {
       _isAppLink = false;
+    }
     if (json.containsKey('domain')) _domain = json['domain'];
 
-    if (json['accept']['type'] != _acceptType)
+    if (json['accept']['type'] != _acceptType) {
       throw FormatException('Unsupported Accept Type');
-    if (json['accept']['verifiablePresentation']['type'] != _vpType)
+    }
+    if (json['accept']['verifiablePresentation']['type'] != _vpType) {
       throw FormatException('Unsupported Verifiable Presentation Type');
+    }
     _credentialTypes =
         json['accept']['verifiablePresentation']['credentialTypes'];
 
     if (json['accept'].containsKey('selectiveDisclosure')) {
       if (json['accept']['selectiveDisclosure']['type'] !=
-          _selectiveDisclosureType)
+          _selectiveDisclosureType) {
         throw FormatException('Unsupported Selective Disclosure Type');
+      }
       Map<String, dynamic> prop =
           json['accept']['selectiveDisclosure']['requiredProperties'];
       _requiredProperties = {};
@@ -102,7 +110,7 @@ class CredentialRequest implements JsonObject {
       json.remove('accept');
       json.remove('challenge');
       json.remove('domain');
-      if (json.length > 0) _domainSpecificExtension = json;
+      if (json.isNotEmpty) _domainSpecificExtension = json;
     }
   }
 
@@ -118,6 +126,7 @@ class CredentialRequest implements JsonObject {
     return jsonEncode(toJson());
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     Map<String, dynamic> accept = {};
@@ -129,27 +138,28 @@ class CredentialRequest implements JsonObject {
     accept['type'] = _acceptType;
     accept['verifiablePresentation'] = vp;
 
-    if (_requiredProperties != null && _requiredProperties!.length != 0) {
+    if (_requiredProperties != null && _requiredProperties!.isNotEmpty) {
       Map<String, dynamic> sd = {};
       sd['type'] = _selectiveDisclosureType;
       sd['requiredProperties'] = _requiredProperties;
       accept['selectiveDisclosure'] = sd;
     }
 
-    if (_isAppLink!)
+    if (_isAppLink!) {
       endpoint['type'] = 'AppLink';
-    else
+    } else {
       endpoint['type'] = 'WebAddress';
+    }
     endpoint['location'] = _location;
 
     accept['endpoint'] = endpoint;
     json['type'] = _type;
     json['accept'] = accept;
-    json['challenge'] = _challenge;
+    json['challenge'] = challenge;
     if (_domain != null) {
       json['domain'] = _domain;
       if (_domainSpecificExtension != null &&
-          _domainSpecificExtension!.length > 0) {
+          _domainSpecificExtension!.isNotEmpty) {
         json.addAll(_domainSpecificExtension!);
       }
     }
@@ -165,13 +175,6 @@ class CredentialRequest implements JsonObject {
 
   /// URL to which the response has to be send.
   String? get location => _location;
-
-  /// Long random String /String representation of number that has to be included in the Verifiable presentation the response contains.
-  String? get challenge => _challenge;
-
-  set challenge(String? value) {
-    _challenge = value;
-  }
 
   /// URI to announce domain specific fields.
   String? get domain => _domain;
@@ -201,9 +204,9 @@ class CredentialResponse implements JsonObject {
 
   List<dynamic>? _plaintextCredentials;
 
-  String _type = 'CredentialResponse';
+  final String _type = 'CredentialResponse';
 
-  String _sdType = 'HashedPlaintextCredential2021';
+  final String _sdType = 'HashedPlaintextCredential2021';
 
   CredentialResponse(
       {required Map<String, dynamic> verifiablePresentation,
@@ -215,8 +218,9 @@ class CredentialResponse implements JsonObject {
   ///
   /// Expected key is 'iwce'
   CredentialResponse.fromQuery(Map<String, dynamic> queryParameters) {
-    if (!queryParameters.containsKey('iwce'))
+    if (!queryParameters.containsKey('iwce')) {
       throw FormatException('Could not find expected query parameter');
+    }
     Map<String, dynamic> json = jsonDecode(utf8.decode(
         base64Decode(Base64Codec().normalize(queryParameters['iwce']))));
     _fromJson(json);
@@ -228,16 +232,19 @@ class CredentialResponse implements JsonObject {
   }
 
   _fromJson(Map<String, dynamic> json) {
-    if (json['type'] != _type)
+    if (json['type'] != _type) {
       throw FormatException('Unsupported Response-Type');
+    }
     _verifiablePresentation = json['verifiablePresentation'];
     if (json.containsKey('selectiveDisclosure')) {
-      if (json['selectiveDisclosure']['type'] != _sdType)
+      if (json['selectiveDisclosure']['type'] != _sdType) {
         throw FormatException('Unsupported Selective Disclosure Type');
+      }
       _plaintextCredentials =
           json['selectiveDisclosure']['plaintextCredentials'];
-    } else
+    } else {
       _plaintextCredentials = [];
+    }
   }
 
   /// Returns the base64Url encoded credential request that could be used as query in an uri. It is prefix with key 'iwce='.
@@ -246,6 +253,7 @@ class CredentialResponse implements JsonObject {
     return 'iwce=${base64UrlEncode(utf8.encode(jsonEncode(json)))}';
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> json = {};
     Map<String, dynamic> selectiveDisclosure = {};

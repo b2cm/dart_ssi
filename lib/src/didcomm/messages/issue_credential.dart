@@ -53,8 +53,9 @@ class ProposeCredential extends DidcommPlaintextMessage {
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
-    if (credentialPreview != null)
+    if (credentialPreview != null) {
       body['credential_preview'] = credentialPreview!.toJson();
+    }
     if (detail != null) {
       attachments = [];
       for (var a in detail!) {
@@ -68,14 +69,16 @@ class ProposeCredential extends DidcommPlaintextMessage {
   }
 
   ProposeCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.proposeCredential.value)
+    if (type != DidcommMessages.proposeCredential.value) {
       throw Exception('Unknown Message type or version');
+    }
     goalCode = body['goal_code'];
     comment = body['comment'];
-    if (body.containsKey('credential_preview'))
+    if (body.containsKey('credential_preview')) {
       credentialPreview =
           PreviewCredential.fromJson(body['credential_preview']);
-    if (attachments != null && attachments!.length > 0) {
+    }
+    if (attachments != null && attachments!.isNotEmpty) {
       detail = [];
       for (var a in attachments!) {
         if (a.format != null &&
@@ -91,8 +94,9 @@ class ProposeCredential extends DidcommPlaintextMessage {
         } else if (a.format != null &&
             a.format == AttachmentFormat.indyCredentialFilter.value) {
           throw UnimplementedError('indy Attachment is not supported');
-        } else
-          throw Exception('Unknown Attachment Format');
+        } else {
+          continue;
+        }
       }
     }
   }
@@ -149,8 +153,9 @@ class OfferCredential extends DidcommPlaintextMessage {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (replacementId != null) body['replacement_id'] = replacementId;
-    if (credentialPreview != null)
+    if (credentialPreview != null) {
       body['credential_preview'] = credentialPreview!.toJson();
+    }
     if (detail != null) {
       attachments = [];
       for (var a in detail!) {
@@ -181,15 +186,17 @@ class OfferCredential extends DidcommPlaintextMessage {
   }
 
   OfferCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.offerCredential.value)
+    if (type != DidcommMessages.offerCredential.value) {
       throw Exception('Unknown Message type or version');
+    }
     goalCode = body['goal_code'];
     comment = body['comment'];
     replacementId = body['replacement_id'];
-    if (body.containsKey('credential_preview'))
+    if (body.containsKey('credential_preview')) {
       credentialPreview =
           PreviewCredential.fromJson(body['credential_preview']);
-    if (attachments != null && attachments!.length > 0) {
+    }
+    if (attachments != null && attachments!.isNotEmpty) {
       detail = [];
       for (var a in attachments!) {
         if (a.format != null &&
@@ -203,10 +210,10 @@ class OfferCredential extends DidcommPlaintextMessage {
           throw UnimplementedError(
               'dif credential Manifest Attachment as specified in Aries RFC 0511 is not supported yet');
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialManifest) {
+            a.format == AttachmentFormat.credentialManifest.value) {
           credentialManifest = CredentialManifest.fromJson(a.data.json);
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialFulfillment) {
+            a.format == AttachmentFormat.credentialFulfillment.value) {
           fulfillment = VerifiablePresentation.fromJson(a.data.json);
           if (fulfillment?.credentialFulfillment == null) {
             throw Exception(
@@ -215,8 +222,9 @@ class OfferCredential extends DidcommPlaintextMessage {
         } else if (a.format != null &&
             a.format == AttachmentFormat.indyCredentialAbstract.value) {
           throw UnimplementedError('indy Attachment is not supported');
-        } else
-          throw Exception('Unknown Attachment Format');
+        } else {
+          continue;
+        }
       }
     }
   }
@@ -287,11 +295,12 @@ class RequestCredential extends DidcommPlaintextMessage {
   }
 
   RequestCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.requestCredential.value)
+    if (type != DidcommMessages.requestCredential.value) {
       throw Exception('Unknown Message type or version');
+    }
     goalCode = body['goal_code'];
     comment = body['comment'];
-    if (attachments != null && attachments!.length > 0) {
+    if (attachments != null && attachments!.isNotEmpty) {
       detail = [];
       for (var a in attachments!) {
         if (a.format != null &&
@@ -310,8 +319,9 @@ class RequestCredential extends DidcommPlaintextMessage {
         } else if (a.format != null &&
             a.format == AttachmentFormat.indyCredentialRequest.value) {
           throw UnimplementedError('indy Attachment is not supported');
-        } else
-          throw Exception('Unknown Attachment Format');
+        } else {
+          continue;
+        }
       }
     }
   }
@@ -385,12 +395,13 @@ class IssueCredential extends DidcommPlaintextMessage {
   }
 
   IssueCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.issueCredential.value)
+    if (type != DidcommMessages.issueCredential.value) {
       throw Exception('Unknown Message type or version');
+    }
     goalCode = body['goal_code'];
     comment = body['comment'];
     replacementId = body['replacement_id'];
-    if (attachments != null && attachments!.length > 0) {
+    if (attachments != null && attachments!.isNotEmpty) {
       credentials = [];
       for (var a in attachments!) {
         if (a.format != null && a.format == AttachmentFormat.ldProofVc.value) {
@@ -404,8 +415,9 @@ class IssueCredential extends DidcommPlaintextMessage {
         } else if (a.format != null &&
             a.format == AttachmentFormat.indyCredential.value) {
           throw UnimplementedError('indy Attachment is not supported');
-        } else
+        } else {
           throw Exception('Unknown Attachment Format');
+        }
       }
     }
   }
@@ -473,19 +485,22 @@ class PreviewCredentialAttribute implements JsonObject {
 
   PreviewCredentialAttribute.fromJson(dynamic jsonObject) {
     var previewAttribute = credentialToMap(jsonObject);
-    if (previewAttribute.containsKey('name'))
+    if (previewAttribute.containsKey('name')) {
       name = previewAttribute['name'];
-    else
+    } else {
       throw FormatException(
           'name property needed in Attribute for Credential Preview');
-    if (previewAttribute.containsKey(['value']))
+    }
+    if (previewAttribute.containsKey(['value'])) {
       value = previewAttribute['value'];
-    else
+    } else {
       throw FormatException(
           'value property needed in Attribute for Credential Preview');
+    }
     mimeType = previewAttribute['mime-type'];
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     jsonObject['name'] = name;
@@ -494,6 +509,7 @@ class PreviewCredentialAttribute implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -508,16 +524,19 @@ class LdProofVcDetail implements JsonObject {
 
   LdProofVcDetail.fromJson(dynamic jsonObject) {
     var vcDetail = credentialToMap(jsonObject);
-    if (vcDetail.containsKey('credential'))
+    if (vcDetail.containsKey('credential')) {
       credential = VerifiableCredential.fromJson(vcDetail['credential']);
-    else
+    } else {
       throw FormatException('credential property is needed in LdProofVcDetail');
-    if (vcDetail.containsKey('options'))
+    }
+    if (vcDetail.containsKey('options')) {
       options = LdProofVcDetailOptions.fromJson(vcDetail['options']);
-    else
+    } else {
       throw FormatException('options property is needed in LdProofVcDetail');
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     jsonObject['credential'] = credential.toJson();
@@ -549,24 +568,28 @@ class LdProofVcDetailOptions implements JsonObject {
 
   LdProofVcDetailOptions.fromJson(dynamic jsonObject) {
     var options = credentialToMap(jsonObject);
-    if (options.containsKey('proofType'))
+    if (options.containsKey('proofType')) {
       proofType = options['proofType'];
-    else
+    } else {
       throw FormatException('proofType is needed in Options Object');
+    }
     proofPurpose = options['proofPurpose'];
-    if (options.containsKey('created'))
+    if (options.containsKey('created')) {
       created = DateTime.parse(options['created']);
+    }
     challenge = options['challenge'];
     domain = options['domain'];
     if (options.containsKey('credentialStatus')) {
       Map<String, dynamic> tmp = options['credentialStatus'];
-      if (tmp.containsKey(['type']))
+      if (tmp.containsKey(['type'])) {
         credentialStatusType = tmp['type'];
-      else
+      } else {
         throw FormatException('type property is needed for credential Status');
+      }
     }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     jsonObject['proofType'] = proofType;
@@ -574,8 +597,9 @@ class LdProofVcDetailOptions implements JsonObject {
     if (created != null) jsonObject['created'] = created!.toIso8601String();
     if (challenge != null) jsonObject['challenge'] = challenge;
     if (domain != null) jsonObject['domain'] = domain;
-    if (credentialStatusType != null)
+    if (credentialStatusType != null) {
       jsonObject['credentialStatus'] = {'type': credentialStatusType};
+    }
     return jsonObject;
   }
 

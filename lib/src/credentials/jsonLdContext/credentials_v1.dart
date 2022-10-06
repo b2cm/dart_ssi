@@ -1,5 +1,5 @@
-const String CREDENTIALS_V1_IRI = 'https://www.w3.org/2018/credentials/v1';
-const Map<String, dynamic> CREDENTIALS_V1 = {
+const String credentialsV1Iri = 'https://www.w3.org/2018/credentials/v1';
+const Map<String, dynamic> credentialsV1Context = {
   "@context": {
     "@version": 1.1,
     "@protected": true,
