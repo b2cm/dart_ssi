@@ -1,5 +1,12 @@
+export 'src/credentials/credential_manifest.dart';
 export 'src/credentials/credential_operations.dart';
 export 'src/credentials/credential_signer.dart';
+export 'src/credentials/jsonLdContext/credentials_v1.dart';
+export 'src/credentials/jsonLdContext/document_loader.dart';
+export 'src/credentials/jsonLdContext/ecdsa_recovery_2020.dart';
+export 'src/credentials/jsonLdContext/ed25519_signature.dart';
+export 'src/credentials/jsonLdContext/presentation_submission_context.dart';
+export 'src/credentials/jsonLdContext/schema_org.dart';
 export 'src/credentials/presentation_exchange.dart';
 export 'src/credentials/revocation.dart';
 export 'src/credentials/verifiable_credential.dart';

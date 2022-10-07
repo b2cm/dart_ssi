@@ -1,4 +1,3 @@
-import 'package:dart_ssi/didcomm.dart';
 import 'package:hive/hive.dart';
 
 part 'hive_model.g.dart';

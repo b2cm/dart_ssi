@@ -1,16 +1,16 @@
 import 'dart:io';
 
-import 'package:dart_web3/crypto.dart';
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/wallet.dart';
 import 'package:test/test.dart';
+import 'package:web3dart/crypto.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
   String contractAddress = '0xF7551cC988437d0D33A615cCE4716D8384Aa8AEB';
   var erc1056 = Erc1056(rpcUrl, contractAddress: contractAddress);
-  var ganacheAccounts = new WalletStore('ganacheNew');
+  var ganacheAccounts = WalletStore('ganacheNew');
   await ganacheAccounts.openBoxes('ganache');
   ganacheAccounts.initialize(
       mnemonic:

@@ -43,9 +43,10 @@ class EmptyMessage extends DidcommPlaintextMessage {
             ack: ack);
 
   EmptyMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.emptyMessage.value)
+    if (type != DidcommMessages.emptyMessage.value) {
       throw Exception('Wrong message type');
-    if (body.length > 0) throw Exception('this message is not empty');
+    }
+    if (body.isNotEmpty) throw Exception('this message is not empty');
   }
 }
 
@@ -100,12 +101,14 @@ class ProblemReport extends DidcommPlaintextMessage {
   }
 
   ProblemReport.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.problemReport.value)
+    if (type != DidcommMessages.problemReport.value) {
       throw Exception('Wrong message type');
-    if (body.containsKey('code'))
+    }
+    if (body.containsKey('code')) {
       code = body['code'];
-    else
+    } else {
       throw FormatException('code property is needed in Problem Report');
+    }
     comment = body['comment'];
     args = body['args'];
     escalateTo = body['escalate_to'];
@@ -123,7 +126,9 @@ class ProblemReport extends DidcommPlaintextMessage {
         String replacement = '?';
         try {
           replacement = args![int.parse(argPos) - 1];
-        } catch (e) {}
+        } catch (e) {
+          throw Exception('cant interpolate comment');
+        }
         interpolatedComment =
             interpolatedComment.replaceRange(index, index2 + 1, replacement);
         index = interpolatedComment.indexOf('{');
@@ -178,22 +183,26 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
     if (goal != null) body['goal'] = goal;
     if (goalCode != null) body['goal_code'] = goalCode;
     List<String> tmp = [];
-    for (var p in accept!) tmp.add(p.value);
+    for (var p in accept!) {
+      tmp.add(p.value);
+    }
     body['accept'] = tmp;
   }
 
   OutOfBandMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.invitation.value)
+    if (type != DidcommMessages.invitation.value) {
       throw Exception('Wrong message type');
+    }
     if (from == null) throw FormatException('from property needed');
-    if (typ != null && typ != DidcommMessageTyp.plain)
+    if (typ != null && typ != DidcommMessageTyp.plain) {
       throw Exception(
           'Out of band Message is expected to be a Plaintext-message');
+    }
     goalCode = body['goal_code'];
     goal = body['goal'];
     if (body.containsKey('accept')) {
       List acc = body['accept'];
-      if (acc.length > 0) {
+      if (acc.isNotEmpty) {
         accept = [];
         for (String a in acc) {
           switch (a) {
@@ -218,7 +227,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
   }
 
   String toUrl(String protocol, String domain, String path) {
-    return '$protocol://$domain/$path?_oob=${base64UrlEncode(utf8.encode(this.toString()))}';
+    return '$protocol://$domain/$path?_oob=${base64UrlEncode(utf8.encode(toString()))}';
   }
 }
 
@@ -228,6 +237,7 @@ OutOfBandMessage oobMessageFromUrl(String url) {
   if (asUri.queryParameters.containsKey('_oob')) {
     return OutOfBandMessage.fromJson(utf8.decode(
         base64Decode(addPaddingToBase64(asUri.queryParameters['_oob']!))));
-  } else
+  } else {
     throw Exception('No Out-Of-Band Message found');
+  }
 }

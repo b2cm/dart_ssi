@@ -6,7 +6,7 @@ import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/wallet.dart';
 import 'package:uuid/uuid.dart';
 
-//This example shows how holder an verifier could interact.
+//This example shows how holder and verifier could interact.
 //You should run the example issuance.dart before to make sure, the credential exists.
 
 main() async {
@@ -16,12 +16,12 @@ main() async {
   var revocationRegistry = RevocationRegistry(rpcUrl);
 
   //init Holder Wallet
-  var holder = new WalletStore('example/holder');
+  var holder = WalletStore('exampleData/holder');
   await holder.openBoxes('holderPW');
 
   //Verifier generates nonce/challenge for this presentation
   // and sends it to holder
-  var challenge = new Uuid().v4();
+  var challenge = Uuid().v4();
 
   //Holder searches credential in Wallet and builds a Presentation with the W3C-Credential
   var allCredentials = holder.getAllCredentials();
@@ -29,7 +29,7 @@ main() async {
   Credential c = allCredentials[keyList.first]!;
   var presentation =
       await buildPresentation([c.w3cCredential], holder, challenge);
-  await new File('example/presentation.json').writeAsString(presentation);
+  await File('exampleData/presentation.json').writeAsString(presentation);
 
   //Holder hides all values he wouldn't show
   Map<String, dynamic> plaintext = jsonDecode(c.plaintextCredential);
@@ -43,7 +43,7 @@ main() async {
     'student.birthDate',
     'immatrikulation'
   ]);
-  await new File('example/disclosedImma.json').writeAsString(plaintextDis);
+  await File('exampleData/disclosedImma.json').writeAsString(plaintextDis);
 
   //Holder sends both to verifier
 

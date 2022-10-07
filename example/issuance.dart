@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:dart_web3/dart_web3.dart';
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/wallet.dart';
 import 'package:http/http.dart';
+import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
@@ -17,7 +17,7 @@ void main() async {
   var revocationRegistry = RevocationRegistry(rpcUrl);
 
   //init issuer
-  var issuer = new WalletStore('example/issuer');
+  var issuer = WalletStore('exampleData/issuer');
   await issuer.openBoxes('iss1passsword');
   await issuer.initialize(); //comment this line if trying a second time
   await issuer.initializeIssuer(); //comment this line if trying a second time
@@ -35,7 +35,7 @@ void main() async {
   issuer.storeConfigEntry('revAddress', revAddress);
 
   //init Holder
-  var holder = new WalletStore('example/holder');
+  var holder = WalletStore('exampleData/holder');
   await holder.openBoxes('holderPW');
   await holder.initialize(); //comment this line if trying a second time
 
@@ -56,7 +56,7 @@ void main() async {
       'givenName': 'Max',
       'familyName': 'Mustermann',
       'birthDate':
-          new DateTime(1999, 10, 14).toIso8601String().substring(0, 10),
+          DateTime(1999, 10, 14).toIso8601String().substring(0, 10),
       'birthPlace': 'Berlin',
       'address': {
         'type': 'PostalAddress',
@@ -91,7 +91,7 @@ void main() async {
 
   //Holder hashes all values an sends this to issuer
   var plaintextCred = buildPlaintextCredential(immatrikulation, immaDid);
-  await new File('example/immaPlaintext.json').writeAsString(plaintextCred);
+  await File('example/immaPlaintext.json').writeAsString(plaintextCred);
 
   //Issuer checks the values and builds a W3C Verifiable credential over
   //a hashes of each attribute value
@@ -101,7 +101,7 @@ void main() async {
 
   //Issuer signs the credential and sends it to the Holder
   var signedImma = await signCredential(issuer, w3cImma);
-  await new File('example/signedImma.json').writeAsString(signedImma);
+  await File('example/signedImma.json').writeAsString(signedImma);
   //Issuer stores it in its own history to be able to revoke it
   issuer.toIssuingHistory(immaDid, plaintextCred, signedImma);
 

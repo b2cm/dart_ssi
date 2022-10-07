@@ -9,11 +9,11 @@ void main() async {
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
 
   //init issuer
-  var issuer = new WalletStore('example/issuer');
+  var issuer = WalletStore('exampleData/issuer');
   await issuer.openBoxes('iss1passsword');
 
   //init Holder
-  var holder = new WalletStore('example/holder');
+  var holder = WalletStore('exampleData/holder');
   await holder.openBoxes('holderPW');
 
   // Holder generates its did for this connection

@@ -5,7 +5,7 @@ import 'package:crypto/crypto.dart';
 // Reference https://github.com/marceloneppel/pbkdf2/blob/master/lib/pbkdf2_dart.dart
 class PBKDF2 {
   Hash? hash;
-  List<int> _blockList = [1, 1, 1, 1];
+  final List<int> _blockList = [1, 1, 1, 1];
   int? _prfLengthInBytes;
 
   PBKDF2({this.hash});
@@ -42,8 +42,8 @@ class PBKDF2 {
 
   List<int> _computeBlock(
       String password, String salt, int iterations, int blockNumber) {
-    var hmac = new Hmac(hash!, password.codeUnits);
-    var sink = new SyncChunkedConversionSink();
+    var hmac = Hmac(hash!, password.codeUnits);
+    var sink = SyncChunkedConversionSink();
     var outsink = hmac.startChunkedConversion(sink);
 
     outsink.add(salt.codeUnits);
@@ -55,10 +55,10 @@ class PBKDF2 {
 
     var bytes = sink.getAll();
     var lastDigest = bytes;
-    List<int> result = new List.from(bytes);
+    List<int> result = List.from(bytes);
 
     for (var i = 1; i < iterations; i++) {
-      hmac = new Hmac(hash!, password.codeUnits);
+      hmac = Hmac(hash!, password.codeUnits);
       var newDigest = hmac.convert(lastDigest);
 
       _xorLists(result, newDigest.bytes);

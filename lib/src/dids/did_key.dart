@@ -10,7 +10,7 @@ const _xMultiCodec = [236, 1];
 DidDocument resolveDidKey(String did) {
   if (!did.startsWith('did:key')) throw Exception('Unexpected did');
   var splited = did.split(':');
-  if (splited.length != 3) throw Exception('maleformed did');
+  if (splited.length != 3) throw Exception('malformed did');
 
   String keyPart = splited[2];
   var multibaseIndicator = keyPart[0];
@@ -24,22 +24,25 @@ DidDocument resolveDidKey(String did) {
 
   var id = did;
 
-  if (multibaseIndicator != 'z')
+  if (multibaseIndicator != 'z') {
     throw UnimplementedError('Only Base58 is supported yet');
-  if (keyPart.startsWith('6Mk'))
+  }
+  if (keyPart.startsWith('6Mk')) {
     return _buildEDDoc(context, id, keyPart);
-  else if (keyPart.startsWith('6LS'))
+  } else if (keyPart.startsWith('6LS')) {
     return _buildXDoc(context, id, keyPart);
-  else
+  } else {
     throw UnimplementedError('Only Ed25519 and X25519 keys are supported now');
+  }
 }
 
 DidDocument _buildEDDoc(List<String> context, String id, String keyPart) {
   var multiCodecXKey =
       _ed25519PublicToX25519Public(base58Bitcoin.decode(keyPart).sublist(2));
-  if (!multiCodecXKey.startsWith('6LS'))
+  if (!multiCodecXKey.startsWith('6LS')) {
     throw Exception(
         'Something went wrong during conversion from Ed25515 to curve25519 key');
+  }
   String verificationKeyId = '$id#z$keyPart';
   String agreementKeyId = '$id#z$multiCodecXKey';
 

@@ -4,15 +4,16 @@ import 'dart:typed_data';
 
 import 'package:asn1lib/asn1lib.dart';
 import 'package:base_codecs/base_codecs.dart';
-import 'package:dart_web3/crypto.dart';
+import 'package:web3dart/crypto.dart';
 
 import '../credentials/credential_operations.dart';
 
 Uint8List _multibaseToUint8List(String multibase) {
-  if (multibase.startsWith('z'))
+  if (multibase.startsWith('z')) {
     return base58BitcoinDecode(multibase.substring(1));
-  else
+  } else {
     throw UnimplementedError('Unsupported multibase indicator ${multibase[0]}');
+  }
 }
 
 String multibaseToBase64Url(String multibase) {
@@ -33,30 +34,35 @@ Map<String, dynamic> multibaseKeyToJwk(String multibaseKey) {
     jwk['kty'] = 'OKP';
     jwk['crv'] = 'X25519';
     jwk['x'] = removePaddingFromBase64(base64UrlEncode(key));
-  } else
+  } else {
     throw UnimplementedError(
         'Unsupported multicodec indicator 0x$indicatorHex');
+  }
   return jwk;
 }
 
 /// Converts json-String [credential] to dart Map.
 Map<String, dynamic> credentialToMap(dynamic credential) {
-  if (credential is String)
+  if (credential is String) {
     return jsonDecode(credential);
-  else if (credential is Map<String, dynamic>)
+  } else if (credential is Map<String, dynamic>) {
     return credential;
-  else
+  } else {
     throw Exception('unknown type for $credential');
+  }
 }
 
 String addPaddingToBase64(String base64Input) {
-  while (base64Input.length % 4 != 0) base64Input += '=';
+  while (base64Input.length % 4 != 0) {
+    base64Input += '=';
+  }
   return base64Input;
 }
 
 String removePaddingFromBase64(String base64Input) {
-  while (base64Input.endsWith('='))
+  while (base64Input.endsWith('=')) {
     base64Input = base64Input.substring(0, base64Input.length - 1);
+  }
   return base64Input;
 }
 
@@ -104,10 +110,11 @@ Future<CertificateInformation?> getCertificateInfoFromUrl(String url) async {
         .getUrl(Uri.parse(url))
         .timeout(Duration(seconds: 30));
     var res = await client.close();
-    if (res.certificate == null)
+    if (res.certificate == null) {
       return null;
-    else
+    } else {
       return CertificateInformation(res.certificate, true);
+    }
   } catch (e) {
     throw Exception('Error occurred during certificate check: $e');
   }
@@ -125,7 +132,7 @@ class CertificateInformation {
   X509Certificate? rawCert;
   bool isEvCert = false;
 
-  List<String> _evOIDs = [
+  final List<String> _evOIDs = [
     '2.23.140.1.1',
     '1.2.156.112559.1.1.6.1',
     '2.16.756.5.14.7.4.8',
@@ -165,9 +172,8 @@ class CertificateInformation {
     '1.3.6.1.4.1.6334.1.100.1'
   ];
 
-  CertificateInformation(X509Certificate? certificate, bool valid) {
-    this.valid = valid;
-    this.rawCert = certificate;
+  CertificateInformation(X509Certificate? certificate, bool this.valid) {
+    rawCert = certificate;
     var splittedSubject = _splitSubject(rawCert!.subject);
     subjectCommonName = splittedSubject['CN'];
     subjectOrganization = splittedSubject['O'];
@@ -177,12 +183,12 @@ class CertificateInformation {
     issuerOrganization = splittedIssuer['O'];
     issuerCountry = splittedIssuer['C'];
     var extractedEvOids = _extractEvOids();
-    if (extractedEvOids.length > 0) {
-      extractedEvOids.forEach((element) {
+    if (extractedEvOids.isNotEmpty) {
+      for (var element in extractedEvOids) {
         if (_evOIDs.contains(element)) {
           isEvCert = true;
         }
-      });
+      }
     }
   }
 
@@ -195,20 +201,20 @@ class CertificateInformation {
       var extObject = cert.elements[7];
       var extParser = ASN1Parser(extObject.valueBytes());
       var extSeq = extParser.nextObject() as ASN1Sequence;
-      extSeq.elements.forEach((ASN1Object element) {
+      for (var element in extSeq.elements) {
         var seq = element as ASN1Sequence;
         var oi = seq.elements[0] as ASN1ObjectIdentifier;
         if (oi.identifier == '2.5.29.32') {
           var policyRaw = seq.elements[1] as ASN1OctetString;
           var policyParser = ASN1Parser(policyRaw.octets);
           var policy = policyParser.nextObject() as ASN1Sequence;
-          policy.elements.forEach((ASN1Object element) {
+          for (var element in policy.elements) {
             var policy1 = element as ASN1Sequence;
             var policyOID = policy1.elements[0] as ASN1ObjectIdentifier;
             extracted.add(policyOID.identifier);
-          });
+          }
         }
-      });
+      }
     }
     return extracted;
   }
@@ -216,12 +222,12 @@ class CertificateInformation {
   Map<String, String> _splitSubject(String subject) {
     var splitted = subject.split('/');
     Map<String, String> foundElements = {};
-    splitted.forEach((element) {
+    for (var element in splitted) {
       if (element != '') {
         var keyValue = element.split('=');
         foundElements[keyValue[0]] = keyValue[1];
       }
-    });
+    }
 
     return foundElements;
   }
@@ -236,7 +242,7 @@ class CertificateInformation {
       var extParser = ASN1Parser(extensionObject.valueBytes());
       var extSequence = extParser.nextObject() as ASN1Sequence;
 
-      extSequence.elements.forEach((ASN1Object subseq) {
+      for (var subseq in extSequence.elements) {
         var seq = subseq as ASN1Sequence;
         var oi = seq.elements[0] as ASN1ObjectIdentifier;
         if (oi.identifier == '2.5.29.17') {
@@ -246,7 +252,7 @@ class CertificateInformation {
             sans = _fetchSansFromExtension(seq.elements.elementAt(1));
           }
         }
-      });
+      }
     }
     return sans;
   }
@@ -256,7 +262,7 @@ class CertificateInformation {
     var octet = extData as ASN1OctetString;
     var sanParser = ASN1Parser(octet.valueBytes());
     var sanSeq = sanParser.nextObject() as ASN1Sequence;
-    sanSeq.elements.forEach((ASN1Object san) {
+    for (var san in sanSeq.elements) {
       if (san.tag == 135) {
         var sb = StringBuffer();
         san.valueBytes().forEach((int b) {
@@ -270,7 +276,7 @@ class CertificateInformation {
         var s = String.fromCharCodes(san.valueBytes());
         sans.add(s);
       }
-    });
+    }
     return sans;
   }
 }

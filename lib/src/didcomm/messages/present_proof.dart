@@ -12,11 +12,11 @@ import '../types.dart';
 class ProposePresentation extends DidcommPlaintextMessage {
   String? goalCode;
   String? comment;
-  late List<PresentationDefinition> presentationDefinition;
+  List<PresentationDefinition>? presentationDefinition;
 
   ProposePresentation(
       {String? id,
-      required this.presentationDefinition,
+      this.presentationDefinition,
       this.goalCode,
       this.comment,
       String? replyUrl,
@@ -52,35 +52,39 @@ class ProposePresentation extends DidcommPlaintextMessage {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     attachments = [];
-    for (var d in presentationDefinition) {
-      var attachment = Attachment(
-          data: AttachmentData(json: d.toJson()),
-          id: Uuid().v4(),
-          format: AttachmentFormat.presentationDefinition.value,
-          mediaType: 'application/json');
-      attachments!.add(attachment);
+    if (presentationDefinition != null) {
+      for (var d in presentationDefinition!) {
+        var attachment = Attachment(
+            data: AttachmentData(json: d.toJson()),
+            id: Uuid().v4(),
+            format: AttachmentFormat.presentationDefinition.value,
+            mediaType: 'application/json');
+        attachments!.add(attachment);
+      }
     }
   }
 
   ProposePresentation.fromJson(dynamic jsonObject)
       : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.proposePresentation.value)
+    if (type != DidcommMessages.proposePresentation.value) {
       throw Exception('Unsupported type or version');
+    }
     goalCode = body['goal_code'];
     comment = body['comment'];
 
-    if (attachments != null && attachments!.length > 0) {
+    if (attachments != null && attachments!.isNotEmpty) {
       presentationDefinition = [];
 
       for (var a in attachments!) {
         if (a.format == AttachmentFormat.presentationDefinition.value) {
           a.data.resolveData();
-          presentationDefinition
+          presentationDefinition!
               .add(PresentationDefinition.fromJson(a.data.json));
         } else if (a.format == AttachmentFormat.indyProofRequest.value) {
           throw UnimplementedError('Indy proof request is not supported');
-        } else
+        } else {
           throw Exception('Unknown type');
+        }
       }
     }
   }
@@ -144,13 +148,14 @@ class RequestPresentation extends DidcommPlaintextMessage {
 
   RequestPresentation.fromJson(dynamic jsonObject)
       : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.requestPresentation.value)
+    if (type != DidcommMessages.requestPresentation.value) {
       throw Exception('Unsupported type or version');
+    }
     goalCode = body['goal_code'];
     comment = body['comment'];
     willConfirm = body['will_confirm'];
 
-    if (attachments != null && attachments!.length > 0) {
+    if (attachments != null && attachments!.isNotEmpty) {
       presentationDefinition = [];
 
       for (var a in attachments!) {
@@ -160,8 +165,9 @@ class RequestPresentation extends DidcommPlaintextMessage {
               .add(PresentationDefinitionWithOptions.fromJson(a.data.json!));
         } else if (a.format == AttachmentFormat.indyProofRequest.value) {
           throw UnimplementedError('Indy proof request is not supported');
-        } else
+        } else {
           throw Exception('Unknown type');
+        }
       }
     }
   }
@@ -211,9 +217,10 @@ class Presentation extends DidcommPlaintextMessage {
     if (comment != null) body['comment'] = comment;
     attachments = [];
     for (var d in verifiablePresentation) {
-      if (d.presentationSubmission == null)
+      if (d.presentationSubmission == null) {
         throw Exception(
             'The verifiable Presentation used here must contain a presentation submission');
+      }
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
@@ -224,26 +231,29 @@ class Presentation extends DidcommPlaintextMessage {
   }
 
   Presentation.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.presentation.value)
+    if (type != DidcommMessages.presentation.value) {
       throw Exception('Unsupported type or version');
+    }
     goalCode = body['goal_code'];
     comment = body['comment'];
 
-    if (attachments != null && attachments!.length > 0) {
+    if (attachments != null && attachments!.isNotEmpty) {
       verifiablePresentation = [];
 
       for (var a in attachments!) {
         if (a.format == AttachmentFormat.presentationSubmission.value) {
           a.data.resolveData();
           var tmp = VerifiablePresentation.fromJson(a.data.json);
-          if (tmp.presentationSubmission == null)
+          if (tmp.presentationSubmission == null) {
             throw Exception(
                 'The verifiable Presentation used here must contain a presentation submission');
+          }
           verifiablePresentation.add(tmp);
         } else if (a.format == AttachmentFormat.indyProof.value) {
           throw UnimplementedError('Indy proof request is not supported');
-        } else
-          throw Exception('Unknown type');
+        } else {
+          throw Exception('Unknown type: ${a.format}');
+        }
       }
     }
   }
@@ -258,10 +268,11 @@ class PresentationDefinitionWithOptions implements JsonObject {
       {required this.domain,
       String? challenge,
       required this.presentationDefinition}) {
-    if (challenge == null)
+    if (challenge == null) {
       this.challenge = Uuid().v4();
-    else
+    } else {
       this.challenge = challenge;
+    }
   }
 
   PresentationDefinitionWithOptions.fromJson(dynamic jsonObject) {
@@ -269,23 +280,28 @@ class PresentationDefinitionWithOptions implements JsonObject {
     if (object.containsKey('options')) {
       Map<String, dynamic> options = object['options'];
 
-      if (options.containsKey('domain'))
+      if (options.containsKey('domain')) {
         domain = options['domain'];
-      else
+      } else {
         throw FormatException('Options Object us contain domain property');
-      if (options.containsKey('challenge'))
+      }
+      if (options.containsKey('challenge')) {
         challenge = options['challenge'];
-      else
+      } else {
         throw FormatException('Options Object must contain challenge property');
-    } else
+      }
+    } else {
       throw FormatException('options object needed');
-    if (object.containsKey('presentation_definition'))
+    }
+    if (object.containsKey('presentation_definition')) {
       presentationDefinition =
           PresentationDefinition.fromJson(object['presentation_definition']);
-    else
+    } else {
       throw Exception('presentation_definition needed');
+    }
   }
 
+  @override
   Map<String, dynamic> toJson() {
     Map<String, dynamic> jsonObject = {};
     Map<String, dynamic> options = {};
@@ -296,6 +312,7 @@ class PresentationDefinitionWithOptions implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }

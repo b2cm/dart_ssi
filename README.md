@@ -73,6 +73,16 @@ For now the only supported signature-suites for the proof-section are
 If you need another one the API for signing in verifying credentials is extensible. How you could develop and use your own signature suites is described in 
 [extendSigners.md](https://github.com/b2cm/dart_ssi/blob/didcomm/extendSigners.md)
 
+### Some Notes on Json-Ld Signatures
+- for security and performance reasons some important Json-ld contexts are bundled with this library. These are:
+  - https://schema.org
+  - https://www.w3.org/2018/credentials/v1
+  - https://w3id.org/security/suites/secp256k1recovery-2020/v2
+  - https://w3id.org/security/suites/ed25519-2020/v1
+  - https://identity.foundation/presentation-exchange/submission/v1/
+- The function used to load context is implemented that way that it only loads the named contexts. It will not download things from the web. All functions that need such a document loader have an optional paramter `loadDocumentFunction`. This means you can write your own function for loading contexts if needed.
+- The [safeMode option](https://pub.dev/packages/json_ld_processor#safemode-option) of the Json-ld processor is set to true
+
 ## Usage of Credentials
 As the [W3C-Specification for Verifiable Credentials](https://www.w3.org/TR/vc-data-model/) describes, a credential is issued by an issuer, stored by a holder and presented to verifier. 
 How to achieve this using this package is shown in the examples [issuance.dart](https://github.com/b2cm/dart_ssi/blob/master/examples/issuance.dart) 
@@ -128,7 +138,6 @@ A full example for issuing a credential and requesting a presentation using didc
   They are useful, when didcomm is used with a did-method that do not support service endpoints or to clarify which service endpoint from a did-document should be used.
 
 ## TODOs/Future Plans
-- because of a missing json-ld processing api for dart all generated signature are not fully correct json-ld signatures. Therefore the plan for the near future is to develop an json-ld processor to get interoperable json-ld signatures.
 - support of [didcomm routing messages](https://identity.foundation/didcomm-messaging/spec/#routing)
 - `from_prior` header is not fully supported now
 - the hash in attachment data of a didcomm message is not checked yet 
@@ -139,6 +148,12 @@ A full example for issuing a credential and requesting a presentation using didc
     - `statuses` property
     - `predicate` property
 - there are not many tests 
+
+## More Examples
+With this library it is on the one hand side possible to build a mobile wallet application and on the other hand side to build agent software running on a server (e.g. for issuing credentials).
+For both there are small examples:
+- [wallet](https://github.com/b2cm/id_ideal_wallet)
+- [server software](https://github.com/b2cm/didcomm_examples)
     
 
 

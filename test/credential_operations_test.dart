@@ -4,11 +4,11 @@ import 'dart:io';
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/wallet.dart';
-import 'package:dart_web3/dart_web3.dart';
 import 'package:http/http.dart';
 import 'package:json_schema2/json_schema2.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
+import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcUrl = 'http://127.0.0.1:7545';
@@ -17,18 +17,15 @@ void main() async {
   var erc1056 = Erc1056(rpcUrl,
       contractAddress: '0x0eE301c92471234038E320153A7F650ab9a72e28');
   var revocationRegistry = RevocationRegistry(rpcUrl);
-  var ganacheAccounts = new WalletStore('ganache');
+  var ganacheAccounts = WalletStore('ganache');
   await ganacheAccounts.openBoxes('ganache');
   await ganacheAccounts.initialize(
       mnemonic:
           'situate recall vapor van layer stage nerve wink gap vague muffin vacuum');
 
-  var ganacheDid5 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/4');
   var ganacheDid6 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/5');
-  var ganacheDid7 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/6');
-  var ganacheDid8 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/7');
   var ganacheDid9 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/8');
-  var ganacheDid10 = await ganacheAccounts.getDid('m/44\'/60\'/0\'/0/9');
+
   ganacheAccounts.storeCredential('', '', 'm/44\'/60\'/0\'/0/8');
   test('test get issuer did from Credential', () {
     String cred1 = '{"issuer": "did:ethr:123456"}';
@@ -43,7 +40,7 @@ void main() async {
   });
 
   test('test build JWS Header', () {
-    var critical = new Map<String, dynamic>();
+    var critical = <String, dynamic>{};
     critical.putIfAbsent('b64', () => false);
     var header = buildJwsHeader(alg: 'ES256K-R', extra: critical);
     expect(
@@ -1234,7 +1231,13 @@ void main() async {
         await wallet.initialize();
         await wallet.initializeIssuer();
       }
-      var cred = {'name': 'Max', 'age': 20, 'height': 1.78, 'student': true};
+      var cred = {
+        '@context': 'https://schema.org',
+        'name': 'Max',
+        'age': 20,
+        'height': 1.78,
+        'student': true
+      };
       var plaintext = buildPlaintextCredential(cred, 'did:ethr:0x123456');
       w3c = buildW3cCredentialwithHashes(
           plaintext, wallet.getStandardIssuerDid());
@@ -1306,7 +1309,7 @@ void main() async {
 
     group('credential revocation', () {
       test('credential was revoked', () async {
-        var plaintext = {'name': 'Max', 'age': 20};
+        var plaintext = {'@context': 'schema.org', 'name': 'Max', 'age': 20};
         var rev = RevocationRegistry(rpcUrl);
         var revAddress = await rev
             .deploy(await ganacheAccounts.getPrivateKey('m/44\'/60\'/0\'/0/8'));
@@ -1408,6 +1411,7 @@ void main() async {
       await holder.initialize();
 
       var cred1 = {
+        '@context': 'https://schema.org',
         'name': 'Max Mustermann',
         'address': {
           'postalCode': '09648',
@@ -1415,12 +1419,17 @@ void main() async {
         }
       };
       var cred2 = {
+        '@context': 'https://schema.org',
         'grades': [
           {'course': 'Mathematik', 'grade': 1.0},
           {'course': 'Datenbanken', 'grade': 1.3}
         ]
       };
-      var cred3 = {'verein': 'Laufgruppe Döbeln', 'rolle': 'Mitglied'};
+      var cred3 = {
+        '@context': 'https://schema.org',
+        'verein': 'Laufgruppe Döbeln',
+        'rolle': 'Mitglied'
+      };
 
       didCred1 = await holder.getNextCredentialDID();
       didCred2 = await holder.getNextCredentialDID();
@@ -1954,7 +1963,7 @@ void main() async {
     });
 
     test('sign a credential', () async {
-      var cred = {'name': 'Max', 'age': 23};
+      var cred = {'@context': 'schema.org', 'name': 'Max', 'age': 23};
       var holderDid = await wallet.getNextCredentialDID();
       var plain = buildPlaintextCredential(cred, holderDid);
       expect(
@@ -1966,8 +1975,9 @@ void main() async {
     });
 
     tearDown(() {
-      if (Directory('other').existsSync())
+      if (Directory('other').existsSync()) {
         Directory('other').delete(recursive: true);
+      }
     });
   });
 

@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:dart_ssi/src/credentials/presentation_exchange.dart';
-
 import '../util/types.dart';
 import '../util/utils.dart';
+import 'credential_manifest.dart';
+import 'presentation_exchange.dart';
 
 class VerifiableCredential implements JsonObject {
-  late List<String> context;
+  late List<dynamic> context;
   String? id;
   late List<String> type;
   dynamic credentialSubject;
@@ -32,58 +32,69 @@ class VerifiableCredential implements JsonObject {
 
   VerifiableCredential.fromJson(dynamic jsonObject) {
     var credential = credentialToMap(jsonObject);
-    if (credential.containsKey('@context'))
-      context = credential['@context'].cast<String>();
-    else
+    if (credential.containsKey('@context')) {
+      context = credential['@context'];
+    } else {
       throw FormatException(
           '@context property is needed in verifiable credential');
+    }
 
-    if (credential.containsKey('type'))
+    if (credential.containsKey('type')) {
       type = credential['type'].cast<String>();
-    else
+    } else {
       throw FormatException('type property is needed in verifiable credential');
+    }
 
-    if (credential.containsKey('issuer'))
+    if (credential.containsKey('issuer')) {
       issuer = credential['issuer'];
-    else
+    } else {
       throw FormatException(
           'issuer property is needed in verifiable credential');
+    }
 
     if (credential.containsKey('credentialSubject')) {
       {
         credentialSubject = credential['credentialSubject'];
-        if (!(credentialSubject is Map<String, dynamic>))
+        if (credentialSubject is! Map<String, dynamic>) {
           throw FormatException(
               'Credential subject property must be a Map (dart json Object)');
+        }
       }
-    } else
+    } else {
       throw FormatException(
           'credential subject property is needed in verifiable credential');
+    }
 
-    if (credential.containsKey('issuanceDate'))
+    if (credential.containsKey('issuanceDate')) {
       issuanceDate = DateTime.parse(credential['issuanceDate']);
-    else
+    } else {
       throw FormatException(
           'issuer property is needed in verifiable credential');
+    }
 
     id = credential['id'];
 
-    if (credential.containsKey('expirationDate'))
+    if (credential.containsKey('expirationDate')) {
       expirationDate = DateTime.parse(credential['expirationDate']);
+    }
 
-    if (credential.containsKey(['credentialStatus']))
+    if (credential.containsKey(['credentialStatus'])) {
       status = CredentialStatus.fromJson(credential['credentialStatus']);
+    }
 
-    if (credential.containsKey('proof'))
+    if (credential.containsKey('proof')) {
       proof = LinkedDataProof.fromJson(credential['proof']);
+    }
 
-    if (credential.containsKey('credentialSchema'))
+    if (credential.containsKey('credentialSchema')) {
       credentialSchema =
           CredentialStatus.fromJson(credential['credentialSchema']);
+    }
 
     _originalDoc = credential;
   }
 
+  @override
   Map<String, dynamic> toJson() {
     if (_originalDoc != null) return _originalDoc!;
     Map<String, dynamic> jsonObject = {};
@@ -95,22 +106,24 @@ class VerifiableCredential implements JsonObject {
     jsonObject['issuanceDate'] = issuanceDate.toIso8601String();
     if (proof != null) jsonObject['proof'] = proof!.toJson();
     if (status != null) jsonObject['credentialStatus'] = status!.toJson();
-    if (credentialSchema != null)
+    if (credentialSchema != null) {
       jsonObject['credentialSchema'] = credentialSchema!.toJson();
+    }
 
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
 
   bool isOfSameType(VerifiableCredential other) {
-    if (this.credentialSchema != null && other.credentialSchema != null) {
-      return this.credentialSchema!.type == other.credentialSchema!.type &&
-          this.credentialSchema!.id == other.credentialSchema!.id;
+    if (credentialSchema != null && other.credentialSchema != null) {
+      return credentialSchema!.type == other.credentialSchema!.type &&
+          credentialSchema!.id == other.credentialSchema!.id;
     } else {
-      for (String typeValue in this.type) {
+      for (String typeValue in type) {
         if (!other.type.contains(typeValue)) return false;
       }
       return true;
@@ -141,30 +154,35 @@ class LinkedDataProof implements JsonObject {
 
   LinkedDataProof.fromJson(dynamic jsonObject) {
     var proof = credentialToMap(jsonObject);
-    if (proof.containsKey('type'))
+    if (proof.containsKey('type')) {
       type = proof['type'];
-    else
+    } else {
       throw FormatException('Type property is needed in proof object');
+    }
 
-    if (proof.containsKey('proofPurpose'))
+    if (proof.containsKey('proofPurpose')) {
       proofPurpose = proof['proofPurpose'];
-    else
+    } else {
       throw FormatException('proofPurpose property is needed in proof object');
+    }
 
-    if (proof.containsKey('verificationMethod'))
+    if (proof.containsKey('verificationMethod')) {
       verificationMethod = proof['verificationMethod'];
-    else
+    } else {
       throw FormatException('verification Method is needed in proof object');
+    }
 
-    if (proof.containsKey('created'))
+    if (proof.containsKey('created')) {
       created = DateTime.parse(proof['created']);
-    else
+    } else {
       throw FormatException('created is needed in proof object');
+    }
 
     proofValue = proof['proofValue'];
     jws = proof['jws'];
-    if (jws == null && proofValue == null)
+    if (jws == null && proofValue == null) {
       throw FormatException('one of proofValue or jws must be present');
+    }
 
     domain = proof['domain'];
     challenge = proof['challenge'];
@@ -172,6 +190,7 @@ class LinkedDataProof implements JsonObject {
     _originalDoc = proof;
   }
 
+  @override
   Map<String, dynamic> toJson() {
     if (_originalDoc != null) return _originalDoc!;
 
@@ -187,6 +206,7 @@ class LinkedDataProof implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -201,18 +221,21 @@ class CredentialStatus implements JsonObject {
 
   CredentialStatus.fromJson(dynamic jsonObject) {
     var status = credentialToMap(jsonObject);
-    if (status.containsKey('id'))
+    if (status.containsKey('id')) {
       id = status['id'];
-    else
+    } else {
       throw FormatException('id property is needed in Credential Status');
-    if (status.containsKey('type'))
+    }
+    if (status.containsKey('type')) {
       type = status['type'];
-    else
+    } else {
       throw FormatException('type property is needed in credentialStatus');
+    }
 
     _originalDoc = status;
   }
 
+  @override
   Map<String, dynamic> toJson() {
     if (_originalDoc != null) return _originalDoc!;
 
@@ -222,6 +245,7 @@ class CredentialStatus implements JsonObject {
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -236,6 +260,8 @@ class VerifiablePresentation implements JsonObject {
   String? holder;
   List<LinkedDataProof>? proof;
   PresentationSubmission? presentationSubmission;
+  CredentialFulfillment? credentialFulfillment;
+  CredentialApplication? credentialApplication;
   Map<String, dynamic>? _originalDoc;
 
   VerifiablePresentation(
@@ -245,29 +271,34 @@ class VerifiablePresentation implements JsonObject {
       this.id,
       this.holder,
       this.proof,
-      this.presentationSubmission});
+      this.presentationSubmission,
+      this.credentialFulfillment,
+      this.credentialApplication});
 
   VerifiablePresentation.fromJson(dynamic jsonObject) {
     var presentation = credentialToMap(jsonObject);
-    if (presentation.containsKey('@context'))
+    if (presentation.containsKey('@context')) {
       context = presentation['@context'].cast<String>();
-    else
+    } else {
       throw FormatException(
           'context property is needed in verifiable presentation');
-    if (presentation.containsKey('type'))
+    }
+    if (presentation.containsKey('type')) {
       type = presentation['type'].cast<String>();
-    else
+    } else {
       throw FormatException(
           'type property is needed in verifiable presentation');
+    }
     if (presentation.containsKey('verifiableCredential')) {
       verifiableCredential = [];
       List tmp = presentation['verifiableCredential'];
       for (var c in tmp) {
         verifiableCredential.add(VerifiableCredential.fromJson(c));
       }
-    } else
+    } else {
       throw FormatException(
           'verifiable credential property is needed in verifiable presentation');
+    }
     id = presentation['id'];
     holder = presentation['holder'];
     if (presentation.containsKey('proof')) {
@@ -283,6 +314,16 @@ class VerifiablePresentation implements JsonObject {
       presentationSubmission = PresentationSubmission.fromJson(tmp);
     }
 
+    if (presentation.containsKey('credential_fulfillment')) {
+      credentialFulfillment = CredentialFulfillment.fromJson(
+          presentation['credential_fulfillment']);
+    }
+
+    if (presentation.containsKey('credential_application')) {
+      credentialApplication = CredentialApplication.fromJson(
+          presentation['credential_application']);
+    }
+
     _originalDoc = presentation;
   }
 
@@ -293,21 +334,32 @@ class VerifiablePresentation implements JsonObject {
     jsonObject['@context'] = context;
     jsonObject['type'] = type;
     List tmp = [];
-    for (var c in verifiableCredential) tmp.add(c.toJson());
+    for (var c in verifiableCredential) {
+      tmp.add(c.toJson());
+    }
     jsonObject['verifiableCredential'] = tmp;
     if (id != null) jsonObject['id'] = id;
     if (holder != null) jsonObject['holder'] = holder;
     if (presentationSubmission != null) {
       jsonObject['presentation_submission'] = presentationSubmission!.toJson();
     }
+    if (credentialFulfillment != null) {
+      jsonObject['credential_fulfillment'] = credentialFulfillment!.toJson();
+    }
+    if (credentialApplication != null) {
+      jsonObject['credential_application'] = credentialApplication!.toJson();
+    }
     if (proof != null) {
       tmp = [];
-      for (var p in proof!) tmp.add(p.toJson());
+      for (var p in proof!) {
+        tmp.add(p.toJson());
+      }
       jsonObject['proof'] = tmp;
     }
     return jsonObject;
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }

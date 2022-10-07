@@ -5,9 +5,9 @@ import 'package:crypto/crypto.dart';
 import 'package:crypto_keys/crypto_keys.dart';
 import 'package:dart_ssi/src/dids/did_document.dart';
 import 'package:dart_ssi/src/wallet/wallet_store.dart';
-import 'package:dart_web3/crypto.dart';
 import 'package:elliptic/ecdh.dart' as ecdh;
 import 'package:elliptic/elliptic.dart' as elliptic;
+import 'package:web3dart/crypto.dart';
 import 'package:x25519/x25519.dart' as x25519;
 
 import '../util/types.dart';
@@ -76,6 +76,9 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     for (var keyId in receiverKeyIds) {
       keyIdString += '$keyId.';
     }
+    if (keyIdString.isEmpty) {
+      throw Exception('Cant find keys with matching crv parameter');
+    }
     keyIdString = keyIdString.substring(0, keyIdString.length - 1);
     var apv = removePaddingFromBase64(
         base64UrlEncode(sha256.convert(utf8.encode(keyIdString)).bytes));
@@ -91,25 +94,27 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     //2) look for Key-Type and generate Ephermal Key
 
     elliptic.Curve? c;
-    var epkPrivate;
-    var epkPublic;
+    Object epkPrivate;
+    List<int> epkPublic = [];
     if (curve.startsWith('P')) {
-      if (curve == 'P-256')
+      if (curve == 'P-256') {
         c = elliptic.getP256();
-      else if (curve == 'P-384')
+      } else if (curve == 'P-384') {
         c = elliptic.getP384();
-      else if (curve == 'P-521')
+      } else if (curve == 'P-521') {
         c = elliptic.getP521();
-      else
+      } else {
         throw UnimplementedError();
+      }
 
       epkPrivate = c.generatePrivateKey();
     } else if (curve.startsWith('X')) {
       var eKeyPair = x25519.generateKeyPair();
       epkPrivate = eKeyPair.privateKey;
       epkPublic = eKeyPair.publicKey;
-    } else
+    } else {
       throw UnimplementedError();
+    }
 
     Map<String, dynamic> epkJwk = {'kty': keyType, 'crv': curve};
     if (epkPrivate is elliptic.PrivateKey) {
@@ -119,19 +124,21 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
           base64UrlEncode(intToBytes(epkPrivate.publicKey.Y)));
     } else if (epkPrivate is List<int>) {
       epkJwk['x'] = removePaddingFromBase64(base64UrlEncode(epkPublic));
-    } else
+    } else {
       throw Exception('Unknown Key type');
+    }
     jweHeader['epk'] = epkJwk;
 
     //3) generate symmetric CEK
     var cek = SymmetricKey.generate(256);
     Encrypter e;
-    if (encryptionAlgorithm == EncryptionAlgorithm.a256cbc)
+    if (encryptionAlgorithm == EncryptionAlgorithm.a256cbc) {
       e = cek.createEncrypter(algorithms.encryption.aes.cbcWithHmac.sha512);
-    else if (encryptionAlgorithm == EncryptionAlgorithm.a256gcm)
+    } else if (encryptionAlgorithm == EncryptionAlgorithm.a256gcm) {
       e = cek.createEncrypter(algorithms.encryption.aes.gcm);
-    else
+    } else {
       throw UnimplementedError();
+    }
 
     //4) Generate IV
 
@@ -174,24 +181,27 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
   Future<DidcommMessage> decrypt(WalletStore wallet) async {
     _decodeProtected();
     if (protectedHeaderAlg!.startsWith('ECDH-1PU')) {
-      if (protectedHeaderSkid == null)
+      if (protectedHeaderSkid == null) {
         throw Exception('sender id needed when using AuthCrypt');
+      }
       var senderDDO =
           (await resolveDidDocument(protectedHeaderSkid!.split('#').first))
               .resolveKeyIds()
               .convertAllKeysToJwk();
       for (var key in senderDDO.keyAgreement!) {
         if (key is VerificationMethod) {
-          if (key.publicKeyJwk!['kid'] == protectedHeaderSkid)
+          if (key.publicKeyJwk!['kid'] == protectedHeaderSkid) {
             return decryptWithJwk(
                 await _searchPrivateKey(wallet), key.publicKeyJwk);
+          }
         }
       }
       throw Exception('No key found in did document');
-    } else if (protectedHeaderAlg!.startsWith('ECDH-ES'))
+    } else if (protectedHeaderAlg!.startsWith('ECDH-ES')) {
       return decryptWithJwk(await _searchPrivateKey(wallet));
-    else
+    } else {
       throw Exception('Unknown algorithm');
+    }
   }
 
   Future<Map<String, dynamic>> _searchPrivateKey(WalletStore wallet) async {
@@ -199,9 +209,9 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       String kid = entry['header']['kid']!;
       var did = kid.split('#').first;
       var key = await wallet.getPrivateKeyForConnectionDidAsJwk(did);
-      if (key != null)
+      if (key != null) {
         return key;
-      else {
+      } else {
         key = await wallet.getKeyAgreementKeyForDidAsJwk(did);
         if (key != null) return key;
       }
@@ -218,14 +228,15 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     dynamic receiverPrivate, epkPublic;
 
     if (crv.startsWith('P')) {
-      if (crv == 'P-256')
+      if (crv == 'P-256') {
         c = elliptic.getP256();
-      else if (crv == 'P-384')
+      } else if (crv == 'P-384') {
         c = elliptic.getP384();
-      else if (crv == 'P-521')
+      } else if (crv == 'P-521') {
         c = elliptic.getP521();
-      else
+      } else {
         throw UnimplementedError();
+      }
 
       receiverPrivate = elliptic.PrivateKey(
           c,
@@ -241,8 +252,9 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     } else if (crv.startsWith('X')) {
       receiverPrivate = base64Decode(addPaddingToBase64(privateKeyJwk['d']));
       epkPublic = base64Decode(addPaddingToBase64(protectedHeaderEpk!['x']));
-    } else
+    } else {
       throw UnimplementedError();
+    }
 
     //2) compute shared Secret
     List<int> sharedSecret;
@@ -250,11 +262,12 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       sharedSecret =
           _ecdhES(receiverPrivate, epkPublic, apv: protectedHeaderApv);
     } else if (protectedHeaderAlg!.startsWith('ECDH-1PU')) {
-      if (senderPublicKeyJwk == null)
+      if (senderPublicKeyJwk == null) {
         throw Exception('Public key of sender needed');
+      }
       //var senderDid = base64Decode(addPaddingToBase64(apu));
-      var senderPubKey;
-      if (crv.startsWith('P'))
+      Object senderPubKey;
+      if (crv.startsWith('P')) {
         senderPubKey = elliptic.PublicKey.fromPoint(
             c!,
             elliptic.AffinePoint.fromXY(
@@ -262,18 +275,19 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
                     base64Decode(addPaddingToBase64(senderPublicKeyJwk['x']))),
                 bytesToUnsignedInt(base64Decode(
                     addPaddingToBase64(senderPublicKeyJwk['y'])))));
-      else if (crv.startsWith('X')) {
+      } else if (crv.startsWith('X')) {
         senderPubKey =
             base64Decode(addPaddingToBase64(senderPublicKeyJwk['x']));
-      } else
+      } else {
         throw UnimplementedError();
+      }
 
       sharedSecret = _ecdh1PU(
           receiverPrivate,
           receiverPrivate,
           epkPublic,
           senderPubKey,
-          base64Decode(addPaddingToBase64(this.tag)),
+          base64Decode(addPaddingToBase64(tag)),
           protectedHeaderAlg!,
           protectedHeaderApu!,
           protectedHeaderApv!);
@@ -305,12 +319,13 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     var cek = SymmetricKey(keyValue: decryptedCek);
     //4) Decrypt Body
     Encrypter e;
-    if (protectedHeaderEnc! == 'A256CBC-HS512')
+    if (protectedHeaderEnc! == 'A256CBC-HS512') {
       e = cek.createEncrypter(algorithms.encryption.aes.cbcWithHmac.sha512);
-    else if (protectedHeaderEnc == 'A256GCM')
+    } else if (protectedHeaderEnc == 'A256GCM') {
       e = cek.createEncrypter(algorithms.encryption.aes.gcm);
-    else
+    } else {
       throw UnimplementedError();
+    }
 
     var toDecrypt = EncryptionResult(
         base64Decode(addPaddingToBase64(ciphertext)),
@@ -338,6 +353,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     return m;
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'ciphertext': ciphertext,
@@ -348,6 +364,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     };
   }
 
+  @override
   String toString() {
     return jsonEncode(toJson());
   }
@@ -355,21 +372,25 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
   _decodeProtected() {
     Map<String, dynamic> protectedJson = jsonDecode(
         utf8.decode(base64Decode(addPaddingToBase64(protectedHeader))));
-    if (protectedJson.containsKey('alg'))
+    if (protectedJson.containsKey('alg')) {
       protectedHeaderAlg = protectedJson['alg'];
-    if (protectedJson.containsKey('epk'))
+    }
+    if (protectedJson.containsKey('epk')) {
       protectedHeaderEpk = protectedJson['epk'];
-    if (protectedJson.containsKey('apv'))
+    }
+    if (protectedJson.containsKey('apv')) {
       protectedHeaderApv = protectedJson['apv'];
-    if (protectedJson.containsKey('skid'))
+    }
+    if (protectedJson.containsKey('skid')) {
       protectedHeaderSkid = protectedJson['skid'];
-    if (protectedJson.containsKey('enc'))
+    }
+    if (protectedJson.containsKey('enc')) {
       protectedHeaderEnc = protectedJson['enc'];
+    }
     if (protectedJson.containsKey('apu')) {
       protectedHeaderApu = protectedJson['apu'];
-      if (protectedHeaderSkid == null)
-        protectedHeaderSkid =
-            utf8.decode(base64Decode(addPaddingToBase64(protectedHeaderApu!)));
+      protectedHeaderSkid ??=
+          utf8.decode(base64Decode(addPaddingToBase64(protectedHeaderApu!)));
     }
   }
 
@@ -399,10 +420,11 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
         sharedSecret = _ecdhES(
             epkPrivate, base64Decode(addPaddingToBase64(publicKeyJwk['x']!)),
             apv: apv);
-      } else
+      } else {
         throw UnimplementedError();
+      }
     } else if (keyWrapAlgorithm.startsWith('ECDH-1PU')) {
-      var staticKeyPrivate, pub;
+      Object staticKeyPrivate, pub;
       if (curve.startsWith('P')) {
         staticKeyPrivate = elliptic.PrivateKey(
             c!,
@@ -418,8 +440,9 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
         staticKeyPrivate =
             base64Decode(addPaddingToBase64(senderPrivateKeyJwk!['d']!));
         pub = base64Decode(addPaddingToBase64(publicKeyJwk['x']!));
-      } else
+      } else {
         throw UnimplementedError();
+      }
 
       sharedSecret = _ecdh1PU(
           epkPrivate,
@@ -449,13 +472,14 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
 
   List<int> _ecdhES(dynamic privateKey, dynamic publicKey,
       {String? apu, String? apv}) {
-    var z;
-    if (privateKey is elliptic.PrivateKey && publicKey is elliptic.PublicKey)
+    List<int> z;
+    if (privateKey is elliptic.PrivateKey && publicKey is elliptic.PublicKey) {
       z = ecdh.computeSecret(privateKey, publicKey);
-    else if (privateKey is List<int> && publicKey is List<int>)
+    } else if (privateKey is List<int> && publicKey is List<int>) {
       z = x25519.X25519(privateKey, publicKey);
-    else
+    } else {
       throw Exception('Unknown key-Type');
+    }
 
     //Didcomm only uses A256KW
     var keyDataLen = 256;
@@ -504,7 +528,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       String keyWrapAlgorithm,
       String apu,
       String apv) {
-    var ze, zs;
+    List<int> ze, zs;
 
     if (private1 is elliptic.PrivateKey &&
         private2 is elliptic.PrivateKey &&
@@ -518,8 +542,9 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
         public2 is List<int>) {
       ze = x25519.X25519(private1, public1);
       zs = x25519.X25519(private2, public2);
-    } else
+    } else {
       throw Exception('Unknown Key-Type');
+    }
     var z = ze + zs;
 
     //Didcomm only uses A256KW

@@ -40,17 +40,19 @@ class DidExchangeRequest extends DidcommPlaintextMessage {
   }
 
   DidExchangeRequest.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/didexchange/2.0/request')
+    if (type != 'https://didcomm.org/didexchange/2.0/request') {
       throw Exception('Wrong type');
+    }
     if (parentThreadId == null) throw Exception('Parent thread id needed');
     label = body['label'];
     goalCode = body['goal_code'];
     goal = body['goal'];
-    if (body.containsKey('did'))
+    if (body.containsKey('did')) {
       did = body['did'];
-    else
+    } else {
       throw Exception('did property is needed in didExchangeRequest');
-    if (attachments != null && attachments!.length > 0) {
+    }
+    if (attachments != null && attachments!.isNotEmpty) {
       attachments![0].data.resolveData();
       didDocument = DidDocument.fromJson(attachments![0].data.json!);
     }
@@ -83,14 +85,16 @@ class DidExchangeResponse extends DidcommPlaintextMessage {
 
   DidExchangeResponse.fromJson(dynamic jsonObject)
       : super.fromJson(jsonObject) {
-    if (type != 'https://didcomm.org/didexchange/2.0/response')
+    if (type != 'https://didcomm.org/didexchange/2.0/response') {
       throw Exception('Wrong type');
+    }
     if (threadId == null) throw Exception('thread id needed');
-    if (body.containsKey('did'))
+    if (body.containsKey('did')) {
       did = body['did'];
-    else
+    } else {
       throw Exception('did property is needed in didExchangeRequest');
-    if (attachments != null && attachments!.length > 0) {
+    }
+    if (attachments != null && attachments!.isNotEmpty) {
       attachments![0].data.resolveData();
       didDocument = DidDocument.fromJson(attachments![0].data.json!);
     }

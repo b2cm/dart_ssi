@@ -27,12 +27,12 @@ import 'package:json_schema2/json_schema2.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  var alice = WalletStore('example/didcomm/alice');
+  var alice = WalletStore('exampleData/didcomm/alice');
   await alice.openBoxes('alicePassword');
   await alice.initialize();
   await _issueStudentCard(alice);
 
-  var museum = WalletStore('example/didcomm/museum');
+  var museum = WalletStore('exampleData/didcomm/museum');
   await museum.openBoxes('museumPassword');
   await museum.initialize();
   await museum.initializeIssuer(KeyType.ed25519);
@@ -93,8 +93,9 @@ void main() async {
   var allCreds = alice.getAllCredentials();
   List<Map<String, dynamic>> allW3CCreds = [];
   for (var cred in allCreds.values) {
-    if (cred.w3cCredential != '')
+    if (cred.w3cCredential != '') {
       allW3CCreds.add(jsonDecode(cred.w3cCredential));
+    }
   }
   var searchResult = searchCredentialsForPresentationDefinition(
       allW3CCreds, request.presentationDefinition[0].presentationDefinition);
@@ -136,8 +137,9 @@ void main() async {
 
   //Normally a Wallet has to check which Type it gets here. For this example we know, that it is a plaintext-Massage
   decrypted = decrypted as DidcommPlaintextMessage;
-  if (decrypted.type != 'https://didcomm.org/present-proof/3.0/presentation')
+  if (decrypted.type != 'https://didcomm.org/present-proof/3.0/presentation') {
     throw Exception('Presentation Message expected');
+  }
   var presentationMessageReceived = Presentation.fromJson(decrypted.toJson());
 
   //verifyPresentation
@@ -155,7 +157,7 @@ void main() async {
   if (result.length != 1) throw Exception('Credential dont match definition');
 
   //Now the Museum could start the issuance process for the annual ticket
-  var museumIssuerDid = await museum.getStandardIssuerDid(KeyType.ed25519);
+  var museumIssuerDid = museum.getStandardIssuerDid(KeyType.ed25519);
   var credentialSubject = {
     'id': 'did:key:00000',
     'institution': 'Museum of modern Art',
@@ -195,7 +197,7 @@ void main() async {
   //Alice checks, if the did the credential should issued to is controlled by her
   var did = receivedOffer.detail![0].credential.credentialSubject['id'];
   print(did);
-  var key;
+  String? key;
   try {
     key = await alice.getPrivateKeyForCredentialDid(did);
   } catch (e) {
