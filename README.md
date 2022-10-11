@@ -7,9 +7,6 @@ Additional two exchange protocols ([IWCE](https://b2cm.github.io/iwce/) and
 
 **Important Note**: This package is work-in-progress. The API is subject to change and the code was not tested extensively.
 
-## API Documentation
-To get a complete documentation of the API of this library use [`dart doc`](https://dart.dev/tools/dart-doc).
-
 ## Getting Started
 
 To setup a Wallet just do this:
@@ -27,7 +24,7 @@ Most important part of this package are the credentials supported by it. These c
 using a simple hash-based mechanism.
 Therefore every attribute of a credential is hashed with a salt. The verifiable credential signed by the issuer
 only contains the hashes. In the wallet of the holder both credentials - the one containing all values 
-with their salts and the signed one - are stored. 
+with their salts and the signed one - are stored. Usage of this selective disclosure mechanism is optional.
 E.g. the first mentioned type - in the package referred to to as plaintext-credential -
 looks like this:
 ```
@@ -71,7 +68,7 @@ For now the only supported signature-suites for the proof-section are
 [EcdsaSecp256k1RecoverySignature2020](https://identity.foundation/EcdsaSecp256k1RecoverySignature2020/) and 
 [Ed25519Signature2020](https://w3c-ccg.github.io/lds-ed25519-2020/).
 If you need another one the API for signing in verifying credentials is extensible. How you could develop and use your own signature suites is described in 
-[extendSigners.md](https://github.com/b2cm/dart_ssi/blob/didcomm/extendSigners.md)
+[extendSigners.md](./extendSigners.md)
 
 ### Some Notes on Json-Ld Signatures
 - for security and performance reasons some important Json-ld contexts are bundled with this library. These are:
@@ -80,14 +77,14 @@ If you need another one the API for signing in verifying credentials is extensib
   - https://w3id.org/security/suites/secp256k1recovery-2020/v2
   - https://w3id.org/security/suites/ed25519-2020/v1
   - https://identity.foundation/presentation-exchange/submission/v1/
-- The function used to load context is implemented that way that it only loads the named contexts. It will not download things from the web. All functions that need such a document loader have an optional paramter `loadDocumentFunction`. This means you can write your own function for loading contexts if needed.
+- The function used to load context is implemented that way that it only loads the named contexts. It will not download things from the web. All functions that need such a document loader have an optional parameter `loadDocumentFunction`. This means you can write your own function for loading contexts if needed.
 - The [safeMode option](https://pub.dev/packages/json_ld_processor#safemode-option) of the Json-ld processor is set to true
 
 ## Usage of Credentials
 As the [W3C-Specification for Verifiable Credentials](https://www.w3.org/TR/vc-data-model/) describes, a credential is issued by an issuer, stored by a holder and presented to verifier. 
-How to achieve this using this package is shown in the examples [issuance.dart](https://github.com/b2cm/dart_ssi/blob/master/examples/issuance.dart) 
-and [verification.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/verification.dart). Beside this a credential could be revoked by its issuer
-as shown in [credentialRevocation.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/credentialRevocation.dart). 
+How to achieve this using this package is shown in the examples [issuance.dart](./example/issuance.dart) 
+and [verification.dart](./example/verification.dart). Beside this a credential could be revoked by its issuer
+as shown in [credential_revocation.dart](./example/credential_revocation.dart). 
 For the revocation a simple Ethereum-SmartContract is used, that should be deployed for each issuer.
 
 ## Key- and Identifier Management
@@ -105,13 +102,13 @@ This package only supports credentials that are issued to different dids each, b
 
 With the [ERC1056-SmartContract (EthereumDIDRegistry)](https://eips.ethereum.org/EIPS/eip-1056) it is for
 example possible to rotate a key if it is lost/corrupted.
-An example for that could be found in [keyRotation.dart](https://github.com/b2cm/dart_ssi/blob/master/examples/keyRotation.dart).  
+An example for that could be found in [key_rotation.dart](./example/key_rotation.dart).  
 
 An identifier could not only be used to bind credentials on it. 
 They could also be used to encrypt/sign didcomm messages with or as an replacement for an 'normal' username. 
 These are referred to as ConnectionDIDs in this package.
 A usage example for the second case could be found in 
-[registration.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/registration.dart). 
+[registration.dart](./example/registration.dart). 
 Therefore a
 registration process for a new user within an online-service could include the following steps:   
 
@@ -130,7 +127,7 @@ From a message level perspective the following Message/Protocols are supported:
 - [present-proof V3](https://github.com/decentralized-identity/waci-presentation-exchange/blob/main/present_proof/present-proof-v3.md) with [DIF Presentation Exchange Attachment](https://github.com/hyperledger/aries-rfcs/tree/main/features/0510-dif-pres-exch-attach) and the slightly change that this packages uses [V2 of presentation exchanges](https://identity.foundation/presentation-exchange/) and tries to support all features of it and not only the listed ones in the definition of the attachment format.
 
 
-A full example for issuing a credential and requesting a presentation using didcomm can be found in [didcomm.dart](https://github.com/b2cm/dart_ssi/blob/didcomm/examples/didcomm.dart) 
+A full example for issuing a credential and requesting a presentation using didcomm can be found in [didcomm.dart](./example/didcomm.dart) 
 
 ### Differences to Didcomm spec
 - This library supports explizit two additional headers for the plaintext messages not mentioned in the spec. These are `reply_url` and `reply_to`. 

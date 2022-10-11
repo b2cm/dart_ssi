@@ -1,6 +1,6 @@
 name: dart_ssi
 description: Dart Package supporting Verifiable Credentials, Dids, a wallet for them, Didcomm and IWCE
-version: 1.0.2
+version: 1.0.3
 repository: https://github.com/b2cm/dart_ssi/
 
 environment:
