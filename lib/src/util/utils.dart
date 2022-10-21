@@ -4,9 +4,11 @@ import 'dart:typed_data';
 
 import 'package:asn1lib/asn1lib.dart';
 import 'package:base_codecs/base_codecs.dart';
+import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:web3dart/crypto.dart';
 
 import '../credentials/credential_operations.dart';
+import '../wallet/wallet_store.dart';
 
 Uint8List _multibaseToUint8List(String multibase) {
   if (multibase.startsWith('z')) {
@@ -279,4 +281,132 @@ class CertificateInformation {
     }
     return sans;
   }
+}
+
+ASN1Set _buildSubjectInfoPart(String part, String data) {
+  var set = ASN1Set();
+  var seq = ASN1Sequence();
+  List<int> oid = [2, 5, 4];
+  switch (part) {
+    case 'commonName':
+      oid.add(3);
+      break;
+    case 'stateOrProvinceName':
+      oid.add(8);
+      break;
+    case 'localityName':
+      oid.add(7);
+      break;
+    case 'organizationName':
+      oid.add(10);
+      break;
+    case 'organizationalUnitName':
+      oid.add(11);
+      break;
+  }
+  seq.add(ASN1ObjectIdentifier(oid, identifier: part));
+  seq.add(ASN1UTF8String(data));
+  set.add(seq);
+  return set;
+}
+
+/// Generate a x509 Certificate Signing Request for a key belonging to [did].
+Future<String> buildCsrForDid(WalletStore wallet, String did,
+    {String? countryCode,
+    String? state,
+    String? city,
+    String? organization,
+    String? organizationalUnit,
+    String? emailAddress}) async {
+  if (!did.startsWith('did:key:z6Mk')) {
+    throw Exception('Only did:key with Ed25519 keys are supported now');
+  }
+
+  String? privateKey;
+  privateKey = await wallet.getPrivateKeyForCredentialDid(did);
+  privateKey ??= await wallet.getPrivateKeyForConnectionDid(did);
+  if (privateKey == null) {
+    throw Exception('Could not find private Key for DID $did');
+  }
+
+  var key = ed.PrivateKey(hexToBytes(privateKey).toList());
+  var pub = ed.public(key);
+
+  var csr = ASN1Sequence();
+  var cri = ASN1Sequence();
+
+  //Version
+  cri.add(ASN1Integer(BigInt.zero));
+
+  //subject
+  var subject = ASN1Sequence();
+
+  //countryCode in subject
+  if (countryCode != null) {
+    if (countryCode.length != 2) {
+      throw Exception('Only two letter countryCodes are accepted');
+    }
+    var country = ASN1Sequence();
+    country.add(ASN1ObjectIdentifier([2, 5, 4, 6], identifier: 'countryName'));
+    country.add(ASN1PrintableString(countryCode));
+    var countrySet = ASN1Set();
+    countrySet.add(country);
+    subject.add(countrySet);
+  }
+
+  if (state != null) {
+    subject.add(_buildSubjectInfoPart('stateOrProvinceName', state));
+  }
+  if (city != null) {
+    subject.add(_buildSubjectInfoPart('localityName', city));
+  }
+  if (organization != null) {
+    subject.add(_buildSubjectInfoPart('organizationName', organization));
+  }
+  if (organizationalUnit != null) {
+    subject.add(
+        _buildSubjectInfoPart('organizationalUnitName', organizationalUnit));
+  }
+
+  subject.add(_buildSubjectInfoPart('commonName', did));
+
+  //email
+  if (emailAddress != null) {
+    var country = ASN1Sequence();
+    country.add(ASN1ObjectIdentifier([1, 2, 840, 113549, 1, 9, 1],
+        identifier: 'countryName'));
+    country.add(ASN1IA5String(emailAddress));
+    var countrySet = ASN1Set();
+    countrySet.add(country);
+    subject.add(countrySet);
+  }
+
+  //subject public Key
+  var publicKey = ASN1Sequence();
+  var pubKeyId = ASN1Sequence();
+  pubKeyId.add(ASN1ObjectIdentifier([1, 3, 101, 112]));
+  publicKey.add(pubKeyId);
+  publicKey.add(ASN1BitString(pub.bytes));
+  var sigId = ASN1Sequence()..add(ASN1ObjectIdentifier([1, 3, 101, 112]));
+
+  //build together Certificate Request Info
+  cri.add(subject);
+  cri.add(publicKey);
+
+  //sign
+  var sig = ed.sign(ed.PrivateKey(hexToBytes(privateKey).toList()),
+      Uint8List.fromList(cri.encodedBytes));
+  csr.add(cri);
+  csr.add(sigId);
+  csr.add(ASN1BitString(sig));
+
+  //buildPem
+  var buffer = StringBuffer();
+  var bytes = csr.encodedBytes;
+  buffer.writeln('-----BEGIN CERTIFICATE REQUEST-----');
+  for (var i = 0; i < bytes.length; i += 48) {
+    buffer.writeln(base64.encode(bytes.skip(i).take(48).toList()));
+  }
+  buffer.writeln('-----END CERTIFICATE REQUEST-----');
+  return buffer.toString();
 }

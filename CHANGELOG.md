@@ -1,3 +1,7 @@
+## 1.0.3
+- add function to build x509 certificate signing request for did
+- update readme.md
+
 ## 1.0.2
 - small bug-fixes
 - prepare for publishing (actual linting, etc.)
