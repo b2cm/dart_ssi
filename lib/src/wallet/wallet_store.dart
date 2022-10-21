@@ -416,7 +416,7 @@ class WalletStore {
     } else if (keyType == KeyType.ed25519) {
       return _getNextCredentialDIDWithEdKey();
     } else {
-      throw Exception('Unknown KeyType');
+      throw Exception('Unsupported Credential KeyType `$keyType`');
     }
   }
 
@@ -798,7 +798,7 @@ class WalletStore {
           return bytesToHex(_edPrivateToXPrivate(
               ed.newKeyFromSeed(Uint8List.fromList(key.key))));
         } else {
-          throw Exception('Could not find a key for this did');
+          throw Exception('Could not find a key for did `$did`');
         }
       }
     } else {
@@ -902,6 +902,8 @@ class WalletStore {
       protocol = DidcommProtocol.presentProof;
     } else if (message.type.contains('discover-features')) {
       protocol = DidcommProtocol.discoverFeature;
+    } else if (message.type.contains('invitation')) {
+      protocol = DidcommProtocol.invitation;
     } else {
       throw Exception('unsupported Protocol');
     }

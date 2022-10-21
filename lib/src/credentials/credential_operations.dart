@@ -850,7 +850,7 @@ String getHolderDidFromCredential(dynamic credential) {
 /// ```
 /// {
 ///   "alg" : "EdDSA",
-///   "crv" : Ed25519,
+///   "crv" : "Ed25519"
 /// }
 /// ```
 /// if did is of type did:key with appropriate key-Material
@@ -866,7 +866,8 @@ Future<String> signStringOrJson(
     return _signStringEddsa(wallet, didToSignWith, toSign,
         detached: detached, jwsHeader: jwsHeader);
   } else {
-    throw UnimplementedError('Could not sign with this did');
+    throw UnimplementedError('did with type `$didToSignWith` '
+        'is not supported for signing');
   }
 }
 

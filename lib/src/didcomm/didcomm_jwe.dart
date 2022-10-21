@@ -205,9 +205,11 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
   }
 
   Future<Map<String, dynamic>> _searchPrivateKey(WalletStore wallet) async {
+    var didsTried = [];
     for (var entry in recipients) {
       String kid = entry['header']['kid']!;
       var did = kid.split('#').first;
+      didsTried.add(did);
       var key = await wallet.getPrivateKeyForConnectionDidAsJwk(did);
       if (key != null) {
         return key;
@@ -216,7 +218,10 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
         if (key != null) return key;
       }
     }
-    throw Exception('No Key Found');
+    throw Exception(
+        'No Key found in the wallet for following '
+        'dids: ${didsTried.isNotEmpty ? didsTried.join(', ') : 'none due to '
+            'recipient in message'}');
   }
 
   DidcommMessage decryptWithJwk(Map<String, dynamic> privateKeyJwk,
@@ -235,7 +240,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       } else if (crv == 'P-521') {
         c = elliptic.getP521();
       } else {
-        throw UnimplementedError();
+        throw UnimplementedError("Curve `$crv` not supported");
       }
 
       receiverPrivate = elliptic.PrivateKey(
@@ -253,7 +258,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       receiverPrivate = base64Decode(addPaddingToBase64(privateKeyJwk['d']));
       epkPublic = base64Decode(addPaddingToBase64(protectedHeaderEpk!['x']));
     } else {
-      throw UnimplementedError();
+      throw UnimplementedError("Curve `$crv` not supported");
     }
 
     //2) compute shared Secret
@@ -279,7 +284,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
         senderPubKey =
             base64Decode(addPaddingToBase64(senderPublicKeyJwk['x']));
       } else {
-        throw UnimplementedError();
+        throw UnimplementedError("Curve `$crv` is not supported");
       }
 
       sharedSecret = _ecdh1PU(
@@ -292,7 +297,8 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
           protectedHeaderApu!,
           protectedHeaderApv!);
     } else {
-      throw UnimplementedError();
+      throw UnimplementedError("Algorithm `${protectedHeaderAlg!}`"
+          " is not supported");
     }
     //3) Decrypt cek
 

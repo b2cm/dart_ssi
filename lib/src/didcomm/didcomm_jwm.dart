@@ -47,7 +47,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       this.ack,
       this.webRedirect,
       this.additionalHeaders}) {
-    if (pleaseAck) this.pleaseAck = ['receipt'];
+    if (pleaseAck) this.pleaseAck = [this.id];
     this.threadId = threadId ?? id;
   }
 
