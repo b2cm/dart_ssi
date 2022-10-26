@@ -1211,23 +1211,29 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
     if (descriptor.constraints!.fields != null) {
       var fields = descriptor.constraints!.fields!;
       for (var cred in creds) {
+        Set<bool> isCandidateSet = {};
         for (var field in fields) {
           if (field.predicate != null) {
             throw UnimplementedError(
                 'Evaluating predicate feature is not supported yet');
           }
+          bool pathMatch = false;
           for (var path in field.path) {
             var match = path.read(cred);
             var matchList = match.toList();
             if (matchList.isEmpty) continue;
             if (field.filter != null) {
               if (field.filter!.validate(matchList[0].value)) {
-                candidate.add(cred);
+                pathMatch = true;
               }
             } else {
-              candidate.add(cred);
+              pathMatch = true;
             }
           }
+          isCandidateSet.add(pathMatch);
+        }
+        if (isCandidateSet.length == 1 && isCandidateSet.first) {
+          candidate.add(cred);
         }
       }
     }
