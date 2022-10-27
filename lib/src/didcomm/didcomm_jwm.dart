@@ -259,7 +259,7 @@ class AttachmentData implements JsonObject {
   String? hash;
   List<String>? links;
   String? base64;
-  Map<String, dynamic>? json;
+  dynamic json;
 
   AttachmentData({this.jws, this.hash, this.links, this.base64, this.json});
 
