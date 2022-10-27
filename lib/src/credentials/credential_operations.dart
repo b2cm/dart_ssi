@@ -732,6 +732,54 @@ List<String> getAllJsonPathsOfCredential(dynamic w3cCredential) {
   return paths;
 }
 
+PresentationDefinition buildPresentationDefinitionForCredential(
+    dynamic credential) {
+  VerifiableCredential cred;
+  if (credential is VerifiableCredential) {
+    cred = credential;
+  } else {
+    cred = VerifiableCredential.fromJson(credential);
+  }
+
+  List<InputDescriptorField> fields = [];
+
+  // var type = cred.type.firstWhere(
+  //     (element) => element != 'VerifiableCredential',
+  //     orElse: () => '');
+  // if (type.isNotEmpty) {
+  //   var typeField = InputDescriptorField(
+  //       path: [JsonPath(r'$.type')],
+  //       filter: JsonSchema.createSchema({
+  //         'type': 'array',
+  //         'contains': {'type': 'string', 'pattern': type}
+  //       }));
+  //   fields.add(typeField);
+  // }
+
+  var vcAsJson = cred.toJson();
+
+  var paths = getAllJsonPathsOfCredential(vcAsJson);
+
+  for (var path in paths) {
+    var asJsonPath = JsonPath('\$.credentialSubject.$path');
+    var value = asJsonPath.read(vcAsJson).first.value;
+    var field = InputDescriptorField(path: [JsonPath('\$..$path')]);
+    if (value is String) {
+      field.filter =
+          JsonSchema.createSchema({'type': 'string', 'pattern': value});
+    } else if (value is num) {
+      field.filter = JsonSchema.createSchema({'type': 'number'});
+    } else if (value is bool) {
+      field.filter = JsonSchema.createSchema({'type': 'boolean'});
+    }
+    fields.add(field);
+  }
+
+  return PresentationDefinition(inputDescriptors: [
+    InputDescriptor(constraints: InputDescriptorConstraints(fields: fields))
+  ]);
+}
+
 String buildJwsHeader(
     {required String alg,
     String? jku,

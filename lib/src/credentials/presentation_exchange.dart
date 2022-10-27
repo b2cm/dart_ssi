@@ -273,12 +273,7 @@ class InputDescriptorField implements JsonObject {
   Limiting? predicate;
 
   InputDescriptorField(
-      {required this.path,
-      String? id,
-      this.purpose,
-      this.filter,
-      this.predicate})
-      : id = id ?? Uuid().v4();
+      {required this.path, this.id, this.purpose, this.filter, this.predicate});
 
   InputDescriptorField.fromJson(dynamic fieldJson) {
     var field = credentialToMap(fieldJson);
