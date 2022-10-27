@@ -56,7 +56,7 @@ class WalletStore {
   /// Constructs a wallet at file-system path [path].
   WalletStore(this._walletPath) {
     Hive.init(_walletPath);
-    _nameExpansion = _walletPath.replaceAll('/', '_');
+    _nameExpansion = _walletPath.replaceAll('/', '_').replaceAll(r'\', '_');
     var split = _nameExpansion.split('_');
     if (split.length > 3) {
       _nameExpansion =
