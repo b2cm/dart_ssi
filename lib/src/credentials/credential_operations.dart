@@ -732,6 +732,7 @@ List<String> getAllJsonPathsOfCredential(dynamic w3cCredential) {
   return paths;
 }
 
+/// Build a Presentation definition to e.g. propose the given [credential] for presentation.
 PresentationDefinition buildPresentationDefinitionForCredential(
     dynamic credential) {
   VerifiableCredential cred;
@@ -743,18 +744,18 @@ PresentationDefinition buildPresentationDefinitionForCredential(
 
   List<InputDescriptorField> fields = [];
 
-  // var type = cred.type.firstWhere(
-  //     (element) => element != 'VerifiableCredential',
-  //     orElse: () => '');
-  // if (type.isNotEmpty) {
-  //   var typeField = InputDescriptorField(
-  //       path: [JsonPath(r'$.type')],
-  //       filter: JsonSchema.createSchema({
-  //         'type': 'array',
-  //         'contains': {'type': 'string', 'pattern': type}
-  //       }));
-  //   fields.add(typeField);
-  // }
+  var type = cred.type.firstWhere(
+      (element) => element != 'VerifiableCredential',
+      orElse: () => '');
+  if (type.isNotEmpty) {
+    var typeField = InputDescriptorField(
+        path: [JsonPath(r'$.type')],
+        filter: JsonSchema.createSchema({
+          'type': 'array',
+          'contains': {'type': 'string', 'pattern': type}
+        }));
+    fields.add(typeField);
+  }
 
   var vcAsJson = cred.toJson();
 

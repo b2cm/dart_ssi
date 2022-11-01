@@ -1,3 +1,7 @@
+## 1.0.4
+- bugfixes (in: filtering credentials according to a presentation definition; the wallet, didcomm message attachments; please-ack header)
+- function to build presentation Definition for a credential (to e.g. propose it for presentation)
+
 ## 1.0.3
 - add function to build x509 certificate signing request for did
 - update readme.md

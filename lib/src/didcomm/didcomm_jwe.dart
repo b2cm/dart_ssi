@@ -178,6 +178,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     this.recipients = recipients;
   }
 
+  /// Decrypt this encrypted message using keys from [wallet].
   Future<DidcommMessage> decrypt(WalletStore wallet) async {
     _decodeProtected();
     if (protectedHeaderAlg!.startsWith('ECDH-1PU')) {
