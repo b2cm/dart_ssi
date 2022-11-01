@@ -1199,6 +1199,11 @@ FilterResult _processSubmissionRequirement(
   List<Map<String, dynamic>> creds = [];
   for (String d in accordingDescriptors) {
     var credsForDescriptor = filterResultPerDescriptor[d];
+    if (requirement.rule == SubmissionRequirementRule.all) {
+      if (credsForDescriptor.isEmpty) {
+        throw Exception('Cant fullfill submission requirement');
+      }
+    }
     if (creds.isEmpty) {
       creds = credsForDescriptor;
     } else {
