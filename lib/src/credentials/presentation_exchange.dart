@@ -684,12 +684,14 @@ class FilterResult implements JsonObject {
   late String presentationDefinitionId;
   SubmissionRequirement? submissionRequirement;
   late List<String> matchingDescriptorIds;
+  List<InputDescriptorConstraints>? selfIssuable;
 
   FilterResult(
       {required this.credentials,
       required this.matchingDescriptorIds,
       this.submissionRequirement,
-      required this.presentationDefinitionId});
+      required this.presentationDefinitionId,
+      this.selfIssuable});
 
   @override
   Map<String, dynamic> toJson() {
@@ -703,6 +705,13 @@ class FilterResult implements JsonObject {
       jsonObject['submissionRequirement'] = submissionRequirement!.toJson();
     }
     jsonObject['matchingDescriptorIds'] = matchingDescriptorIds;
+    if (selfIssuable != null && selfIssuable!.isNotEmpty) {
+      List self = [];
+      for (var i in selfIssuable!) {
+        self.add(i.toJson());
+      }
+      jsonObject['selfIssuable'] = self;
+    }
     return jsonObject;
   }
 

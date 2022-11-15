@@ -91,10 +91,10 @@ void main() async {
 
   //Alice searches her Wallet for matching credentials
   var allCreds = alice.getAllCredentials();
-  List<Map<String, dynamic>> allW3CCreds = [];
+  List<VerifiableCredential> allW3CCreds = [];
   for (var cred in allCreds.values) {
     if (cred.w3cCredential != '') {
-      allW3CCreds.add(jsonDecode(cred.w3cCredential));
+      allW3CCreds.add(VerifiableCredential.fromJson(cred.w3cCredential));
     }
   }
   var searchResult = searchCredentialsForPresentationDefinition(
@@ -152,7 +152,6 @@ void main() async {
   var result = searchCredentialsForPresentationDefinition([
     presentationMessageReceived
         .verifiablePresentation[0].verifiableCredential[0]
-        .toJson()
   ], presentationDefinition);
   if (result.length != 1) throw Exception('Credential dont match definition');
 

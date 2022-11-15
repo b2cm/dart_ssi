@@ -7,7 +7,7 @@ import 'package:web3dart/web3dart.dart';
 
 void main() async {
   const String rpcRopsten =
-      'https://ropsten.infura.io/v3/c79506ae5f37452681b58978ac57e927';
+      'https://goerli.infura.io/v3/c79506ae5f37452681b58978ac57e927';
 
   var revRopsten = RevocationRegistry(rpcRopsten,
       contractAddress: '0x77b8cb68d784a46d1bc4b9c9e8894f8fb39d099f');

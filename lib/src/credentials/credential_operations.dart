@@ -1119,7 +1119,7 @@ Future<bool> _verifyEthr(String jws, String expectedDid,
 }
 
 List<FilterResult> searchCredentialsForPresentationDefinition(
-    List<Map<String, dynamic>> credentials,
+    List<VerifiableCredential> credentials,
     PresentationDefinition presentationDefinition) {
   var globalFormat = presentationDefinition.format;
   if (globalFormat != null) {
@@ -1131,7 +1131,7 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
   }
 
   if (presentationDefinition.submissionRequirement != null) {
-    Map<String, dynamic> filterResultPerDescriptor = {};
+    Map<String, FilterResult> filterResultPerDescriptor = {};
     Map<String, dynamic> descriptorGroups = {};
 
     //search things for all descriptors
@@ -1164,21 +1164,22 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
     }
     return finalCredList;
   } else {
-    List<Map<String, dynamic>> inputCreds = credentials;
+    List<VerifiableCredential> inputCreds = credentials;
     List<String> allDescriptorIds = [];
+    List<InputDescriptorConstraints> allSelfIssuables = [];
     for (var descriptor in presentationDefinition.inputDescriptors) {
       //Without any requirements, all input_descriptors must be fulfilled
       allDescriptorIds.add(descriptor.id);
-      inputCreds =
-          _processInputDescriptor(descriptor, globalFormat, inputCreds);
-    }
-    List<VerifiableCredential> vcList = [];
-    for (var c in inputCreds) {
-      vcList.add(VerifiableCredential.fromJson(c));
+      var res = _processInputDescriptor(descriptor, globalFormat, inputCreds);
+      inputCreds = res.credentials;
+      if (res.selfIssuable != null) {
+        allSelfIssuables.addAll(res.selfIssuable!);
+      }
     }
     return [
       FilterResult(
-          credentials: vcList,
+          selfIssuable: allSelfIssuables.isNotEmpty ? allSelfIssuables : null,
+          credentials: inputCreds,
           matchingDescriptorIds: allDescriptorIds,
           presentationDefinitionId: presentationDefinition.id)
     ];
@@ -1186,7 +1187,7 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
 }
 
 FilterResult _processSubmissionRequirement(
-    Map<String, dynamic> filterResultPerDescriptor,
+    Map<String, FilterResult> filterResultPerDescriptor,
     Map<String, dynamic> descriptorGroups,
     SubmissionRequirement requirement,
     String definitionId) {
@@ -1195,49 +1196,55 @@ FilterResult _processSubmissionRequirement(
     //TODO:process path nested in submission requirement
     throw UnimplementedError('Cant process from nested entries yet');
   }
+
   List<String> accordingDescriptors = descriptorGroups[requirement.from];
-  List<Map<String, dynamic>> creds = [];
+  List<VerifiableCredential> creds = [];
+  List<InputDescriptorConstraints> selfIssuable = [];
+
   for (String d in accordingDescriptors) {
-    var credsForDescriptor = filterResultPerDescriptor[d];
+    var descriptor = filterResultPerDescriptor[d]!;
+    if (descriptor.selfIssuable != null) {
+      selfIssuable.addAll(descriptor.selfIssuable!);
+    }
+    var credsForDescriptor = descriptor.credentials;
     if (requirement.rule == SubmissionRequirementRule.all) {
       if (credsForDescriptor.isEmpty) {
-        throw Exception('Cant fullfill submission requirement');
+        throw Exception('Cant fulfill submission requirement');
       }
     }
     if (creds.isEmpty) {
       creds = credsForDescriptor;
     } else {
-      List<Map<String, dynamic>> toAdd = [];
+      List<VerifiableCredential> toAdd = [];
       for (var c1 in creds) {
         for (var c2 in credsForDescriptor) {
           //TODO find better criteria to compare
-          if (c1['id'] != c2['id']) toAdd.add(c2);
+          if (c1.id != c2.id) toAdd.add(c2);
         }
       }
       creds += toAdd;
     }
   }
+
   if (requirement.rule == SubmissionRequirementRule.pick) {
     int notLower = 0;
     if (requirement.count != null) notLower = requirement.count!;
     if (requirement.min != null) notLower = requirement.min!;
-    if (creds.length < notLower) {
+    if (creds.length < notLower && selfIssuable.isEmpty) {
       throw Exception('Could not fullfill submission requirement');
     }
   }
-  List<VerifiableCredential> vcList = [];
-  for (var c in creds) {
-    vcList.add(VerifiableCredential.fromJson(c));
-  }
+
   return FilterResult(
-      credentials: vcList,
+      selfIssuable: selfIssuable.isNotEmpty ? selfIssuable : null,
+      credentials: creds,
       matchingDescriptorIds: accordingDescriptors,
       submissionRequirement: requirement,
       presentationDefinitionId: definitionId);
 }
 
-List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
-    FormatProperty? globalFormat, List<Map<String, dynamic>> creds) {
+FilterResult _processInputDescriptor(InputDescriptor descriptor,
+    FormatProperty? globalFormat, List<VerifiableCredential> creds) {
   var localFormat = globalFormat;
   if (descriptor.format != null) {
     if (descriptor.format != null) {
@@ -1251,7 +1258,7 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
     }
   }
 
-  List<Map<String, dynamic>> candidate = [];
+  List<VerifiableCredential> candidate = [];
   if (descriptor.constraints != null) {
     if (descriptor.constraints!.isHolder != null) {
       throw UnimplementedError('is_holder property is not supported yet');
@@ -1262,9 +1269,23 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
     if (descriptor.constraints!.statuses != null) {
       throw UnimplementedError('statuses feature is not supported yet');
     }
+    // if (descriptor.constraints!.subjectIsIssuer != null) {
+    //   if (descriptor.constraints!.subjectIsIssuer! == Limiting.required) {
+    //     return FilterResult(
+    //         credentials: [],
+    //         matchingDescriptorIds: [descriptor.id],
+    //         presentationDefinitionId: '',
+    //         selfIssuable: [descriptor.constraints!]);
+    //   }
+    // }
+
     if (descriptor.constraints!.fields != null) {
       var fields = descriptor.constraints!.fields!;
       for (var cred in creds) {
+        if (descriptor.constraints!.subjectIsIssuer != null &&
+            descriptor.constraints!.subjectIsIssuer! == Limiting.required) {
+          if (!cred.isSelfIssued()) continue;
+        }
         Set<bool> isCandidateSet = {};
         for (var field in fields) {
           if (field.predicate != null) {
@@ -1273,7 +1294,7 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
           }
           bool pathMatch = false;
           for (var path in field.path) {
-            var match = path.read(cred);
+            var match = path.read(cred.toJson());
             var matchList = match.toList();
             if (matchList.isEmpty) continue;
             if (field.filter != null) {
@@ -1295,18 +1316,30 @@ List<Map<String, dynamic>> _processInputDescriptor(InputDescriptor descriptor,
 
   //check against format
   if (localFormat != null) {
-    List<Map<String, dynamic>> candidateFormatFiltered = [];
+    List<VerifiableCredential> candidateFormatFiltered = [];
     for (var cred in candidate) {
-      String credProofFormat = cred['proof']['type'];
+      String credProofFormat = cred.proof!.type;
       if (localFormat.ldpVc != null) {
         if (localFormat.ldpVc!.proofType.contains(credProofFormat)) {
           candidateFormatFiltered.add(cred);
         }
       }
     }
-    return candidateFormatFiltered;
+    return FilterResult(
+        selfIssuable: descriptor.constraints?.subjectIsIssuer != null
+            ? [descriptor.constraints!]
+            : null,
+        credentials: candidateFormatFiltered,
+        matchingDescriptorIds: [descriptor.id],
+        presentationDefinitionId: '');
   }
-  return candidate;
+  return FilterResult(
+      selfIssuable: descriptor.constraints?.subjectIsIssuer != null
+          ? [descriptor.constraints!]
+          : null,
+      credentials: candidate,
+      matchingDescriptorIds: [descriptor.id],
+      presentationDefinitionId: '');
 }
 
 //***********************Private Methods***************************************

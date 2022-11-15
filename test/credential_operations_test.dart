@@ -2062,8 +2062,10 @@ void main() async {
         }
       };
 
-      var result = searchCredentialsForPresentationDefinition(
-          [vc1, vc2], PresentationDefinition.fromJson(presentationDefinition));
+      var result = searchCredentialsForPresentationDefinition([
+        VerifiableCredential.fromJson(vc1),
+        VerifiableCredential.fromJson(vc2)
+      ], PresentationDefinition.fromJson(presentationDefinition));
       expect(result.length, 1);
     });
 
@@ -2116,8 +2118,10 @@ void main() async {
           ]
         }
       };
-      var result = searchCredentialsForPresentationDefinition(
-          [vc1, vc3], PresentationDefinition.fromJson(presentationDefinition));
+      var result = searchCredentialsForPresentationDefinition([
+        VerifiableCredential.fromJson(vc1),
+        VerifiableCredential.fromJson(vc3)
+      ], PresentationDefinition.fromJson(presentationDefinition));
       expect(result.length, 1);
     });
   });
