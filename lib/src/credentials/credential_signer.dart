@@ -420,7 +420,7 @@ class EdDsaSigner extends Signer {
 
     var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
     var hash = pOptionsHash + hashToSign;
-    print(hash);
+    // print(hash);
 
     var privateKey = await wallet.getPrivateKeyForCredentialDid(did);
     privateKey ??= await wallet.getPrivateKeyForConnectionDid(did);
@@ -480,7 +480,7 @@ class EdDsaSigner extends Signer {
                 JsonLdOptions(safeMode: true, documentLoader: loadDocument))))
         .bytes;
     var hashToSign = proofHash + hash;
-    print(hashToSign);
+    // print(hashToSign);
 
     proof.remove('@context');
     proof['proofValue'] = proofValue;

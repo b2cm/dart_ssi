@@ -57,7 +57,8 @@ extension JwsSignatureAlgorithmExt on JwsSignatureAlgorithm {
   String get value => values[this]!;
 }
 
-enum DidcommProtocol { issueCredential, presentProof, discoverFeature, invitation }
+enum DidcommProtocol { issueCredential, presentProof, discoverFeature, invitation,
+  requestPresentation }
 
 extension DidcommProtocolsExt on DidcommProtocol {
   static const Map<DidcommProtocol, String> values = {

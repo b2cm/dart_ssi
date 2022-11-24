@@ -904,6 +904,8 @@ class WalletStore {
       protocol = DidcommProtocol.discoverFeature;
     } else if (message.type.contains('invitation')) {
       protocol = DidcommProtocol.invitation;
+    } else if (message.type.contains('request-presentation')){
+      protocol = DidcommProtocol.requestPresentation;
     } else {
       throw Exception('unsupported Protocol');
     }
