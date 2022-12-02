@@ -57,13 +57,15 @@ extension JwsSignatureAlgorithmExt on JwsSignatureAlgorithm {
   String get value => values[this]!;
 }
 
-enum DidcommProtocol { issueCredential, presentProof, discoverFeature }
+enum DidcommProtocol { issueCredential, presentProof, discoverFeature, invitation,
+  requestPresentation }
 
 extension DidcommProtocolsExt on DidcommProtocol {
   static const Map<DidcommProtocol, String> values = {
     DidcommProtocol.issueCredential: 'issue-credential',
     DidcommProtocol.presentProof: 'present-proof',
-    DidcommProtocol.discoverFeature: 'discover-features'
+    DidcommProtocol.discoverFeature: 'discover-features',
+    DidcommProtocol.invitation: 'invitation'
   };
   String get value => values[this]!;
 }
@@ -81,7 +83,13 @@ enum DidcommMessages {
   discoverFeatureQuery,
   discoverFeatureDisclose,
   invitation,
-  problemReport
+  problemReport;
+
+  // gets the enum type by its descriptive name will throw
+  // a [StateError] if it was not found
+  DidcommMessages byName(String name) {
+    return DidcommMessages.values.firstWhere((element) => element.value == name);
+  }
 }
 
 extension DidcommMessagesExt on DidcommMessages {
@@ -114,6 +122,7 @@ extension DidcommMessagesExt on DidcommMessages {
   };
   String get value => values[this]!;
   List<String> get allValues => values.values.toList();
+
 }
 
 enum AttachmentFormat {

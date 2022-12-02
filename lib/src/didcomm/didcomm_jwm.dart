@@ -47,7 +47,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       this.ack,
       this.webRedirect,
       this.additionalHeaders}) {
-    if (pleaseAck) this.pleaseAck = [id];
+    if (pleaseAck) this.pleaseAck = [this.id];
     this.threadId = threadId ?? id;
   }
 
@@ -84,7 +84,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
           typ = DidcommMessageTyp.encrypted;
           break;
         default:
-          throw Exception('Unknown typ');
+          throw Exception('Unknown typ field ${typTmp}');
       }
     }
     var tmp = decoded['created_time'];
@@ -116,12 +116,12 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
         }
       }
     }
-    if (decoded.containsKey('please_ack')) {
+    if (decoded.containsKey('please_ack') && decoded['please_ack'] != null) {
       pleaseAck = decoded['please_ack'].cast<String>();
     }
-    if (decoded.containsKey('ack')) ack = decoded['ack'].cast<String>();
+    if (decoded.containsKey('ack') && decoded['please_ack'] != null) ack = decoded['ack'].cast<String>();
 
-    if (decoded.containsKey('web_redirect')) {
+    if (decoded.containsKey('web_redirect') && decoded['web_redirect'] != null) {
       webRedirect = WebRedirect.fromJson(decoded['web_redirect']);
     }
 
@@ -223,7 +223,7 @@ class Attachment implements JsonObject {
     filename = decoded['filename'];
     mediaType = decoded['media_type'];
     format = decoded['format'];
-    if (decoded.containsKey('lastmod_time')) {
+    if (decoded.containsKey('lastmod_time') && decoded['lastmod_time'] != null) {
       lastmodTime = DateTime.fromMillisecondsSinceEpoch(
           decoded['lastmod_time'] * 1000,
           isUtc: true);
@@ -267,7 +267,7 @@ class AttachmentData implements JsonObject {
     Map<String, dynamic> decoded = credentialToMap(jsonData);
     jws = decoded['jws'];
     hash = decoded['hash'];
-    if (decoded.containsKey('links')) links = decoded['links'].cast<String>();
+    if (decoded.containsKey('links')) links = decoded['links']?.cast<String>();
     base64 = decoded['base64'];
     json = decoded['json'];
   }
