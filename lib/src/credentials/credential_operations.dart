@@ -1208,7 +1208,7 @@ FilterResult _processSubmissionRequirement(
     }
     var credsForDescriptor = descriptor.credentials;
     if (requirement.rule == SubmissionRequirementRule.all) {
-      if (credsForDescriptor.isEmpty) {
+      if (credsForDescriptor.isEmpty && descriptor.selfIssuable == null) {
         throw Exception('Cant fulfill submission requirement');
       }
     }
@@ -1296,9 +1296,11 @@ FilterResult _processInputDescriptor(InputDescriptor descriptor,
           for (var path in field.path) {
             var match = path.read(cred.toJson());
             var matchList = match.toList();
-            if (matchList.isEmpty) continue;
+            if (matchList.isEmpty &&
+                (field.optional == null || field.optional == false)) continue;
             if (field.filter != null) {
-              if (field.filter!.validate(matchList[0].value)) {
+              if (field.filter!.validate(matchList[0].value) &&
+                  (field.optional == null || field.optional == false)) {
                 pathMatch = true;
               }
             } else {

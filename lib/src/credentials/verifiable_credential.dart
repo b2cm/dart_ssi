@@ -134,9 +134,9 @@ class VerifiableCredential implements JsonObject {
     if (issuer is String && credentialSubject is String) {
       return issuer == credentialSubject;
     } else if (issuer is String && credentialSubject is Map) {
-      return issuer = credentialSubject['id'];
+      return issuer == credentialSubject['id'];
     } else if (issuer is Map && credentialSubject is String) {
-      return issuer['id'] = credentialSubject;
+      return issuer['id'] == credentialSubject;
     } else if (issuer is Map && credentialSubject is Map) {
       return issuer['id'] == credentialSubject['id'];
     } else {

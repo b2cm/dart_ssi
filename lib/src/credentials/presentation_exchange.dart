@@ -264,7 +264,9 @@ class InputDescriptorField implements JsonObject {
   late List<JsonPath> path;
   String? id;
   String? purpose;
+  String? name;
   JsonSchema? filter;
+  bool? optional;
 
   /// Either `required` or `preferred`.
   ///
@@ -273,7 +275,13 @@ class InputDescriptorField implements JsonObject {
   Limiting? predicate;
 
   InputDescriptorField(
-      {required this.path, this.id, this.purpose, this.filter, this.predicate});
+      {required this.path,
+      this.id,
+      this.purpose,
+      this.name,
+      this.filter,
+      this.optional,
+      this.predicate});
 
   InputDescriptorField.fromJson(dynamic fieldJson) {
     var field = credentialToMap(fieldJson);
@@ -289,9 +297,11 @@ class InputDescriptorField implements JsonObject {
 
     if (field.containsKey('id')) id = field['id'];
     if (field.containsKey('purpose')) purpose = field['purpose'];
+    if (field.containsKey('name')) name = field['name'];
     if (field.containsKey('filter')) {
       filter = JsonSchema.createSchema(field['filter']);
     }
+    if (field.containsKey('optional')) optional = field['optional'];
     if (field.containsKey('predicate')) {
       String p = field['predicate'];
       if (p == 'preferred') {
@@ -315,6 +325,8 @@ class InputDescriptorField implements JsonObject {
 
     if (id != null) jsonObject['id'] = id;
     if (purpose != null) jsonObject['purpose'] = purpose;
+    if (name != null) jsonObject['name'] = name;
+    if (optional != null) jsonObject['optional'] = optional;
 
     if (filter != null) jsonObject['filter'] = jsonDecode(filter!.toJson());
     if (predicate != null) {

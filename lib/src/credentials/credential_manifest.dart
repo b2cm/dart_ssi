@@ -8,6 +8,9 @@ import 'presentation_exchange.dart';
 
 class CredentialManifest implements JsonObject {
   late String id;
+  String? name;
+  String? description;
+  late String specVersion;
   late IssuerProperty issuer;
   late List<OutputDescriptor> outputDescriptor;
   FormatProperty? format;
@@ -15,6 +18,10 @@ class CredentialManifest implements JsonObject {
 
   CredentialManifest(
       {String? id,
+      this.name,
+      this.description,
+      this.specVersion =
+          'https://identity.foundation/credential-manifest/spec/v1.0.0/',
       required this.issuer,
       required this.outputDescriptor,
       this.format,
@@ -28,6 +35,10 @@ class CredentialManifest implements JsonObject {
     } else {
       throw Exception('id property needed in Credential manifest');
     }
+    name = map['name'];
+    description = map['description'];
+    specVersion = map['spec_version'] ??
+        'https://identity.foundation/credential-manifest/spec/v0.0.0/';
     if (map.containsKey('issuer')) {
       issuer = IssuerProperty.fromJson(map['issuer']);
     } else {
@@ -55,10 +66,18 @@ class CredentialManifest implements JsonObject {
   Map<String, dynamic> toJson() {
     var map = {
       'id': id,
+      'spec_version': specVersion,
       'issuer': issuer.toJson(),
       'output_descriptors': List.generate(
           outputDescriptor.length, (index) => outputDescriptor[index].toJson())
     };
+    if (name != null) {
+      map['name'] = name!;
+    }
+    if (description != null) {
+      map['description'] = description!;
+    }
+
     if (format != null) {
       map['format'] = format!.toJson();
     }
@@ -420,10 +439,16 @@ class SchemaObject implements JsonObject {
 class CredentialApplication implements JsonObject {
   late String id;
   late String manifestId;
+  late String specVersion;
   late FormatProperty format;
+  PresentationSubmission? presentationSubmission;
 
   CredentialApplication(
-      {String? id, required this.manifestId, required this.format})
+      {String? id,
+      required this.manifestId,
+      this.specVersion =
+          'https://identity.foundation/credential-manifest/spec/v1.0.0/',
+      required this.format})
       : id = id ?? Uuid().v4();
 
   CredentialApplication.fromJson(dynamic jsonObject) {
@@ -434,6 +459,8 @@ class CredentialApplication implements JsonObject {
       throw Exception('id property needed in Credential application');
     }
 
+    specVersion = map['spec_version'] ??
+        'https://identity.foundation/credential-manifest/spec/v0.0.0/';
     if (map.containsKey('manifest_id')) {
       manifestId = map['manifest_id'];
     } else {
@@ -445,6 +472,11 @@ class CredentialApplication implements JsonObject {
     } else {
       throw Exception('format property needed in credential Application');
     }
+
+    if (map.containsKey('presentation_submission')) {
+      presentationSubmission =
+          PresentationSubmission.fromJson(map['presentation_submission']);
+    }
   }
 
   @override
@@ -452,8 +484,12 @@ class CredentialApplication implements JsonObject {
     Map<String, dynamic> map = {
       'id': id,
       'manifest_id': manifestId,
+      'spec_version': specVersion,
       'format': format.toJson()
     };
+    if (presentationSubmission != null) {
+      map['presentation_submission'] = presentationSubmission!.toJson();
+    }
     return map;
   }
 
