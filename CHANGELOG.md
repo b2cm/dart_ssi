@@ -1,3 +1,6 @@
+## 1.0.5
+- bugfixes and improvements
+
 ## 1.0.4
 - bugfixes (in: filtering credentials according to a presentation definition; the wallet, didcomm message attachments; please-ack header)
 - function to build presentation Definition for a credential (to e.g. propose it for presentation)
