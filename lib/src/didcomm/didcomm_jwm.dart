@@ -56,7 +56,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
     id = decoded['id']!;
     type = decoded['type']!;
     replyUrl = decoded['reply_url'];
-    if (decoded.containsKey('reply_to')) {
+    if (decoded.containsKey('reply_to') && decoded['reply_to'] != null) {
       replyTo = decoded['reply_to'].cast<String>();
     }
     if (decoded.containsKey('body')) {
