@@ -56,8 +56,10 @@ class VerifiableCredential implements JsonObject {
       {
         credentialSubject = credential['credentialSubject'];
         if (credentialSubject is! Map<String, dynamic>) {
-          throw FormatException(
-              'Credential subject property must be a Map (dart json Object)');
+          if (credentialSubject is! List) {
+            throw FormatException(
+                'Credential subject property must be a Map or List (dart json Object)');
+          }
         }
       }
     } else {

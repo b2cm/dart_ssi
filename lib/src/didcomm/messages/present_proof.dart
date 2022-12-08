@@ -140,7 +140,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
-          format: AttachmentFormat.presentationDefinition.value,
+          format: AttachmentFormat.presentationDefinition2.value,
           mediaType: 'application/json');
       attachments!.add(attachment);
     }
@@ -159,7 +159,8 @@ class RequestPresentation extends DidcommPlaintextMessage {
       presentationDefinition = [];
 
       for (var a in attachments!) {
-        if (a.format == AttachmentFormat.presentationDefinition.value) {
+        if (a.format == AttachmentFormat.presentationDefinition.value ||
+            a.format == AttachmentFormat.presentationDefinition2.value) {
           a.data.resolveData();
           presentationDefinition
               .add(PresentationDefinitionWithOptions.fromJson(a.data.json!));
@@ -224,7 +225,7 @@ class Presentation extends DidcommPlaintextMessage {
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
-          format: AttachmentFormat.presentationSubmission.value,
+          format: AttachmentFormat.presentationSubmission2.value,
           mediaType: 'application/json');
       attachments!.add(attachment);
     }
@@ -241,7 +242,8 @@ class Presentation extends DidcommPlaintextMessage {
       verifiablePresentation = [];
 
       for (var a in attachments!) {
-        if (a.format == AttachmentFormat.presentationSubmission.value) {
+        if (a.format == AttachmentFormat.presentationSubmission.value ||
+            a.format == AttachmentFormat.presentationSubmission2.value) {
           a.data.resolveData();
           var tmp = VerifiablePresentation.fromJson(a.data.json);
           if (tmp.presentationSubmission == null) {

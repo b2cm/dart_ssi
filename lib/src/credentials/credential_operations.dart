@@ -489,7 +489,8 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
     bool verified = await verifyCredential(element,
         erc1056: erc1056,
         revocationRegistry: revocationRegistry,
-        signerSelector: signerSelector);
+        signerSelector: signerSelector,
+        loadDocumentFunction: loadDocumentFunction);
     if (!verified) {
       throw Exception('A credential could not been verified');
     } else {
@@ -1120,8 +1121,16 @@ Future<bool> _verifyEthr(String jws, String expectedDid,
 }
 
 List<FilterResult> searchCredentialsForPresentationDefinition(
-    List<VerifiableCredential> credentials,
-    PresentationDefinition presentationDefinition) {
+    List<dynamic> credentials, PresentationDefinition presentationDefinition) {
+  var creds = <VerifiableCredential>[];
+  for (var entry in credentials) {
+    if (entry is VerifiableCredential) {
+      creds.add(entry);
+    } else {
+      creds.add(VerifiableCredential.fromJson(entry));
+    }
+  }
+
   var globalFormat = presentationDefinition.format;
   if (globalFormat != null) {
     if (globalFormat.ldpVp == null &&
@@ -1154,7 +1163,7 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
 
       //credentials per descriptor
       var filteredCreds =
-          _processInputDescriptor(descriptor, globalFormat, credentials);
+          _processInputDescriptor(descriptor, globalFormat, creds);
       filterResultPerDescriptor[descriptor.id] = filteredCreds;
     }
     //Evaluate submission requirements
@@ -1165,7 +1174,7 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
     }
     return finalCredList;
   } else {
-    List<VerifiableCredential> inputCreds = credentials;
+    List<VerifiableCredential> inputCreds = creds;
     List<String> allDescriptorIds = [];
     List<InputDescriptorConstraints> allSelfIssuables = [];
     for (var descriptor in presentationDefinition.inputDescriptors) {

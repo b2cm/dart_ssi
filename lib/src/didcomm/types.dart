@@ -57,8 +57,13 @@ extension JwsSignatureAlgorithmExt on JwsSignatureAlgorithm {
   String get value => values[this]!;
 }
 
-enum DidcommProtocol { issueCredential, presentProof, discoverFeature, invitation,
-  requestPresentation }
+enum DidcommProtocol {
+  issueCredential,
+  presentProof,
+  discoverFeature,
+  invitation,
+  requestPresentation
+}
 
 extension DidcommProtocolsExt on DidcommProtocol {
   static const Map<DidcommProtocol, String> values = {
@@ -88,7 +93,8 @@ enum DidcommMessages {
   // gets the enum type by its descriptive name will throw
   // a [StateError] if it was not found
   DidcommMessages byName(String name) {
-    return DidcommMessages.values.firstWhere((element) => element.value == name);
+    return DidcommMessages.values
+        .firstWhere((element) => element.value == name);
   }
 }
 
@@ -122,13 +128,13 @@ extension DidcommMessagesExt on DidcommMessages {
   };
   String get value => values[this]!;
   List<String> get allValues => values.values.toList();
-
 }
 
 enum AttachmentFormat {
   presentationDefinition,
   presentationDefinition2,
   presentationSubmission,
+  presentationSubmission2,
   ldProofVc,
   ldProofVcDetail,
   credentialManifestAries,
@@ -151,6 +157,8 @@ extension AttachmentFormatExt on AttachmentFormat {
         'dif/presentation-exchange/definitions@v2.0',
     AttachmentFormat.presentationSubmission:
         'dif/presentation-exchange/submission@v1.0',
+    AttachmentFormat.presentationSubmission2:
+        'dif/presentation-exchange/submission@v2.0',
     AttachmentFormat.ldProofVc: 'aries/ld-proof-vc@v1.0',
     AttachmentFormat.ldProofVcDetail: 'aries/ld-proof-vc-detail@v1.0',
     AttachmentFormat.credentialManifestAries: 'dif/credential-manifest@v1.0',

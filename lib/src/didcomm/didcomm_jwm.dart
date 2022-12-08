@@ -119,9 +119,11 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
     if (decoded.containsKey('please_ack') && decoded['please_ack'] != null) {
       pleaseAck = decoded['please_ack'].cast<String>();
     }
-    if (decoded.containsKey('ack') && decoded['please_ack'] != null) ack = decoded['ack'].cast<String>();
+    if (decoded.containsKey('ack') && decoded['please_ack'] != null)
+      ack = decoded['ack'].cast<String>();
 
-    if (decoded.containsKey('web_redirect') && decoded['web_redirect'] != null) {
+    if (decoded.containsKey('web_redirect') &&
+        decoded['web_redirect'] != null) {
       webRedirect = WebRedirect.fromJson(decoded['web_redirect']);
     }
 
@@ -223,7 +225,8 @@ class Attachment implements JsonObject {
     filename = decoded['filename'];
     mediaType = decoded['media_type'];
     format = decoded['format'];
-    if (decoded.containsKey('lastmod_time') && decoded['lastmod_time'] != null) {
+    if (decoded.containsKey('lastmod_time') &&
+        decoded['lastmod_time'] != null) {
       lastmodTime = DateTime.fromMillisecondsSinceEpoch(
           decoded['lastmod_time'] * 1000,
           isUtc: true);
