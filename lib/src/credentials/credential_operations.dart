@@ -1219,7 +1219,7 @@ FilterResult _processSubmissionRequirement(
     var credsForDescriptor = descriptor.credentials;
     if (requirement.rule == SubmissionRequirementRule.all) {
       if (credsForDescriptor.isEmpty && descriptor.selfIssuable == null) {
-        throw Exception('Cant fulfill submission requirement');
+        throw Exception('Can\'t fulfill submission requirement');
       }
     }
     if (creds.isEmpty) {

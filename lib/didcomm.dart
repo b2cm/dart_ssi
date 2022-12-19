@@ -7,3 +7,13 @@ export 'src/didcomm/messages/discover_feature.dart';
 export 'src/didcomm/messages/issue_credential.dart';
 export 'src/didcomm/messages/present_proof.dart';
 export 'src/didcomm/types.dart';
+export 'src/didcomm/handlers/abstract_didcomm_message_handler.dart';
+export 'src/didcomm/didcomm_service.dart';
+export 'src/didcomm/oob_service.dart';
+
+export 'src/didcomm/handlers/invitation_handler.dart';
+export 'src/didcomm/handlers/propose_credential.dart';
+export 'src/didcomm/handlers/request_credential.dart';
+export 'src/didcomm/handlers/issue_credential.dart';
+export 'src/didcomm/handlers/offer_credential.dart';
+export 'src/didcomm/handlers/presentation_request_handler.dart';
