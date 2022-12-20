@@ -181,7 +181,7 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
     }
   }
 
-  List<String> credContext = [];
+  List<dynamic> credContext = [];
   credContext.add('https://www.w3.org/2018/credentials/v1');
   if (context != null) {
     if (context is String) {
@@ -193,8 +193,12 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
         context.remove('https://www.w3.org/2018/credentials/v1');
       }
       credContext += context;
+    } else if (context is Map) {
+      credContext.add(context);
+    } else if (context is List) {
+      credContext += context;
     } else {
-      throw Exception('type has unknown datatype');
+      throw Exception('context has unknown datatype');
     }
   }
   // adding context of Plaintext-credential
