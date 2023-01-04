@@ -33,6 +33,7 @@ class ProposeCredential extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             type: DidcommMessages.proposeCredential.value,
@@ -50,6 +51,7 @@ class ProposeCredential extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -132,6 +134,7 @@ class OfferCredential extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             type: DidcommMessages.offerCredential.value,
@@ -149,6 +152,7 @@ class OfferCredential extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -254,6 +258,7 @@ class RequestCredential extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             type: DidcommMessages.requestCredential.value,
@@ -271,6 +276,7 @@ class RequestCredential extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -353,6 +359,7 @@ class IssueCredential extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             type: DidcommMessages.issueCredential.value,
@@ -370,6 +377,7 @@ class IssueCredential extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -441,6 +449,7 @@ class PreviewCredential extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
@@ -458,6 +467,7 @@ class PreviewCredential extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ);
 
   PreviewCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {

@@ -26,6 +26,7 @@ class QueryMessage extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
@@ -44,6 +45,7 @@ class QueryMessage extends DidcommPlaintextMessage {
             replyTo: replyTo,
             to: to,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     List<Map<String, dynamic>> q = [];
     for (var query in queries) {
@@ -87,6 +89,7 @@ class DiscloseMessage extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
@@ -105,6 +108,7 @@ class DiscloseMessage extends DidcommPlaintextMessage {
             replyTo: replyTo,
             to: to,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     List<Map<String, dynamic>> d = [];
     for (var dis in disclosures) {

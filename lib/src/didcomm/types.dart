@@ -189,3 +189,14 @@ extension AcknowledgeStatusExt on AcknowledgeStatus {
   };
   String get value => values[this]!;
 }
+
+enum ReturnRouteValue { none, all, thread }
+
+extension ReturnRouteValueExt on ReturnRouteValue {
+  static const Map<ReturnRouteValue, String> values = {
+    ReturnRouteValue.none: 'none',
+    ReturnRouteValue.all: 'all',
+    ReturnRouteValue.thread: 'thread'
+  };
+  String get value => values[this]!;
+}

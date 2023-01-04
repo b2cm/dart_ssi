@@ -22,6 +22,7 @@ class EmptyMessage extends DidcommPlaintextMessage {
       Map<String, dynamic>? additionalHeaders,
       DidcommMessageTyp? typ,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       List<String>? ack})
       : super(
             id: id ?? Uuid().v4(),
@@ -40,6 +41,7 @@ class EmptyMessage extends DidcommPlaintextMessage {
             additionalHeaders: additionalHeaders,
             typ: typ,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             ack: ack);
 
   EmptyMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
@@ -56,27 +58,28 @@ class ProblemReport extends DidcommPlaintextMessage {
   List<String>? args;
   String? escalateTo;
 
-  ProblemReport(
-      {String? id,
-      required String parentThreadId,
-      List<String>? ack,
-      required this.code,
-      this.comment,
-      this.args,
-      this.escalateTo,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      DidcommMessageTyp? typ,
-      WebRedirect? webRedirect})
-      : super(
+  ProblemReport({
+    String? id,
+    required String parentThreadId,
+    List<String>? ack,
+    required this.code,
+    this.comment,
+    this.args,
+    this.escalateTo,
+    String? replyUrl,
+    List<String>? replyTo,
+    String? threadId,
+    String? from,
+    List<String>? to,
+    DateTime? createdTime,
+    DateTime? expiresTime,
+    bool pleaseAck = false,
+    FromPriorJWT? fromPrior,
+    Map<String, dynamic>? additionalHeaders,
+    DidcommMessageTyp? typ,
+    WebRedirect? webRedirect,
+    ReturnRouteValue? returnRoute,
+  }) : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.problemReport.value,
             body: {},
@@ -93,6 +96,7 @@ class ProblemReport extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     body['code'] = code;
     if (comment != null) body['comment'] = comment;
@@ -161,7 +165,8 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       DidcommMessageTyp? typ,
-      WebRedirect? webRedirect})
+      WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.invitation.value,
@@ -179,7 +184,8 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
             pleaseAck: pleaseAck,
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect) {
+            webRedirect: webRedirect,
+            returnRoute: returnRoute) {
     if (goal != null) body['goal'] = goal;
     if (goalCode != null) body['goal_code'] = goalCode;
     List<String> tmp = [];

@@ -31,6 +31,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
@@ -48,6 +49,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
@@ -114,6 +116,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
@@ -131,6 +134,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
@@ -196,6 +200,7 @@ class Presentation extends DidcommPlaintextMessage {
       FromPriorJWT? fromPrior,
       Map<String, dynamic>? additionalHeaders,
       WebRedirect? webRedirect,
+      ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
@@ -213,6 +218,7 @@ class Presentation extends DidcommPlaintextMessage {
             fromPrior: fromPrior,
             additionalHeaders: additionalHeaders,
             webRedirect: webRedirect,
+            returnRoute: returnRoute,
             typ: typ) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;

@@ -27,6 +27,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
   String? replyUrl;
   List<String>? replyTo;
   WebRedirect? webRedirect;
+  ReturnRouteValue? returnRoute;
 
   DidcommPlaintextMessage(
       {required this.id,
@@ -46,7 +47,8 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       bool pleaseAck = false,
       this.ack,
       this.webRedirect,
-      this.additionalHeaders}) {
+      this.additionalHeaders,
+      this.returnRoute}) {
     if (pleaseAck) this.pleaseAck = [this.id];
     this.threadId = threadId ?? id;
   }
@@ -119,14 +121,29 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
     if (decoded.containsKey('please_ack') && decoded['please_ack'] != null) {
       pleaseAck = decoded['please_ack'].cast<String>();
     }
-    if (decoded.containsKey('ack') && decoded['please_ack'] != null)
+    if (decoded.containsKey('ack') && decoded['please_ack'] != null) {
       ack = decoded['ack'].cast<String>();
+    }
 
     if (decoded.containsKey('web_redirect') &&
         decoded['web_redirect'] != null) {
       webRedirect = WebRedirect.fromJson(decoded['web_redirect']);
     }
 
+    if (decoded.containsKey('return_route')) {
+      var tmp = decoded['return_route'];
+      switch (tmp) {
+        case 'all':
+          returnRoute = ReturnRouteValue.all;
+          break;
+        case 'none':
+          returnRoute = ReturnRouteValue.none;
+          break;
+        case 'thread':
+          returnRoute = ReturnRouteValue.thread;
+          break;
+      }
+    }
     decoded.remove('to');
     decoded.remove('from');
     decoded.remove('id');
@@ -144,6 +161,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
     decoded.remove('reply_to');
     decoded.remove('reply_url');
     decoded.remove('web_redirect');
+    decoded.remove('return_route');
     if (decoded.isNotEmpty) additionalHeaders = decoded;
   }
 
@@ -166,6 +184,8 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
 
     if (pleaseAck != null) message['please_ack'] = pleaseAck;
     if (ack != null) message['ack'] = ack;
+    if (webRedirect != null) message['web_redirect'] = webRedirect!.toJson();
+    if (returnRoute != null) message['return_route'] = returnRoute!.value;
     if (additionalHeaders != null) message.addAll(additionalHeaders!);
     message['body'] = body;
 
