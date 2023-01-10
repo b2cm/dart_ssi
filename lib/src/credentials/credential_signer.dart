@@ -252,11 +252,11 @@ class EcdsaRecoverySignature extends Signer {
   Future<bool> verify(proof, data, String did, {String? challenge}) async {
     //compare challenge
     if (challenge != null) {
-      var containingChallenge = proof['challenge'];
-      if (containingChallenge == null) {
+      var containedChallenge = proof['challenge'];
+      if (containedChallenge == null) {
         throw Exception('Expected challenge in this credential');
       }
-      if (containingChallenge != challenge) {
+      if (containedChallenge != challenge) {
         throw Exception('a challenge do not match expected challenge');
       }
     }
