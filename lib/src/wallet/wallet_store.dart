@@ -816,7 +816,8 @@ class WalletStore {
       var private = await getKeyAgreementKeyForDid(did);
       if (private != null) {
         Map<String, dynamic> key = {};
-        key['kid'] = '$did#${did.split(':').last}';
+        key['kid'] =
+            '$did#z${ed25519PublicToX25519Public(base58Bitcoin.decode(did.split(':').last.substring(1)).sublist(2))}';
         key['kty'] = 'OKP';
         key['crv'] = 'X25519';
         key['d'] = removePaddingFromBase64(
@@ -904,7 +905,7 @@ class WalletStore {
       protocol = DidcommProtocol.discoverFeature;
     } else if (message.type.contains('invitation')) {
       protocol = DidcommProtocol.invitation;
-    } else if (message.type.contains('request-presentation')){
+    } else if (message.type.contains('request-presentation')) {
       protocol = DidcommProtocol.requestPresentation;
     } else {
       throw Exception('unsupported Protocol');

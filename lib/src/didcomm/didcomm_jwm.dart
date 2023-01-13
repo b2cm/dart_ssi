@@ -49,7 +49,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       this.webRedirect,
       this.additionalHeaders,
       this.returnRoute}) {
-    if (pleaseAck) this.pleaseAck = [this.id];
+    if (pleaseAck) this.pleaseAck = [id];
     this.threadId = threadId ?? id;
   }
 
@@ -86,7 +86,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
           typ = DidcommMessageTyp.encrypted;
           break;
         default:
-          throw Exception('Unknown typ field ${typTmp}');
+          throw Exception('Unknown typ field $typTmp');
       }
     }
     var tmp = decoded['created_time'];

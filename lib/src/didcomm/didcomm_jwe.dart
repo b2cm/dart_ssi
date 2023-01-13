@@ -14,7 +14,6 @@ import '../util/types.dart';
 import '../util/utils.dart';
 import 'didcomm_jwm.dart';
 import 'didcomm_jws.dart';
-import 'messages/basic_messages.dart';
 import 'types.dart';
 
 ///A didcomm encrypted message
@@ -211,16 +210,15 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       String kid = entry['header']['kid']!;
       var did = kid.split('#').first;
       didsTried.add(did);
-      var key = await wallet.getPrivateKeyForConnectionDidAsJwk(did);
+      var key = await wallet.getKeyAgreementKeyForDidAsJwk(did);
       if (key != null) {
         return key;
       } else {
-        key = await wallet.getKeyAgreementKeyForDidAsJwk(did);
+        key = await wallet.getPrivateKeyForConnectionDidAsJwk(did);
         if (key != null) return key;
       }
     }
-    throw Exception(
-        'No Key found in the wallet for following '
+    throw Exception('No Key found in the wallet for following '
         'dids: ${didsTried.isNotEmpty ? didsTried.join(', ') : 'none due to '
             'recipient in message'}');
   }
@@ -264,10 +262,12 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
 
     //2) compute shared Secret
     List<int> sharedSecret;
+    bool authcrypt = false;
     if (protectedHeaderAlg!.startsWith('ECDH-ES')) {
       sharedSecret =
           _ecdhES(receiverPrivate, epkPublic, apv: protectedHeaderApv);
     } else if (protectedHeaderAlg!.startsWith('ECDH-1PU')) {
+      authcrypt = true;
       if (senderPublicKeyJwk == null) {
         throw Exception('Public key of sender needed');
       }
@@ -342,19 +342,29 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
 
     var plain = e.decrypt(toDecrypt);
     //5)return body
-    DidcommMessage m = EmptyMessage();
-    try {
-      m = DidcommPlaintextMessage.fromJson(utf8.decode(plain));
-    } catch (e) {
-      try {
-        m = DidcommSignedMessage.fromJson(utf8.decode(plain));
-      } catch (e) {
-        try {
-          m = DidcommEncryptedMessage.fromJson(utf8.decode(plain));
-        } catch (e) {
-          throw Exception('Unknown Message type');
+    DidcommMessage m;
+    Map message = jsonDecode(utf8.decode(plain));
+
+    if (message.containsKey('id')) {
+      m = DidcommPlaintextMessage.fromJson(message);
+      m as DidcommPlaintextMessage;
+      if (authcrypt) {
+        if (m.from != null) {
+          if (m.from != protectedHeaderSkid!.split('#').first) {
+            throw Exception(
+                'From value of plaintext Message do not match skid of encrypted message');
+          }
+        } else {
+          throw Exception(
+              'from header in plaintext message is required if authcrypt is used');
         }
       }
+    } else if (message.containsKey('ciphertext')) {
+      m = DidcommSignedMessage.fromJson(message);
+    } else if (message.containsKey('signatures')) {
+      m = DidcommEncryptedMessage.fromJson(message);
+    } else {
+      throw Exception('Unknown Message type');
     }
 
     return m;

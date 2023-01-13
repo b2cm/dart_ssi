@@ -1,11 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:base_codecs/base_codecs.dart';
-import 'package:x25519/src/curve25519.dart' as x25519;
+import 'package:dart_ssi/src/util/private_util.dart';
 
 import 'did_document.dart';
-
-const _xMultiCodec = [236, 1];
 
 DidDocument resolveDidKey(String did) {
   if (!did.startsWith('did:key')) throw Exception('Unexpected did');
@@ -38,7 +34,7 @@ DidDocument resolveDidKey(String did) {
 
 DidDocument _buildEDDoc(List<String> context, String id, String keyPart) {
   var multiCodecXKey =
-      _ed25519PublicToX25519Public(base58Bitcoin.decode(keyPart).sublist(2));
+      ed25519PublicToX25519Public(base58Bitcoin.decode(keyPart).sublist(2));
   if (!multiCodecXKey.startsWith('6LS')) {
     throw Exception(
         'Something went wrong during conversion from Ed25515 to curve25519 key');
@@ -80,25 +76,4 @@ DidDocument _buildXDoc(List<String> context, String id, String keyPart) {
       id: id,
       verificationMethod: [verification],
       keyAgreement: [verificationKeyId]);
-}
-
-//ported from https://github.com/oasisprotocol/ed25519/blob/master/extra/x25519/x25519.go
-String _ed25519PublicToX25519Public(List<int> ed25519Public) {
-  var Y = x25519.FieldElement();
-  x25519.feFromBytes(Y, ed25519Public);
-  var oneMinusY = x25519.FieldElement();
-  x25519.FeOne(oneMinusY);
-  x25519.FeSub(oneMinusY, oneMinusY, Y);
-  x25519.feInvert(oneMinusY, oneMinusY);
-
-  var outX = x25519.FieldElement();
-  x25519.FeOne(outX);
-  x25519.FeAdd(outX, outX, Y);
-
-  x25519.feMul(outX, outX, oneMinusY);
-
-  var dst = List.filled(32, 0);
-  x25519.FeToBytes(dst, outX);
-
-  return base58Bitcoin.encode(Uint8List.fromList(_xMultiCodec + dst));
 }
