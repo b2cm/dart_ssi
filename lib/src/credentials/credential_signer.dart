@@ -166,7 +166,7 @@ class EcdsaRecoverySignature extends Signer {
       '@context': ecdsaRecoveryContextIri,
       'type': typeName,
       'proofPurpose': 'assertionMethod',
-      'verificationMethod': did,
+      'verificationMethod': '$did#controller',
       'created': DateTime.now().toUtc().toIso8601String()
     };
     if (domain != null) {
@@ -402,7 +402,7 @@ class EdDsaSigner extends Signer {
       '@context': ed25519ContextIri,
       'type': typeName,
       'proofPurpose': 'assertionMethod',
-      'verificationMethod': did,
+      'verificationMethod': '$did#${did.split(':')[2]}',
       'created': DateTime.now().toUtc().toIso8601String()
     };
     if (domain != null) {
@@ -484,6 +484,7 @@ class EdDsaSigner extends Signer {
 
     proof.remove('@context');
     proof['proofValue'] = proofValue;
+
 
     var encodedKey = did.split(':')[2];
     var base58DecodedKey = base58BitcoinDecode(encodedKey.substring(1));

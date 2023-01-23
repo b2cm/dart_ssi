@@ -506,7 +506,8 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
 
   //verify proofs from presentation
   await Future.forEach(proofs, (dynamic element) async {
-    var verifMeth = element['verificationMethod'];
+    String verifMeth = element['verificationMethod'];
+    if(verifMeth.contains('#')) verifMeth = verifMeth.split('#').first;
     if (erc1056 != null) verifMeth = await erc1056.identityOwner(verifMeth);
     var signer = signerSelector.call(element['type'], loadDocumentFunction);
     if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);

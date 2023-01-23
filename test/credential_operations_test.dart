@@ -1249,7 +1249,7 @@ void main() async {
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['verificationMethod'],
-          wallet.getStandardIssuerDid());
+          '${wallet.getStandardIssuerDid()}#controller');
       expect(signedMap['proof']['type'], 'EcdsaSecp256k1RecoverySignature2020');
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);
@@ -1268,7 +1268,7 @@ void main() async {
       signedMap['credentialSubject']['id'] = '0x567';
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['verificationMethod'],
-          wallet.getStandardIssuerDid());
+          '${wallet.getStandardIssuerDid()}#controller');
       expect(signedMap['proof']['type'], 'EcdsaSecp256k1RecoverySignature2020');
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);
@@ -1286,7 +1286,7 @@ void main() async {
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['verificationMethod'],
-          wallet.getStandardIssuerDid());
+          '${wallet.getStandardIssuerDid()}#controller');
       expect(signedMap['proof']['type'], 'EcdsaSecp256k1RecoverySignature2020');
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);
@@ -1471,9 +1471,9 @@ void main() async {
         verificationMethods.add(elem['verificationMethod']);
       });
 
-      expect(verificationMethods.contains(didCred1), true);
-      expect(verificationMethods.contains(didCred2), true);
-      expect(verificationMethods.contains(didCred3), true);
+      expect(verificationMethods.contains('$didCred1#controller'), true);
+      expect(verificationMethods.contains('$didCred2#controller'), true);
+      expect(verificationMethods.contains('$didCred3#controller'), true);
       expect(
           await verifyPresentation(presentation, challenge,
               erc1056: erc1056, revocationRegistry: revocationRegistry),
