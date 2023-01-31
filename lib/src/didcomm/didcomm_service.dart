@@ -76,13 +76,19 @@ Future<DidcommEncryptedMessage> encryptMessage(
     required WalletStore wallet,
     required DidcommPlaintextMessage message,
     required String receiverDid}) async {
-  var myPrivateKey =
-      await wallet.getPrivateKeyForConnectionDidAsJwk(connectionDid);
+  // as per new change of the key type to ed25519
+  // we will use getPrivateKeyForConnectionDidAsJwk to encrypt the message
+  // var myPrivateKey =
+  //    await wallet.getPrivateKeyForConnectionDidAsJwk(connectionDid);
 
+  var myPrivateKey = await wallet.getKeyAgreementKeyForDidAsJwk(connectionDid);
   // @TODO what is that for? Replace me with some useful information
-  var recipientDDO = (await resolveDidDocument(receiverDid))
-      .resolveKeyIds()
-      .convertAllKeysToJwk();
+  var ddo = await resolveDidDocument(receiverDid);
+  var keyIds = ddo.resolveKeyIds();
+  var recipientDDO = keyIds.convertAllKeysToJwk();
+  // var recipientDDO = (await resolveDidDocument(receiverDid))
+  //     .resolveKeyIds()
+  //     .convertAllKeysToJwk();
 
   var encrypted = DidcommEncryptedMessage.fromPlaintext(
       senderPrivateKeyJwk: myPrivateKey!,

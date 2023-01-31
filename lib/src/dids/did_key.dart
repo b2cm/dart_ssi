@@ -4,9 +4,9 @@ import 'package:dart_ssi/src/util/private_util.dart';
 import 'did_document.dart';
 
 DidDocument resolveDidKey(String did) {
-  if (!did.startsWith('did:key')) throw Exception('Unexpected did');
+  if (!did.startsWith('did:key')) throw Exception('Expected did to start with `did:key`. However `$did` did not');
   var splited = did.split(':');
-  if (splited.length != 3) throw Exception('malformed did');
+  if (splited.length != 3) throw Exception('malformed did: `$did`');
 
   String keyPart = splited[2];
   var multibaseIndicator = keyPart[0];

@@ -55,7 +55,7 @@ class DidcommProposeCredentialMessageHandler extends AbstractDidcommMessageHandl
     var offer = OfferCredential(
         threadId: propose.threadId ?? message.id,
         detail: propose.detail,
-        from: getConversationDid(message, wallet!),
+        from: connectionDid ?? getConversationDid(message, wallet!),
         to: [propose.from!],
         replyTo: replyTo);
 
