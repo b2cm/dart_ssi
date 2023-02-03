@@ -345,9 +345,11 @@ Future<bool> verifyCredential(dynamic credential,
         var revoked = await revocationRegistry
             .isRevoked(getHolderDidFromCredential(credMap));
         if (revoked) throw RevokedException('Credential was revoked');
-      } else {
-        throw Exception('Revocation contract needed');
       }
+      //else
+      //{
+      //   throw Exception('Revocation contract needed');
+      // }
     } else if (credStatus['type'] == 'RevocationList2020Status') {
       var status = RevocationList2020Status.fromJson(credStatus);
       var res = await get(Uri.parse(status.revocationListCredential),
