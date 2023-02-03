@@ -58,9 +58,7 @@ class DidcommRequestCredentialMessageHandler extends AbstractDidcommMessageHandl
 
     // patch ack as per didcomm spec (make sure the message contains
     // itself to be acked)
-    if(issue.pleaseAck == null) {
-      issue.pleaseAck = [];
-    }
+    issue.pleaseAck ??= [];
 
     if (!(issue.pleaseAck!.contains('') || issue.pleaseAck!.contains(issue.id))) {
       issue.pleaseAck!.add(issue.id);

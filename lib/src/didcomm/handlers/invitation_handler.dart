@@ -1,7 +1,6 @@
 import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_ssi/exceptions.dart';
 
-import '../oob_service.dart';
 
 class DidcommInvitationMessageHandler extends AbstractDidcommMessageHandler {
   @override
@@ -9,9 +8,13 @@ class DidcommInvitationMessageHandler extends AbstractDidcommMessageHandler {
     DidcommMessages.invitation.value
   ];
 
+  @override
   bool get needsConnectionDid => false;
+  @override
   bool get needsCredentialDid => false;
+  @override
   bool get needsReplyTo => true;
+  @override
   bool get needsWallet => true;
 
   @override

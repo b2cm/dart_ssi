@@ -10,8 +10,7 @@ typedef Json = Map<String, dynamic>;
 /// Just add convenience methods to the type
 extension on SimpleJsonPath {
   prettyPrint() {
-    return "ROOT" +
-        map((val) => '[${val is String ? '"' + val + '"' : val}]').join('');
+    return "ROOT${map((val) => '[${val is String ? '"$val"' : val}]').join('')}";
   }
 }
 

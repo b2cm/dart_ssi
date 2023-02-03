@@ -1,7 +1,6 @@
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_ssi/util.dart';
-import '../didcomm_service.dart';
 
 class DidcommPresentationRequestMessageHandler extends AbstractDidcommMessageHandler {
 
@@ -10,9 +9,13 @@ class DidcommPresentationRequestMessageHandler extends AbstractDidcommMessageHan
     DidcommMessages.requestPresentation.value
   ];
 
+  @override
   bool get needsConnectionDid => false;
+  @override
   bool get needsCredentialDid => false;
+  @override
   bool get needsReplyTo => true;
+  @override
   bool get needsWallet => true;
 
   @override

@@ -10,9 +10,13 @@ class DidcommIssueCredentialHandler extends AbstractDidcommMessageHandler {
     DidcommMessages.issueCredential.value
   ];
 
+  @override
   bool get needsConnectionDid => false;
+  @override
   bool get needsCredentialDid => false;
+  @override
   bool get needsReplyTo => false;
+  @override
   bool get needsWallet => true;
 
   @override
@@ -45,7 +49,7 @@ class DidcommIssueCredentialHandler extends AbstractDidcommMessageHandler {
     if (oldCred == null) {
       throw DidcommServiceException(
           "This wallet doesn't contain a credential "
-          "entry with did ${oldCredentialDid}. Please create one beforehand.",
+          "entry with did $oldCredentialDid. Please create one beforehand.",
           code: 9583904);
     }
 

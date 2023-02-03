@@ -2,8 +2,6 @@ import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_ssi/exceptions.dart';
 import 'package:dart_ssi/wallet.dart';
 
-import 'invitation_handler.dart';
-import 'issue_credential.dart';
 
 /// Abstract class for handling DidComm messages
 abstract class AbstractDidcommMessageHandler {

@@ -39,7 +39,7 @@ class DidcommProposeCredentialMessageHandler extends AbstractDidcommMessageHandl
       try {
         if (!(await a.data.verifyJws(vcSubjectId))) {
           throw DidcommServiceException(
-              "Could not verify the JWS at index ${i} because the "
+              "Could not verify the JWS at index $i because the "
               "signature is invalid",
               code: 9308490238);
         }

@@ -7,9 +7,13 @@ class DidcommOfferCredentialMessageHandler extends AbstractDidcommMessageHandler
     DidcommMessages.offerCredential.value
   ];
 
+  @override
   bool get needsConnectionDid => false;
+  @override
   bool get needsCredentialDid => false;
+  @override
   bool get needsReplyTo => true;
+  @override
   bool get needsWallet => true;
 
   @override
