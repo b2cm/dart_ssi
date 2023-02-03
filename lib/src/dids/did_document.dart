@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dart_ssi/src/dids/did_key.dart';
-
 import '../util/types.dart';
 import '../util/utils.dart';
+import 'did_key.dart';
+import 'did_web.dart';
 
 class DidDocument implements JsonObject {
   List<String>? context;
@@ -487,6 +487,8 @@ Future<DidDocument> resolveDidDocument(String did,
     [String? resolverAddress]) async {
   if (did.startsWith('did:key:z6Mk') || did.startsWith('did:key:z6LS')) {
     return resolveDidKey(did);
+  } else if (did.startsWith('did:web')) {
+    return resolveDidWeb(did);
   } else {
     if (resolverAddress == null) {
       throw Exception(

@@ -1,3 +1,9 @@
+## 1.0.6
+- add CredentialsStausList2020 for revocation
+- add resolution of did:web
+- some example handlers for didcomm-messages
+- bugfixes and improvements
+
 ## 1.0.5
 - bugfixes and improvements
 
