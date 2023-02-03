@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:dart_ssi/src/credentials/revocation_list_2020.dart';
+
 import '../util/types.dart';
 import '../util/utils.dart';
 import 'credential_manifest.dart';
@@ -71,7 +73,7 @@ class VerifiableCredential implements JsonObject {
       issuanceDate = DateTime.parse(credential['issuanceDate']);
     } else {
       throw FormatException(
-          'issuer property is needed in verifiable credential');
+          'issuanceDate property is needed in verifiable credential');
     }
 
     id = credential['id'];
@@ -233,22 +235,27 @@ class CredentialStatus implements JsonObject {
   late String type;
   Map<String, dynamic>? _originalDoc;
 
-  CredentialStatus(this.id, this.type);
+  CredentialStatus(this.id, this.type, [this._originalDoc]);
 
-  CredentialStatus.fromJson(dynamic jsonObject) {
+  factory CredentialStatus.fromJson(dynamic jsonObject) {
     var status = credentialToMap(jsonObject);
+    String id;
     if (status.containsKey('id')) {
       id = status['id'];
     } else {
       throw FormatException('id property is needed in Credential Status');
     }
+    String type;
     if (status.containsKey('type')) {
       type = status['type'];
     } else {
       throw FormatException('type property is needed in credentialStatus');
     }
-
-    _originalDoc = status;
+    if (type == 'RevocationList2020Status') {
+      return RevocationList2020Status.fromJson(jsonObject);
+    } else {
+      return CredentialStatus(id, type, status);
+    }
   }
 
   @override

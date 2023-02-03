@@ -3,7 +3,9 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:dart_ssi/src/credentials/jsonLdContext/document_loader.dart';
+import 'package:dart_ssi/src/credentials/revocation_list_2020.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
+import 'package:http/http.dart';
 import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:json_path/json_path.dart';
 import 'package:json_schema2/json_schema2.dart';
@@ -172,10 +174,8 @@ String buildW3cCredentialwithHashes(dynamic credential, String? issuerDid,
     if (type is String) {
       if (type != 'VerifiableCredential') credTypes.add(type);
     } else if (type is List<String>) {
-      if (type.contains('VerifiableCredential')) {
-        type.remove('VerifiableCredential');
-      }
-      credTypes += type;
+      type.remove('VerifiableCredential');
+      credTypes.addAll(type);
     } else {
       throw Exception('type has unknown datatype');
     }
@@ -276,6 +276,7 @@ Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
   } else {
     credential = credentialToMap(credentialToSign);
   }
+
   String issuerDid = getIssuerDidFromCredential(credential);
   if (issuerDid == '') {
     throw Exception('Could not examine IssuerDID');
@@ -335,16 +336,34 @@ Future<bool> verifyCredential(dynamic credential,
   }
 
   // check for Revocation
-  if (revocationRegistry != null) {
-    if (credMap.containsKey('credentialStatus')) {
-      var credStatus = credMap['credentialStatus'];
-      if (credStatus['type'] != 'EthereumRevocationList') {
-        throw Exception('Unknown Status-method : ${credStatus['type']}');
+  if (credMap.containsKey('credentialStatus')) {
+    var credStatus = credMap['credentialStatus'];
+
+    if (credStatus['type'] == 'EthereumRevocationList') {
+      if (revocationRegistry != null) {
+        revocationRegistry.setContract(credStatus['id']);
+        var revoked = await revocationRegistry
+            .isRevoked(getHolderDidFromCredential(credMap));
+        if (revoked) throw RevokedException('Credential was revoked');
+      } else {
+        throw Exception('Revocation contract needed');
       }
-      revocationRegistry.setContract(credStatus['id']);
-      var revoked = await revocationRegistry
-          .isRevoked(getHolderDidFromCredential(credMap));
-      if (revoked) throw RevokedException('Credential was revoked');
+    } else if (credStatus['type'] == 'RevocationList2020Status') {
+      var status = RevocationList2020Status.fromJson(credStatus);
+      var res = await get(Uri.parse(status.revocationListCredential),
+          headers: {'Accept': 'application/json'});
+      var revCred = RevocationList2020Credential.fromJson(res.body);
+      var verified = await verifyCredential(revCred);
+      if (!verified) {
+        throw Exception('could not verify RevocationListCredential');
+      }
+
+      var revoked = revCred.isRevoked(int.parse(status.revocationListIndex));
+      if (revoked) {
+        throw Exception('Credential is revoked');
+      }
+    } else {
+      throw Exception('Unknown Status-method : ${credStatus['type']}');
     }
   }
 
@@ -507,7 +526,7 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   //verify proofs from presentation
   await Future.forEach(proofs, (dynamic element) async {
     String verifMeth = element['verificationMethod'];
-    if(verifMeth.contains('#')) verifMeth = verifMeth.split('#').first;
+    if (verifMeth.contains('#')) verifMeth = verifMeth.split('#').first;
     if (erc1056 != null) verifMeth = await erc1056.identityOwner(verifMeth);
     var signer = signerSelector.call(element['type'], loadDocumentFunction);
     if (holderDids.contains(verifMeth)) holderDids.remove(verifMeth);
