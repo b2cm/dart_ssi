@@ -22,7 +22,7 @@ void main() async {
       EthPrivateKey.fromHex(spenderPrivateKey),
       Transaction(
           to: EthereumAddress.fromHex(did.substring(9)),
-          value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1)));
+          value: EtherAmount.fromInt(EtherUnit.ether, 1)));
 
   //get a new did
   var newDid = await holder.getNextCredentialDID();

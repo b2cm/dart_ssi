@@ -166,7 +166,6 @@ RequestCredential generateRequestCredentialMessageFromOffer({
   required List<String> replyTo,
   required WalletStore wallet,
 }) {
-  var connectionDid = getConversationDid(offer, wallet);
   var message = RequestCredential(
       detail: [
         LdProofVcDetail(

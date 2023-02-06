@@ -2,12 +2,10 @@ import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_ssi/exceptions.dart';
 import 'package:dart_ssi/util.dart';
 
-class DidcommProposeCredentialMessageHandler extends AbstractDidcommMessageHandler {
-
+class DidcommProposeCredentialMessageHandler
+    extends AbstractDidcommMessageHandler {
   @override
-  List<String> get supportedTypes => [
-    DidcommMessages.proposeCredential.value
-  ];
+  List<String> get supportedTypes => [DidcommMessages.proposeCredential.value];
 
   @override
   bool get needsConnectionDid => false;
@@ -44,7 +42,8 @@ class DidcommProposeCredentialMessageHandler extends AbstractDidcommMessageHandl
               code: 9308490238);
         }
       } on Exception catch (e) {
-        throw DidcommServiceException("The attachment at index $i is not "
+        throw DidcommServiceException(
+            "The attachment at index $i is not "
             "verifiable due to `{${e.toString()}`",
             baseException: e,
             code: 4823482309);

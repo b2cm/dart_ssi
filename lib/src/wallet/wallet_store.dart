@@ -230,7 +230,7 @@ class WalletStore {
     if (keyType == KeyType.secp256k1) {
       var master = BIP32.fromSeed(_keyBox!.get('seed'));
       var key = master.derivePath('m/456/1/0');
-      var issuerDid = await _bip32KeyToDid(key);
+      var issuerDid = _bip32KeyToDid(key);
       await _keyBox!.put('issuerDid', issuerDid);
       await _credentialBox!.put(issuerDid, Credential('m/456/1/0', '', ''));
       return issuerDid;
@@ -431,7 +431,7 @@ class WalletStore {
     lastIndex++;
     await _keyBox!.put('lastCredentialIndex', lastIndex);
 
-    var did = await _bip32KeyToDid(key);
+    var did = _bip32KeyToDid(key);
 
     //store temporarily
     await _configBox!.put('lastCredentialDid', did);
@@ -504,7 +504,7 @@ class WalletStore {
     lastIndex++;
     await _keyBox!.put('lastConnectionIndex', lastIndex);
 
-    var did = await _bip32KeyToDid(key);
+    var did = _bip32KeyToDid(key);
 
     //store temporarily
     await _configBox!.put('lastConnectionDid', did);
@@ -561,7 +561,7 @@ class WalletStore {
     if (keyType == KeyType.secp256k1) {
       var master = BIP32.fromSeed(_keyBox!.get('seed'));
       var key = master.derivePath(hdPath);
-      return await _bip32KeyToDid(key);
+      return _bip32KeyToDid(key);
     } else if (keyType == KeyType.ed25519) {
       var key = await ED25519_HD_KEY.derivePath(
           hdPath, _keyBox!.get('seed').toList());
@@ -840,9 +840,9 @@ class WalletStore {
     return _configBox!.get(key);
   }
 
-  Future<String> _bip32KeyToDid(BIP32 key) async {
+  String _bip32KeyToDid(BIP32 key) {
     var private = EthPrivateKey.fromHex(bytesToHex(key.privateKey!));
-    var addr = await private.extractAddress();
+    var addr = private.address;
     String network = _configBox!.get('network') as String;
     if (network == 'mainnet') {
       return 'did:ethr:${addr.hexEip55}';

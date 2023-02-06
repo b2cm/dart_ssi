@@ -30,7 +30,7 @@ void main() async {
       Transaction(
           to: EthereumAddress.fromHex(
               issuer.getStandardIssuerDid()!.substring(9)),
-          value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1)));
+          value: EtherAmount.fromInt(EtherUnit.ether, 1)));
   var revAddress =
       await revocation.deploy((await issuer.getStandardIssuerPrivateKey())!);
   issuer.storeConfigEntry('revAddress', revAddress);
@@ -157,8 +157,7 @@ void main() async {
   var presentationThree = await buildPresentation(
       [signedEmail], holder, challenge3,
       disclosedCredentials: [disclosedEmail]);
-  await File('example/PresentationThree.json')
-      .writeAsString(presentationThree);
+  await File('example/PresentationThree.json').writeAsString(presentationThree);
 
   print(
       'Is Presentation one correct?: ${await verifyPresentation(presentationOne, challenge1, erc1056: erc1056, revocationRegistry: revocationRegistry)}');

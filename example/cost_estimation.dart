@@ -45,13 +45,13 @@ void main() async {
   var etherscanRes = jsonDecode((await http.get(Uri.parse(
           'https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=D48K393D61FXFZX6CRZSDUC2DVTS26N6SH')))
       .body);
-  var safeGasPrice = EtherAmount.fromUnitAndValue(
+  var safeGasPrice = EtherAmount.fromInt(
           EtherUnit.gwei, etherscanRes['result']['SafeGasPrice'])
       .getValueInUnit(EtherUnit.ether);
-  var proposeGasPrice = EtherAmount.fromUnitAndValue(
+  var proposeGasPrice = EtherAmount.fromInt(
           EtherUnit.gwei, etherscanRes['result']['ProposeGasPrice'])
       .getValueInUnit(EtherUnit.ether);
-  var fastGasPrice = EtherAmount.fromUnitAndValue(
+  var fastGasPrice = EtherAmount.fromInt(
           EtherUnit.gwei, etherscanRes['result']['FastGasPrice'])
       .getValueInUnit(EtherUnit.ether);
 

@@ -42,11 +42,11 @@ class RevocationRegistry {
 
   Future<String> deploy(String privateKeyFrom) async {
     var creds = EthPrivateKey.fromHex(privateKeyFrom);
-    var address = await creds.extractAddress();
+    var address = creds.address;
     var tx = Transaction(
         from: address,
         data: hexToBytes(_bytecode),
-        gasPrice: EtherAmount.fromUnitAndValue(EtherUnit.gwei, 20),
+        gasPrice: EtherAmount.fromInt(EtherUnit.gwei, 20),
         maxGas: 474455);
 
     var res = await web3Client.sendTransaction(creds, tx, chainId: _chainId);

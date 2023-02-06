@@ -1363,7 +1363,7 @@ void main() async {
           from: EthereumAddress.fromHex(ganacheDid6.substring(9)),
           to: EthereumAddress.fromHex(
               wallet.getStandardIssuerDid()!.substring(9)),
-          value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1));
+          value: EtherAmount.fromInt(EtherUnit.ether, 1));
 
       await web3.sendTransaction(
           EthPrivateKey.fromHex(
@@ -1572,7 +1572,7 @@ void main() async {
       var tx = Transaction(
           from: EthereumAddress.fromHex(ganacheDid6.substring(9)),
           to: EthereumAddress.fromHex(didCred1!.substring(9)),
-          value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1));
+          value: EtherAmount.fromInt(EtherUnit.ether, 1));
 
       await web3.sendTransaction(
           EthPrivateKey.fromHex(

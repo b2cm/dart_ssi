@@ -29,7 +29,7 @@ void main() async {
       Transaction(
           to: EthereumAddress.fromHex(
               issuer.getStandardIssuerDid()!.substring(9)),
-          value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1)));
+          value: EtherAmount.fromInt(EtherUnit.ether, 1)));
   var revAddress =
       await revocation.deploy((await issuer.getStandardIssuerPrivateKey())!);
   issuer.storeConfigEntry('revAddress', revAddress);
@@ -55,8 +55,7 @@ void main() async {
       'type': 'Student',
       'givenName': 'Max',
       'familyName': 'Mustermann',
-      'birthDate':
-          DateTime(1999, 10, 14).toIso8601String().substring(0, 10),
+      'birthDate': DateTime(1999, 10, 14).toIso8601String().substring(0, 10),
       'birthPlace': 'Berlin',
       'address': {
         'type': 'PostalAddress',
