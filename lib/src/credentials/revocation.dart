@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dart_ssi/credentials.dart';
 import 'package:http/http.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:web3dart/json_rpc.dart';
@@ -115,13 +116,17 @@ class RevocationRegistry {
     var revokedEvent = _contract.event('RevokedEvent');
     var revEventSig = bytesToHex(revokedEvent.signature);
     var deployedBlock = await deployed();
-    var logs = await web3Client.getLogs(FilterOptions(
-        address: _contract.address,
-        fromBlock: BlockNum.exact(deployedBlock!.toInt()),
-        topics: [
+    var logs = await web3Client
+        .getLogs(FilterOptions(
+            address: _contract.address,
+            fromBlock: BlockNum.exact(deployedBlock!.toInt()),
+            topics: [
           ['0x${revEventSig.padLeft(64, '0')}'],
           ['0x${_didToAddress(credentialDid).hexNo0x.padLeft(64, '0')}']
-        ]));
+        ]))
+        .timeout(Duration(seconds: 30), onTimeout: () {
+      throw RevokedException('Cant reach web3 client', 'revErr');
+    });
 
     return logs.isNotEmpty;
   }

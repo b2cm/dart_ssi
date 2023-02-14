@@ -251,8 +251,11 @@ class CredentialStatus implements JsonObject {
     } else {
       throw FormatException('type property is needed in credentialStatus');
     }
+
     if (type == 'RevocationList2020Status') {
       return RevocationList2020Status.fromJson(jsonObject);
+    } else if (type == 'StatusList2021Entry') {
+      return StatusList2021Entry.fromJson(jsonObject);
     } else {
       return CredentialStatus(id, type, status);
     }

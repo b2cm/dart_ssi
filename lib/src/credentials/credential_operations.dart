@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:dart_ssi/src/credentials/jsonLdContext/document_loader.dart';
+import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/src/credentials/revocation_list_2020.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:http/http.dart';
@@ -17,10 +17,6 @@ import '../dids/did_document.dart';
 import '../dids/did_ethr.dart';
 import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
-import 'credential_signer.dart';
-import 'presentation_exchange.dart';
-import 'revocation.dart';
-import 'verifiable_credential.dart';
 
 final _hashedAttributeSchemaMap = {
   "type": "object",
@@ -335,6 +331,27 @@ Future<bool> verifyCredential(dynamic credential,
     throw Exception('no proof section found');
   }
 
+  // determine issuer
+  var issuerDid = getIssuerDidFromCredential(credential);
+  if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
+
+  // verify proof
+  Map<String, dynamic> proof = credMap['proof'];
+  var signer = signerSelector.call(proof['type'], loadDocumentFunction);
+  credMap.remove('proof');
+  var verified = true;
+  try {
+    verified = await signer.verify(proof, credMap, issuerDid,
+        challenge: expectedChallenge);
+  } catch (_) {
+    credMap['proof'] = proof;
+    throw SignatureException('Unable to verify credential Signature', 'sigErr');
+  }
+  credMap['proof'] = proof;
+  if (!verified) {
+    throw SignatureException('Credentials Signature incorrect', 'sig');
+  }
+
   // check for Revocation
   if (credMap.containsKey('credentialStatus')) {
     var credStatus = credMap['credentialStatus'];
@@ -344,49 +361,46 @@ Future<bool> verifyCredential(dynamic credential,
         revocationRegistry.setContract(credStatus['id']);
         var revoked = await revocationRegistry
             .isRevoked(getHolderDidFromCredential(credMap));
-        if (revoked) throw RevokedException('Credential was revoked');
+        if (revoked) throw RevokedException('Credential was revoked', 'rev');
+      } else {
+        throw RevokedException('Revocation contract needed', 'revErr');
       }
-      //else
-      //{
-      //   throw Exception('Revocation contract needed');
-      // }
     } else if (credStatus['type'] == 'RevocationList2020Status') {
       var status = RevocationList2020Status.fromJson(credStatus);
       var res = await get(Uri.parse(status.revocationListCredential),
           headers: {'Accept': 'application/json'});
+
       var revCred = RevocationList2020Credential.fromJson(res.body);
       var verified = await verifyCredential(revCred);
       if (!verified) {
-        throw Exception('could not verify RevocationListCredential');
+        throw RevokedException(
+            'could not verify RevocationListCredential', 'revErr');
       }
 
       var revoked = revCred.isRevoked(int.parse(status.revocationListIndex));
       if (revoked) {
-        throw Exception('Credential is revoked');
+        throw RevokedException('Credential is revoked', 'rev');
       }
     } else {
       throw Exception('Unknown Status-method : ${credStatus['type']}');
     }
   }
 
-  // determine issuer
-  var issuerDid = getIssuerDidFromCredential(credential);
-  if (erc1056 != null) issuerDid = await erc1056.identityOwner(issuerDid);
-
-  // verify proof
-  Map<String, dynamic> proof = credMap['proof'];
-  var signer = signerSelector.call(proof['type'], loadDocumentFunction);
-  credMap.remove('proof');
-  var verified =
-      signer.verify(proof, credMap, issuerDid, challenge: expectedChallenge);
-  credMap['proof'] = proof;
-
   return verified;
 }
 
 class RevokedException implements Exception {
   String message;
-  RevokedException(this.message);
+  String code;
+
+  RevokedException(this.message, this.code);
+}
+
+class SignatureException implements Exception {
+  String message;
+  String code;
+
+  SignatureException(this.message, this.code);
 }
 
 /// Builds a presentation for [credentials].
@@ -401,6 +415,7 @@ Future<String> buildPresentation(
         loadDocumentStrict}) async {
   List<Map<String, dynamic>?> credMapList = [];
   List<String?> holderDids = [];
+
   PresentationSubmission? submission;
   for (var element in credentials) {
     if (element is FilterResult) {
@@ -465,20 +480,37 @@ Future<String> buildPresentation(
     type.add('DisclosedCredentialPresentation');
     presentation['type'] = type;
   }
+
+  // build signatures
   List<Map<String, dynamic>> proofList = [];
+  Set<Type> signerTypes = {};
   for (var element in holderDids) {
     var signer = _determineSignerForDid(element!, loadDocumentFunction);
+    signerTypes.add(signer.runtimeType);
     proofList.add(await signer.buildProof(presentation, wallet, element,
-        challenge: challenge));
+        challenge: challenge, proofPurpose: 'authentication'));
   }
+
   if (additionalDids != null) {
     for (var element in additionalDids) {
       var signer = _determineSignerForDid(element, loadDocumentFunction);
+      signerTypes.add(signer.runtimeType);
       proofList.add(await signer.buildProof(presentation, wallet, element,
-          challenge: challenge));
+          challenge: challenge, proofPurpose: 'authentication'));
     }
   }
-  presentation['proof'] = proofList;
+
+  // add contexts for used signature suites
+  for (var t in signerTypes) {
+    if (t == EcdsaRecoverySignature) {
+      context.add(ecdsaRecoveryContextIri);
+    } else if (t == EdDsaSigner) {
+      context.add(ed25519ContextIri);
+    }
+  }
+
+  presentation['proof'] = (proofList.length == 1) ? proofList.first : proofList;
+
   return jsonEncode(presentation);
 }
 
@@ -504,7 +536,12 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
     presentationMap = credentialToMap(presentation);
   }
 
-  var proofs = presentationMap['proof'] as List;
+  // get proof(s) as List
+  var proofs = presentationMap['proof'];
+  if (proofs is Map<String, dynamic>) {
+    proofs = [proofs];
+  }
+  proofs as List;
   presentationMap.remove('proof');
 
   // verify credentials
@@ -521,11 +558,21 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
     } else {
       var did = getHolderDidFromCredential(element);
       if (erc1056 != null) did = await erc1056.identityOwner(did);
-      holderDids.add(did);
+      if (did.isNotEmpty && did.startsWith('did:')) {
+        holderDids.add(did);
+      }
     }
   });
 
-  //verify proofs from presentation
+  // check for holder property
+  if (presentationMap.containsKey('holder')) {
+    var holder = presentationMap['holder'];
+    if (holder is String && holder.startsWith('did:')) {
+      holderDids.add(holder);
+    }
+  }
+
+  // verify proofs from presentation
   await Future.forEach(proofs, (dynamic element) async {
     String verifMeth = element['verificationMethod'];
     if (verifMeth.contains('#')) verifMeth = verifMeth.split('#').first;
@@ -539,9 +586,9 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   });
   if (holderDids.isNotEmpty) throw Exception('There are dids without a proof');
 
-  presentationMap['proof'] = proofs;
+  presentationMap['proof'] = (proofs.length == 1) ? proofs.first : proofs;
 
-  //compare plaintext credentials
+  // compare plaintext credentials (if given)
   if (presentationMap.containsKey('disclosedCredentials')) {
     var disclosedCredentials = presentationMap['disclosedCredentials'] as List;
     Map<String?, Map<String, dynamic>> credsToId = {};

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:base_codecs/base_codecs.dart';
 import 'package:crypto/crypto.dart';
+import 'package:dart_ssi/did.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:web3dart/credentials.dart';
@@ -19,7 +20,7 @@ abstract class Signer {
   //late String typeName;
   FutureOr<Map<String, dynamic>> buildProof(
       dynamic data, WalletStore wallet, String did,
-      {String? challenge, String? domain});
+      {String? challenge, String? domain, String? proofPurpose});
   FutureOr<Uint8List> sign(dynamic data, WalletStore wallet, String did,
       {String? challenge, String? domain});
   FutureOr<bool> verify(dynamic proof, dynamic data, String did,
@@ -31,10 +32,10 @@ class EcdsaRecoverySignatureOld extends Signer {
 
   @override
   Future<Map<String, dynamic>> buildProof(data, WalletStore wallet, String did,
-      {String? challenge, String? domain}) async {
+      {String? challenge, String? domain, String? proofPurpose}) async {
     var proofOptions = {
       'type': typeName,
-      'proofPurpose': 'assertionMethod',
+      'proofPurpose': proofPurpose ?? 'assertionMethod',
       'verificationMethod': did,
       'created': DateTime.now().toUtc().toIso8601String()
     };
@@ -161,11 +162,11 @@ class EcdsaRecoverySignature extends Signer {
 
   @override
   Future<Map<String, dynamic>> buildProof(data, WalletStore wallet, String did,
-      {String? challenge, String? domain}) async {
+      {String? challenge, String? domain, String? proofPurpose}) async {
     var proofOptions = {
       '@context': ecdsaRecoveryContextIri,
       'type': typeName,
-      'proofPurpose': 'assertionMethod',
+      'proofPurpose': proofPurpose ?? 'assertionMethod',
       'verificationMethod': '$did#controller',
       'created': DateTime.now().toUtc().toIso8601String()
     };
@@ -307,10 +308,10 @@ class EdDsaSignerOld extends Signer {
   @override
   FutureOr<Map<String, dynamic>> buildProof(
       data, WalletStore wallet, String did,
-      {String? challenge, String? domain}) async {
+      {String? challenge, String? domain, String? proofPurpose}) async {
     var proofOptions = {
       'type': typeName,
-      'proofPurpose': 'assertionMethod',
+      'proofPurpose': proofPurpose ?? 'assertionMethod',
       'verificationMethod': did,
       'created': DateTime.now().toUtc().toIso8601String()
     };
@@ -397,11 +398,11 @@ class EdDsaSigner extends Signer {
   @override
   FutureOr<Map<String, dynamic>> buildProof(
       data, WalletStore wallet, String did,
-      {String? challenge, String? domain}) async {
+      {String? challenge, String? domain, String? proofPurpose}) async {
     var proofOptions = {
       '@context': ed25519ContextIri,
       'type': typeName,
-      'proofPurpose': 'assertionMethod',
+      'proofPurpose': proofPurpose ?? 'assertionMethod',
       'verificationMethod': '$did#${did.split(':')[2]}',
       'created': DateTime.now().toUtc().toIso8601String()
     };
@@ -485,12 +486,31 @@ class EdDsaSigner extends Signer {
     proof.remove('@context');
     proof['proofValue'] = proofValue;
 
+    var ddo = await resolveDidDocument(did);
+    ddo = ddo.resolveKeyIds().convertAllKeysToJwk();
 
-    var encodedKey = did.split(':')[2];
-    var base58DecodedKey = base58BitcoinDecode(encodedKey.substring(1));
-    return ed.verify(
-        ed.PublicKey(base58DecodedKey.sublist(2)),
-        Uint8List.fromList(hashToSign),
+    var verificationMethod = proof['verificationMethod'];
+    dynamic usedJwk;
+    for (var k in ddo.verificationMethod!) {
+      if (k.id == verificationMethod) {
+        usedJwk = k.publicKeyJwk!;
+        break;
+      }
+    }
+
+    if (usedJwk == null) {
+      throw Exception(
+          'Can\'t find public key for id $verificationMethod in did document');
+    }
+
+    if (usedJwk['crv'] != 'Ed25519') {
+      throw Exception(
+          'Wrong crv value ${usedJwk['crv']} for this signature suite (ed25519 needed)');
+    }
+
+    var decodedKey = base64Decode(addPaddingToBase64(usedJwk['x']));
+
+    return ed.verify(ed.PublicKey(decodedKey), Uint8List.fromList(hashToSign),
         base58BitcoinDecode(proofValue.substring(1)));
   }
 }

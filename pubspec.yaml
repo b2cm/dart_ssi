@@ -10,7 +10,7 @@ dependencies:
   hive: ^2.1.0
   bip32: ^2.0.0
   bip39: ^1.0.6
-  web3dart: ^2.4.1
+  web3dart: ^2.6.1
   crypto: ^3.0.2
   uuid: ^3.0.6
   json_schema2: ^2.0.2
@@ -22,7 +22,7 @@ dependencies:
   base_codecs: ^1.0.1
   ed25519_edwards: ^0.3.1
   ed25519_hd_key: ^2.2.0
-  json_ld_processor: ^1.0.0
+  json_ld_processor: ^1.0.1
   http: ^0.13.5
 
 
