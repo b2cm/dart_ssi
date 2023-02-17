@@ -1644,6 +1644,22 @@ void main() async {
       var dir = Directory('tests');
       if (dir.existsSync()) dir.delete(recursive: true);
     });
+
+    test('sign without any manipulation ed25519', () async {
+      String toSign = 'Its a String';
+      WalletStore w = WalletStore('tests');
+      await w.openBoxes('password');
+      await w.initialize();
+      var did = await w.getNextCredentialDID(KeyType.ed25519);
+      var jws = await signStringOrJson(w, did, toSign);
+
+      var verified = await verifyStringSignature(jws, did, toSign: toSign);
+
+      expect(verified, true);
+
+      var dir = Directory('tests');
+      if (dir.existsSync()) dir.delete(recursive: true);
+    });
   });
 
   group('disclose Credential', () {

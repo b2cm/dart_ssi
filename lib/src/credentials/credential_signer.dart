@@ -17,147 +17,27 @@ import 'jsonLdContext/ecdsa_recovery_2020.dart';
 import 'jsonLdContext/ed25519_signature.dart';
 
 abstract class Signer {
-  //late String typeName;
+  /// Build a LinkedDataProof / DataIntegrityProof
   FutureOr<Map<String, dynamic>> buildProof(
       dynamic data, WalletStore wallet, String did,
       {String? challenge, String? domain, String? proofPurpose});
-  FutureOr<Uint8List> sign(dynamic data, WalletStore wallet, String did,
-      {String? challenge, String? domain});
-  FutureOr<bool> verify(dynamic proof, dynamic data, String did,
+
+  /// Build a (detached) JWS
+  FutureOr<String> sign(dynamic data, WalletStore wallet, String did,
+      {bool detached = false, dynamic jwsHeader});
+
+  /// Verifies a LinkedDataProof / DataIntegrityProof
+  FutureOr<bool> verifyProof(dynamic proof, dynamic data, String did,
       {String? challenge});
-}
 
-class EcdsaRecoverySignatureOld extends Signer {
-  final String typeName = 'EcdsaSecp256k1RecoverySignature2020';
-
-  @override
-  Future<Map<String, dynamic>> buildProof(data, WalletStore wallet, String did,
-      {String? challenge, String? domain, String? proofPurpose}) async {
-    var proofOptions = {
-      'type': typeName,
-      'proofPurpose': proofPurpose ?? 'assertionMethod',
-      'verificationMethod': did,
-      'created': DateTime.now().toUtc().toIso8601String()
-    };
-    if (domain != null) {
-      proofOptions['domain'] = domain;
-    }
-    if (challenge != null) {
-      proofOptions['challenge'] = challenge;
-    }
-    String pOptions = jsonEncode(proofOptions);
-
-    List<int> hashToSign = _dataToHash(data);
-
-    var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
-    var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
-    var privateKeyHex = await wallet.getPrivateKeyForCredentialDid(did);
-    privateKeyHex ??= await wallet.getPrivateKeyForConnectionDid(did);
-    if (privateKeyHex == null) throw Exception('Could not find a private key');
-    var key = EthPrivateKey.fromHex(privateKeyHex);
-
-    var sigArray = _buildSignatureArray(hash as Uint8List, key);
-    while (sigArray.length != 65) {
-      sigArray = _buildSignatureArray(hash, key);
-    }
-
-    var critical = <String, dynamic>{};
-    critical['b64'] = false;
-    proofOptions['jws'] = '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
-        '.${base64UrlEncode(sigArray)}';
-
-    return proofOptions;
-  }
-
-  List<int> _dataToHash(dynamic data) {
-    if (data is Uint8List) {
-      return data.toList();
-    } else if (data is List<int>) {
-      return data;
-    } else if (data is Map<String, dynamic>) {
-      return sha256.convert(utf8.encode(jsonEncode(data))).bytes;
-    } else if (data is String) {
-      return sha256.convert(utf8.encode(data)).bytes;
-    } else {
-      throw Exception('Unknown datatype for data');
-    }
-  }
-
-  @override
-  Uint8List sign(data, WalletStore wallet, String did,
-      {String? challenge, String? domain}) {
-    // TODO: implement sign
-    throw UnimplementedError();
-  }
-
-  List<int> _buildSignatureArray(Uint8List hash, EthPrivateKey privateKey) {
-    web3_crypto.MsgSignature signature =
-        web3_crypto.sign(hash, privateKey.privateKey);
-    List<int> rList = web3_crypto.unsignedIntToBytes(signature.r);
-    if (rList.length < 32) {
-      List<int> rPad = List.filled(32 - rList.length, 0);
-      rList = rPad + rList;
-    }
-    List<int> sList = web3_crypto.unsignedIntToBytes(signature.s);
-    if (sList.length < 32) {
-      List<int> sPad = List.filled(32 - sList.length, 0);
-      sList = sPad + sList;
-    }
-    List<int> sigArray = rList + sList + [signature.v - 27];
-    return sigArray;
-  }
-
-  @override
-  bool verify(proof, data, String did, {String? challenge}) {
-    //compare challenge
-    if (challenge != null) {
-      var containingChallenge = proof['challenge'];
-      if (containingChallenge == null) {
-        throw Exception('Expected challenge in this credential');
-      }
-      if (containingChallenge != challenge) {
-        throw Exception('a challenge do not match expected challenge');
-      }
-    }
-
-    //verify signature
-    var signature = _getSignatureFromJws(proof['jws']);
-
-    List<int> hash = _dataToHash(data);
-
-    var jws = proof.remove('jws');
-    var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
-    var hashToSign = sha256.convert(proofHash + hash).bytes;
-
-    proof['jws'] = jws;
-
-    var pubKey = web3_crypto.ecRecover(hashToSign as Uint8List, signature);
-
-    var givenAddress = EthereumAddress.fromHex(did.split(':').last);
-
-    return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
-        givenAddress.hexEip55;
-  }
-
-  web3_crypto.MsgSignature _getSignatureFromJws(String jws) {
-    var splitJws = jws.split('.');
-    Map<String, dynamic> header =
-        jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(splitJws[0]))));
-    if (header['alg'] != 'ES256K-R') {
-      throw Exception('Unsupported signature Algorithm ${header['alg']}');
-    }
-    var sigArray = base64Decode(addPaddingToBase64(splitJws[2]));
-    if (sigArray.length != 65) throw Exception('wrong signature-length');
-    return web3_crypto.MsgSignature(
-        web3_crypto.bytesToUnsignedInt(sigArray.sublist(0, 32)),
-        web3_crypto.bytesToUnsignedInt(sigArray.sublist(32, 64)),
-        sigArray[64] + 27);
-  }
+  /// Verifies a (detached) JWS
+  FutureOr<bool> verify(String jws, String did, {dynamic data});
 }
 
 class EcdsaRecoverySignature extends Signer {
   final String typeName = 'EcdsaSecp256k1RecoverySignature2020';
-  final Function(Uri url, LoadDocumentOptions? options) loadDocument;
+  final Function(Uri url, LoadDocumentOptions? options)? loadDocument;
+
   EcdsaRecoverySignature(this.loadDocument);
 
   @override
@@ -226,10 +106,59 @@ class EcdsaRecoverySignature extends Signer {
   }
 
   @override
-  Uint8List sign(data, WalletStore wallet, String did,
-      {String? challenge, String? domain}) {
-    // TODO: implement sign
-    throw UnimplementedError();
+  Future<String> sign(data, WalletStore wallet, String did,
+      {bool detached = false, dynamic jwsHeader}) async {
+    String header;
+    if (jwsHeader != null) {
+      Map<String, dynamic>? headerMap;
+      if (jwsHeader is String) {
+        headerMap = jsonDecode(jwsHeader);
+      } else {
+        headerMap = jwsHeader;
+      }
+      if (headerMap!['alg'] != 'ES256K-R') {
+        throw Exception('Unsupported signature algorithm ${headerMap['alg']}');
+      }
+      header = removePaddingFromBase64(
+          base64UrlEncode(utf8.encode(jsonEncode(headerMap))));
+    } else {
+      var critical = <String, dynamic>{};
+      critical['b64'] = false;
+      header = removePaddingFromBase64(
+          buildJwsHeader(alg: 'ES256K-R', extra: critical));
+    }
+
+    String signable = '';
+    if (data is String) {
+      signable = data;
+    } else if (data is Map<String, dynamic>) {
+      signable = jsonEncode(data);
+    } else {
+      throw Exception('Unexpected Datatype ${data.runtimeType} for toSign');
+    }
+
+    var payload =
+        removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
+    var signingInput = '$header.$payload';
+    var hash = sha256.convert(ascii.encode(signingInput)).bytes;
+    String? privateKeyHex;
+
+    privateKeyHex = await wallet.getPrivateKeyForCredentialDid(did);
+    privateKeyHex ??= await wallet.getPrivateKeyForConnectionDid(did);
+    if (privateKeyHex == null) throw Exception('Could not find private key');
+    var key = EthPrivateKey.fromHex(privateKeyHex);
+    var sigArray = _buildSignatureArray(hash as Uint8List, key);
+    while (sigArray.length != 65) {
+      sigArray = _buildSignatureArray(hash, key);
+    }
+
+    if (detached) {
+      return '$header.'
+          '.${removePaddingFromBase64(base64UrlEncode(sigArray))}';
+    } else {
+      return '$header.$payload'
+          '.${removePaddingFromBase64(base64UrlEncode(sigArray))}';
+    }
   }
 
   List<int> _buildSignatureArray(Uint8List hash, EthPrivateKey privateKey) {
@@ -250,7 +179,7 @@ class EcdsaRecoverySignature extends Signer {
   }
 
   @override
-  Future<bool> verify(proof, data, String did, {String? challenge}) async {
+  Future<bool> verifyProof(proof, data, String did, {String? challenge}) async {
     //compare challenge
     if (challenge != null) {
       var containedChallenge = proof['challenge'];
@@ -301,98 +230,43 @@ class EcdsaRecoverySignature extends Signer {
         web3_crypto.bytesToUnsignedInt(sigArray.sublist(32, 64)),
         sigArray[64] + 27);
   }
-}
 
-class EdDsaSignerOld extends Signer {
-  final String typeName = 'Ed25519Signature2020';
   @override
-  FutureOr<Map<String, dynamic>> buildProof(
-      data, WalletStore wallet, String did,
-      {String? challenge, String? domain, String? proofPurpose}) async {
-    var proofOptions = {
-      'type': typeName,
-      'proofPurpose': proofPurpose ?? 'assertionMethod',
-      'verificationMethod': did,
-      'created': DateTime.now().toUtc().toIso8601String()
-    };
-    if (domain != null) {
-      proofOptions['domain'] = domain;
-    }
-    if (challenge != null) {
-      proofOptions['challenge'] = challenge;
-    }
-    String pOptions = jsonEncode(proofOptions);
+  FutureOr<bool> verify(String jws, String did, {data}) {
+    var splitted = jws.split('.');
+    if (splitted.length != 3) throw Exception('Malformed JWS');
+    var signature = _getSignatureFromJws(jws);
 
-    List<int> hashToSign = _dataToHash(data);
-
-    var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
-    var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
-
-    var privateKey = await wallet.getPrivateKeyForCredentialDid(did);
-    privateKey ??= await wallet.getPrivateKeyForConnectionDid(did);
-    if (privateKey == null) throw Exception('Could not find a private key');
-    var signature = ed.sign(
-        ed.PrivateKey(web3_crypto.hexToBytes(privateKey).toList()),
-        Uint8List.fromList(hash));
-
-    proofOptions['proofValue'] = 'z${base58BitcoinEncode(signature)}';
-
-    return proofOptions;
-  }
-
-  List<int> _dataToHash(dynamic data) {
-    if (data is Uint8List) {
-      return data;
-    } else if (data is Map<String, dynamic>) {
-      return sha256.convert(utf8.encode(jsonEncode(data))).bytes;
-    } else if (data is String) {
-      return sha256.convert(utf8.encode(data)).bytes;
+    String payload;
+    if (splitted[1] != '') {
+      payload = splitted[1];
+    } else if (data != null) {
+      String signable = '';
+      if (data is String) {
+        signable = data;
+      } else if (data is Map<String, dynamic>) {
+        signable = jsonEncode(data);
+      } else {
+        throw Exception('Unexpected Datatype ${data.runtimeType} for toSign');
+      }
+      payload = removePaddingFromBase64(base64UrlEncode(utf8.encode(signable)));
     } else {
-      throw Exception('Unknown datatype for data');
+      throw Exception('No payload given');
     }
-  }
 
-  @override
-  FutureOr<Uint8List> sign(data, WalletStore wallet, String did,
-      {String? challenge, String? domain}) {
-    // TODO: implement sign
-    throw UnimplementedError();
-  }
+    var signingInput = '${splitted[0]}.$payload';
+    var hashToSign = sha256.convert(ascii.encode(signingInput)).bytes;
+    var pubKey = web3_crypto.ecRecover(hashToSign as Uint8List, signature);
 
-  @override
-  bool verify(proof, data, String did, {String? challenge}) {
-    //compare challenge
-    if (challenge != null) {
-      var containingChallenge = proof['challenge'];
-      if (containingChallenge == null) {
-        throw Exception('Expected challenge in this credential');
-      }
-      if (containingChallenge != challenge) {
-        throw Exception(
-            'challenge in credential do not match expected challenge');
-      }
-    }
-    var proofValue = proof.remove('proofValue');
-
-    List<int> hash = _dataToHash(data);
-
-    var proofHash = sha256.convert(utf8.encode(jsonEncode(proof))).bytes;
-    var hashToSign = sha256.convert(proofHash + hash).bytes;
-
-    proof['proofValue'] = proofValue;
-
-    var encodedKey = did.split(':')[2];
-    var base58DecodedKey = base58BitcoinDecode(encodedKey.substring(1));
-    return ed.verify(
-        ed.PublicKey(base58DecodedKey.sublist(2)),
-        Uint8List.fromList(hashToSign),
-        base58BitcoinDecode(proofValue.substring(1)));
+    return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
+        did.split(':').last;
   }
 }
 
 class EdDsaSigner extends Signer {
   final String typeName = 'Ed25519Signature2020';
-  final Function(Uri url, LoadDocumentOptions? options) loadDocument;
+  final Function(Uri url, LoadDocumentOptions? options)? loadDocument;
+
   EdDsaSigner(this.loadDocument);
 
   @override
@@ -451,14 +325,45 @@ class EdDsaSigner extends Signer {
   }
 
   @override
-  FutureOr<Uint8List> sign(data, WalletStore wallet, String did,
-      {String? challenge, String? domain}) {
-    // TODO: implement sign
-    throw UnimplementedError();
+  FutureOr<String> sign(data, WalletStore wallet, String did,
+      {bool detached = false, dynamic jwsHeader}) async {
+    Map<String, dynamic> header;
+    if (jwsHeader != null) {
+      header = credentialToMap(jwsHeader);
+      if (header['alg'] != 'EdDSA') {
+        throw Exception('Unsupported Signature Algorithm ${header['alg']}');
+      }
+      if (header['crv'] != 'Ed25519') {
+        throw Exception('Unsupported Curve ${header['crv']}');
+      }
+    } else {
+      header = {'alg': 'EdDSA', 'crv': 'Ed25519'};
+    }
+
+    String encodedHeader = removePaddingFromBase64(
+        base64UrlEncode(utf8.encode(jsonEncode(header))));
+    String encodedPayload = removePaddingFromBase64(
+        base64UrlEncode(utf8.encode(data is String ? data : jsonEncode(data))));
+    String signingInput = '$encodedHeader.$encodedPayload';
+
+    Map<String, dynamic>? key =
+        await wallet.getPrivateKeyForCredentialDidAsJwk(did);
+    key ??= await wallet.getPrivateKeyForConnectionDidAsJwk(did);
+    if (key == null) throw Exception('No key found in Wallet');
+
+    var privateKey =
+        ed.newKeyFromSeed(base64Decode(addPaddingToBase64(key['d'])));
+
+    var sig = ed.sign(privateKey, ascii.encode(signingInput));
+    String encodedSig = removePaddingFromBase64(base64UrlEncode(sig));
+
+    return detached
+        ? '$encodedHeader..$encodedSig'
+        : '$signingInput.$encodedSig';
   }
 
   @override
-  Future<bool> verify(proof, data, String did, {String? challenge}) async {
+  Future<bool> verifyProof(proof, data, String did, {String? challenge}) async {
     //compare challenge
     if (challenge != null) {
       var containingChallenge = proof['challenge'];
@@ -512,5 +417,34 @@ class EdDsaSigner extends Signer {
 
     return ed.verify(ed.PublicKey(decodedKey), Uint8List.fromList(hashToSign),
         base58BitcoinDecode(proofValue.substring(1)));
+  }
+
+  @override
+  FutureOr<bool> verify(String jws, String did, {data}) async {
+    var ddo =
+        (await resolveDidDocument(did)).resolveKeyIds().convertAllKeysToJwk();
+    Map<String, dynamic> signingKey =
+        ddo.verificationMethod!.first.publicKeyJwk!;
+
+    var splitted = jws.split('.');
+    if (splitted.length != 3) throw Exception('maleformed jws');
+
+    String encodedPayload;
+    if (data != null) {
+      encodedPayload = data is String
+          ? removePaddingFromBase64(base64UrlEncode(utf8.encode(data)))
+          : removePaddingFromBase64(
+              base64UrlEncode(utf8.encode(jsonEncode(credentialToMap(data)))));
+    } else {
+      encodedPayload = splitted[1];
+    }
+
+    var signingInput = '${splitted[0]}.$encodedPayload';
+
+    var publicKey =
+        ed.PublicKey(base64Decode(addPaddingToBase64(signingKey['x'])));
+
+    return ed.verify(publicKey, ascii.encode(signingInput),
+        base64Decode(addPaddingToBase64(splitted[2])));
   }
 }
