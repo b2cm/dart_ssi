@@ -635,16 +635,19 @@ class EntityStylesImage implements JsonObject {
   }
 }
 
-enum DIFSchemaType { string, boolean, number, integer }
+enum DIFSchemaType {
+  string,
+  boolean,
+  number,
+  integer;
 
-extension DIFSchemaTypeExt on DIFSchemaType {
-  static const Map<DIFSchemaType, String> values = {
+  static const Map<DIFSchemaType, String> stringValues = {
     DIFSchemaType.string: 'string',
     DIFSchemaType.integer: 'integer',
     DIFSchemaType.number: 'number',
     DIFSchemaType.boolean: 'boolean'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
 enum StringFormat {
@@ -660,11 +663,9 @@ enum StringFormat {
   uri,
   uriReference,
   iri,
-  iriReference
-}
+  iriReference;
 
-extension StringFormatExt on StringFormat {
-  static const Map<StringFormat, String> values = {
+  static const Map<StringFormat, String> stringValues = {
     StringFormat.dateTime: 'date-time',
     StringFormat.time: 'time',
     StringFormat.date: 'date',
@@ -679,5 +680,5 @@ extension StringFormatExt on StringFormat {
     StringFormat.iri: 'iri',
     StringFormat.iriReference: 'iri-reference'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }

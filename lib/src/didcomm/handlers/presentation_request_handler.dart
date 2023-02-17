@@ -2,12 +2,10 @@ import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_ssi/util.dart';
 
-class DidcommPresentationRequestMessageHandler extends AbstractDidcommMessageHandler {
-
+class DidcommPresentationRequestMessageHandler
+    extends AbstractDidcommMessageHandler {
   @override
-  List<String> get supportedTypes => [
-    DidcommMessages.requestPresentation.value
-  ];
+  List<String> get supportedTypes => [DidcommMessages.requestPresentation];
 
   @override
   bool get needsConnectionDid => false;
@@ -20,17 +18,16 @@ class DidcommPresentationRequestMessageHandler extends AbstractDidcommMessageHan
 
   @override
   Future<Presentation> handle(DidcommMessage message) async {
-
     var requestPresentation = RequestPresentation.fromJson(message.toJson());
 
     var res = await searchForMatchingCredentials(
-        message: requestPresentation,
-        wallet: wallet!,
+      message: requestPresentation,
+      wallet: wallet!,
     );
 
-    var allCredentialFlattened =
-      res.fold(<VerifiableCredential>[],
-          (List<VerifiableCredential> l, FilterResult e) =>
+    var allCredentialFlattened = res.fold(
+        <VerifiableCredential>[],
+        (List<VerifiableCredential> l, FilterResult e) =>
             l..addAll(e.credentials));
 
     List<FilterResult> finalSend = [];

@@ -36,7 +36,7 @@ class ProposeCredential extends DidcommPlaintextMessage {
       ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
-            type: DidcommMessages.proposeCredential.value,
+            type: DidcommMessages.proposeCredential,
             id: id ?? Uuid().v4(),
             body: {},
             replyUrl: replyUrl,
@@ -64,14 +64,14 @@ class ProposeCredential extends DidcommPlaintextMessage {
         attachments!.add(Attachment(
             data: AttachmentData(json: a.toJson()),
             id: Uuid().v4(),
-            format: AttachmentFormat.ldProofVcDetail.value,
+            format: AttachmentFormat.ldProofVcDetail,
             mediaType: 'application/json'));
       }
     }
   }
 
   ProposeCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.proposeCredential.value) {
+    if (type != DidcommMessages.proposeCredential) {
       throw Exception('Unknown Message type or version');
     }
     goalCode = body['goal_code'];
@@ -83,18 +83,17 @@ class ProposeCredential extends DidcommPlaintextMessage {
     if (attachments != null && attachments!.isNotEmpty) {
       detail = [];
       for (var a in attachments!) {
-        if (a.format != null &&
-            a.format == AttachmentFormat.ldProofVcDetail.value) {
+        if (a.format != null && a.format == AttachmentFormat.ldProofVcDetail) {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             detail!.add(LdProofVcDetail.fromJson(a.data.json!));
           }
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialManifestAries.value) {
+            a.format == AttachmentFormat.credentialManifestAries) {
           throw UnimplementedError(
               'dif credential Manifest Attachment is not supported yet');
         } else if (a.format != null &&
-            a.format == AttachmentFormat.indyCredentialFilter.value) {
+            a.format == AttachmentFormat.indyCredentialFilter) {
           throw UnimplementedError('indy Attachment is not supported');
         } else {
           continue;
@@ -137,7 +136,7 @@ class OfferCredential extends DidcommPlaintextMessage {
       ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
-            type: DidcommMessages.offerCredential.value,
+            type: DidcommMessages.offerCredential,
             id: id ?? Uuid().v4(),
             body: {},
             replyUrl: replyUrl,
@@ -166,7 +165,7 @@ class OfferCredential extends DidcommPlaintextMessage {
         attachments!.add(Attachment(
             data: AttachmentData(json: a.toJson()),
             id: Uuid().v4(),
-            format: AttachmentFormat.ldProofVcDetail.value,
+            format: AttachmentFormat.ldProofVcDetail,
             mediaType: 'application/json'));
       }
     }
@@ -175,7 +174,7 @@ class OfferCredential extends DidcommPlaintextMessage {
       attachments!.add(Attachment(
           data: AttachmentData(json: credentialManifest!.toJson()),
           id: Uuid().v4(),
-          format: AttachmentFormat.credentialManifest.value,
+          format: AttachmentFormat.credentialManifest,
           mediaType: 'application/json'));
     }
 
@@ -184,13 +183,13 @@ class OfferCredential extends DidcommPlaintextMessage {
       attachments!.add(Attachment(
           data: AttachmentData(json: fulfillment!.toJson()),
           id: Uuid().v4(),
-          format: AttachmentFormat.credentialFulfillment.value,
+          format: AttachmentFormat.credentialFulfillment,
           mediaType: 'application/json'));
     }
   }
 
   OfferCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.offerCredential.value) {
+    if (type != DidcommMessages.offerCredential) {
       throw Exception('Unknown Message type or version');
     }
     goalCode = body['goal_code'];
@@ -203,28 +202,27 @@ class OfferCredential extends DidcommPlaintextMessage {
     if (attachments != null && attachments!.isNotEmpty) {
       detail = [];
       for (var a in attachments!) {
-        if (a.format != null &&
-            a.format == AttachmentFormat.ldProofVcDetail.value) {
+        if (a.format != null && a.format == AttachmentFormat.ldProofVcDetail) {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             detail!.add(LdProofVcDetail.fromJson(a.data.json!));
           }
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialManifestAries.value) {
+            a.format == AttachmentFormat.credentialManifestAries) {
           throw UnimplementedError(
               'dif credential Manifest Attachment as specified in Aries RFC 0511 is not supported yet');
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialManifest.value) {
+            a.format == AttachmentFormat.credentialManifest) {
           credentialManifest = CredentialManifest.fromJson(a.data.json);
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialFulfillment.value) {
+            a.format == AttachmentFormat.credentialFulfillment) {
           fulfillment = VerifiablePresentation.fromJson(a.data.json);
           if (fulfillment?.credentialFulfillment == null) {
             throw Exception(
                 'the presentation used here must contain a credential fulfillment');
           }
         } else if (a.format != null &&
-            a.format == AttachmentFormat.indyCredentialAbstract.value) {
+            a.format == AttachmentFormat.indyCredentialAbstract) {
           throw UnimplementedError('indy Attachment is not supported');
         } else {
           continue;
@@ -261,7 +259,7 @@ class RequestCredential extends DidcommPlaintextMessage {
       ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
-            type: DidcommMessages.requestCredential.value,
+            type: DidcommMessages.requestCredential,
             id: id ?? Uuid().v4(),
             body: {},
             replyUrl: replyUrl,
@@ -286,7 +284,7 @@ class RequestCredential extends DidcommPlaintextMessage {
         attachments!.add(Attachment(
             data: AttachmentData(json: a.toJson()),
             id: Uuid().v4(),
-            format: AttachmentFormat.ldProofVcDetail.value,
+            format: AttachmentFormat.ldProofVcDetail,
             mediaType: 'application/json'));
       }
     }
@@ -295,13 +293,13 @@ class RequestCredential extends DidcommPlaintextMessage {
       attachments!.add(Attachment(
           data: AttachmentData(json: credentialApplication!.toJson()),
           id: Uuid().v4(),
-          format: AttachmentFormat.credentialApplication.value,
+          format: AttachmentFormat.credentialApplication,
           mediaType: 'application/json'));
     }
   }
 
   RequestCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.requestCredential.value) {
+    if (type != DidcommMessages.requestCredential) {
       throw Exception('Unknown Message type or version');
     }
     goalCode = body['goal_code'];
@@ -309,8 +307,7 @@ class RequestCredential extends DidcommPlaintextMessage {
     if (attachments != null && attachments!.isNotEmpty) {
       detail = [];
       for (var a in attachments!) {
-        if (a.format != null &&
-            a.format == AttachmentFormat.ldProofVcDetail.value) {
+        if (a.format != null && a.format == AttachmentFormat.ldProofVcDetail) {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             detail!.add(LdProofVcDetail.fromJson(a.data.json!));
@@ -320,10 +317,10 @@ class RequestCredential extends DidcommPlaintextMessage {
           throw UnimplementedError(
               'dif credential Manifest Attachment as described in Aries RFC 511 is not supported yet');
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialApplication.value) {
+            a.format == AttachmentFormat.credentialApplication) {
           credentialApplication = VerifiablePresentation.fromJson(a.data.json);
         } else if (a.format != null &&
-            a.format == AttachmentFormat.indyCredentialRequest.value) {
+            a.format == AttachmentFormat.indyCredentialRequest) {
           throw UnimplementedError('indy Attachment is not supported');
         } else {
           continue;
@@ -362,7 +359,7 @@ class IssueCredential extends DidcommPlaintextMessage {
       ReturnRouteValue? returnRoute,
       DidcommMessageTyp? typ})
       : super(
-            type: DidcommMessages.issueCredential.value,
+            type: DidcommMessages.issueCredential,
             id: id ?? Uuid().v4(),
             body: {},
             replyUrl: replyUrl,
@@ -388,7 +385,7 @@ class IssueCredential extends DidcommPlaintextMessage {
         attachments!.add(Attachment(
             data: AttachmentData(json: a.toJson()),
             id: Uuid().v4(),
-            format: AttachmentFormat.ldProofVc.value,
+            format: AttachmentFormat.ldProofVc,
             mediaType: 'application/json'));
       }
     }
@@ -397,13 +394,13 @@ class IssueCredential extends DidcommPlaintextMessage {
       attachments!.add(Attachment(
           data: AttachmentData(json: credentialFulfillment!.toJson()),
           id: Uuid().v4(),
-          format: AttachmentFormat.credentialFulfillment.value,
+          format: AttachmentFormat.credentialFulfillment,
           mediaType: 'application/json'));
     }
   }
 
   IssueCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.issueCredential.value) {
+    if (type != DidcommMessages.issueCredential) {
       throw Exception('Unknown Message type or version');
     }
     goalCode = body['goal_code'];
@@ -412,16 +409,16 @@ class IssueCredential extends DidcommPlaintextMessage {
     if (attachments != null && attachments!.isNotEmpty) {
       credentials = [];
       for (var a in attachments!) {
-        if (a.format != null && a.format == AttachmentFormat.ldProofVc.value) {
+        if (a.format != null && a.format == AttachmentFormat.ldProofVc) {
           if (a.mediaType != null && a.mediaType == 'application/json') {
             a.data.resolveData();
             credentials!.add(VerifiableCredential.fromJson(a.data.json!));
           }
         } else if (a.format != null &&
-            a.format == AttachmentFormat.credentialFulfillment.value) {
+            a.format == AttachmentFormat.credentialFulfillment) {
           credentialFulfillment = VerifiablePresentation.fromJson(a.data.json);
         } else if (a.format != null &&
-            a.format == AttachmentFormat.indyCredential.value) {
+            a.format == AttachmentFormat.indyCredential) {
           throw UnimplementedError('indy Attachment is not supported');
         } else {
           throw Exception('Unknown Attachment Format');
@@ -453,7 +450,7 @@ class PreviewCredential extends DidcommPlaintextMessage {
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.previewCredential.value,
+            type: DidcommMessages.previewCredential,
             body: {'attributes': attributes},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -473,7 +470,7 @@ class PreviewCredential extends DidcommPlaintextMessage {
   PreviewCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
     if (type ==
             'https://didcomm.org/issue-credential/3.0/credential-credential' ||
-        type == DidcommMessages.previewCredential.value) {
+        type == DidcommMessages.previewCredential) {
       if (body.containsKey('attributes')) {
         List tmp = body['attributes'];
         attributes = [];

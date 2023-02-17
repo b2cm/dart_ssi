@@ -307,9 +307,18 @@ Signer _determineSignerForType(String type,
 
 /// Verifies the signature for the given [credential].
 ///
+/// [credential] may be of datatype Map<String, dynamic>, (jsonEncoded) String or [VerifiableCredential].
+///
 /// If an [erc1056] instance is given it is used to determine the current ethereum-Address behind a did.
 ///
-/// If [revocationRegistry] is given and the credential contains a `credentialStatus` property, the revocation status is checked.
+/// If the credential contains a `credentialStatus` property, the revocation status is checked.
+/// In case of credentialStatus type `EthereumRevocationList` [revocationRegistry] is needed.
+///
+/// Only in case the credential Signature is valid and the credential is not revoked or suspended true is returned,
+/// otherwise an Exception is thrown. There are two different types of Exceptions in use: [RevokedException] and [SignatureException].
+/// Both use codes to indicate why the credential is invalid. If a SignatureException has the code `sig` the signature itself is invalid,
+/// if it has the code `sigErr` something went wrong during signature check.
+/// If a RevokedException has code `rev` or `sus` the credential was revoked or suspended, if it has code `revErr` something went wrong during revocation check.
 Future<bool> verifyCredential(dynamic credential,
     {Erc1056? erc1056,
     RevocationRegistry? revocationRegistry,
@@ -368,21 +377,68 @@ Future<bool> verifyCredential(dynamic credential,
     } else if (credStatus['type'] == 'RevocationList2020Status') {
       var status = RevocationList2020Status.fromJson(credStatus);
       var res = await get(Uri.parse(status.revocationListCredential),
-          headers: {'Accept': 'application/json'});
+              headers: {'Accept': 'application/json'})
+          .timeout(Duration(seconds: 30), onTimeout: () {
+        return Response('Timeout', 408);
+      });
 
-      var revCred = RevocationList2020Credential.fromJson(res.body);
-      var verified = await verifyCredential(revCred);
-      if (!verified) {
+      if (res.statusCode == 200) {
+        var revCred = RevocationList2020Credential.fromJson(res.body);
+        try {
+          await verifyCredential(revCred);
+        } on SignatureException catch (_) {
+          throw RevokedException(
+              'could not verify RevocationListCredential', 'revErr');
+        }
+
+        var revoked = revCred.isRevoked(int.parse(status.revocationListIndex));
+        if (revoked) {
+          throw RevokedException('Credential is revoked', 'rev');
+        }
+      } else {
         throw RevokedException(
-            'could not verify RevocationListCredential', 'revErr');
+            'Error loading status list from ${status.revocationListCredential}',
+            'revErr');
       }
+    } else if (credStatus['type'] == 'StatusList2021Entry') {
+      var status = StatusList2021Entry.fromJson(credStatus);
+      var res = await get(Uri.parse(status.statusListCredential),
+              headers: {'Accept': 'application/json'})
+          .timeout(Duration(seconds: 30), onTimeout: () {
+        return Response('Timeout', 408);
+      });
 
-      var revoked = revCred.isRevoked(int.parse(status.revocationListIndex));
-      if (revoked) {
-        throw RevokedException('Credential is revoked', 'rev');
+      if (res.statusCode == 200) {
+        var revCred = StatusList2021Credential.fromJson(res.body);
+
+        if (revCred.statusPurpose != status.statusPurpose) {
+          throw RevokedException(
+              'StatusPurpose of StatusListEntry and StatusListCredential do not match',
+              'revErr');
+        }
+        try {
+          await verifyCredential(revCred);
+        } on SignatureException catch (_) {
+          throw RevokedException(
+              'could not verify RevocationListCredential', 'revErr');
+        }
+
+        var revoked = revCred.isRevoked(int.parse(status.statusListIndex));
+        if (revoked) {
+          throw RevokedException(
+              'Credential is ${status.statusPurpose == CredentialStatus2021Purpose.revocation ? 'revoked' : 'suspended'}',
+              status.statusPurpose == CredentialStatus2021Purpose.revocation
+                  ? 'rev'
+                  : 'sus');
+        }
+      } else {
+        throw RevokedException(
+            'Error loading status list from ${status.statusListCredential}',
+            'revErr');
       }
     } else {
-      throw Exception('Unknown Status-method : ${credStatus['type']}');
+      throw RevokedException(
+          'Unknown Status-method : ${credStatus['type']}', 'revErr');
     }
   }
 
@@ -1556,14 +1612,15 @@ String buildProofOptions(
   return json.encode(jsonObject);
 }
 
-enum SignatureType { ecdsaRecovery, edDsa }
+enum SignatureType {
+  ecdsaRecovery,
+  edDsa;
 
-extension SignatureTypeExt on SignatureType {
-  static const Map<SignatureType, String> values = {
+  static const Map<SignatureType, String> stringValues = {
     SignatureType.ecdsaRecovery: 'EcdsaSecp256k1RecoverySignature2020',
     SignatureType.edDsa: 'Ed25519Signature2020',
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
 MsgSignature _getSignatureFromJws(String jws) {

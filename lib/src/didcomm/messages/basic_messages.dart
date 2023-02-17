@@ -26,7 +26,7 @@ class EmptyMessage extends DidcommPlaintextMessage {
       List<String>? ack})
       : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.emptyMessage.value,
+            type: DidcommMessages.emptyMessage,
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -45,7 +45,7 @@ class EmptyMessage extends DidcommPlaintextMessage {
             ack: ack);
 
   EmptyMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.emptyMessage.value) {
+    if (type != DidcommMessages.emptyMessage) {
       throw Exception('Wrong message type');
     }
     if (body.isNotEmpty) throw Exception('this message is not empty');
@@ -81,7 +81,7 @@ class ProblemReport extends DidcommPlaintextMessage {
     ReturnRouteValue? returnRoute,
   }) : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.problemReport.value,
+            type: DidcommMessages.problemReport,
             body: {},
             parentThreadId: parentThreadId,
             ack: ack,
@@ -105,7 +105,7 @@ class ProblemReport extends DidcommPlaintextMessage {
   }
 
   ProblemReport.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.problemReport.value) {
+    if (type != DidcommMessages.problemReport) {
       throw Exception('Wrong message type');
     }
     if (body.containsKey('code')) {
@@ -169,7 +169,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
       ReturnRouteValue? returnRoute})
       : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.invitation.value,
+            type: DidcommMessages.invitation,
             body: {},
             typ: DidcommMessageTyp.plain,
             from: from,
@@ -196,7 +196,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
   }
 
   OutOfBandMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.invitation.value) {
+    if (type != DidcommMessages.invitation) {
       throw Exception('Wrong message type');
     }
     if (from == null) throw FormatException('from property needed');

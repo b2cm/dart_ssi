@@ -30,7 +30,7 @@ class QueryMessage extends DidcommPlaintextMessage {
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.discoverFeatureQuery.value,
+            type: DidcommMessages.discoverFeatureQuery,
             body: {},
             parentThreadId: parentThreadId,
             threadId: threadId,
@@ -55,7 +55,7 @@ class QueryMessage extends DidcommPlaintextMessage {
   }
 
   QueryMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.discoverFeatureQuery.value) {
+    if (type != DidcommMessages.discoverFeatureQuery) {
       throw Exception('Wrong message type');
     }
     if (body.containsKey('queries')) {
@@ -93,7 +93,7 @@ class DiscloseMessage extends DidcommPlaintextMessage {
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.discoverFeatureDisclose.value,
+            type: DidcommMessages.discoverFeatureDisclose,
             body: {},
             parentThreadId: parentThreadId,
             threadId: threadId,
@@ -118,7 +118,7 @@ class DiscloseMessage extends DidcommPlaintextMessage {
   }
 
   DiscloseMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.discoverFeatureDisclose.value) {
+    if (type != DidcommMessages.discoverFeatureDisclose) {
       throw Exception('Wrong message type');
     }
     if (body.containsKey('disclosures')) {
@@ -230,14 +230,17 @@ class Disclosure implements JsonObject {
   }
 }
 
-enum FeatureType { protocol, goalCode, header, attachmentFormat }
+enum FeatureType {
+  protocol,
+  goalCode,
+  header,
+  attachmentFormat;
 
-extension FeatureTypeExt on FeatureType {
-  static const Map<FeatureType, String> values = {
+  static const Map<FeatureType, String> stringValues = {
     FeatureType.goalCode: 'goal-code',
     FeatureType.header: 'header',
     FeatureType.protocol: 'protocol',
     FeatureType.attachmentFormat: 'attachment-format'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }

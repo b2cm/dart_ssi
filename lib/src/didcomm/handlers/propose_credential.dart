@@ -5,7 +5,7 @@ import 'package:dart_ssi/util.dart';
 class DidcommProposeCredentialMessageHandler
     extends AbstractDidcommMessageHandler {
   @override
-  List<String> get supportedTypes => [DidcommMessages.proposeCredential.value];
+  List<String> get supportedTypes => [DidcommMessages.proposeCredential];
 
   @override
   bool get needsConnectionDid => false;

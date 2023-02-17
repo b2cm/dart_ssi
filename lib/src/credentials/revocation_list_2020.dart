@@ -4,8 +4,6 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:dart_ssi/credentials.dart';
-import 'package:dart_ssi/src/credentials/jsonLdContext/vc_status_list_2021.dart';
-import 'package:dart_ssi/src/credentials/jsonLdContext/vc_status_rl_2020.dart';
 import 'package:dart_ssi/src/util/utils.dart';
 import 'package:dart_ssi/src/wallet/wallet_store.dart';
 
@@ -83,7 +81,7 @@ class StatusList2021Entry extends CredentialStatus {
       required this.statusListCredential,
       required this.statusListIndex,
       Map<String, dynamic>? originalData})
-      : super(id, 'RevocationList2020Status', originalData);
+      : super(id, 'StatusList2021Entry', originalData);
 
   factory StatusList2021Entry.fromJson(dynamic jsonData) {
     var data = credentialToMap(jsonData);
@@ -151,14 +149,15 @@ class StatusList2021Entry extends CredentialStatus {
   }
 }
 
-enum CredentialStatus2021Purpose { revocation, suspension }
+enum CredentialStatus2021Purpose {
+  revocation,
+  suspension;
 
-extension CredentialStatus2021PurposeExt on CredentialStatus2021Purpose {
-  static const Map<CredentialStatus2021Purpose, String> values = {
+  static const Map<CredentialStatus2021Purpose, String> stringValues = {
     CredentialStatus2021Purpose.revocation: 'revocation',
     CredentialStatus2021Purpose.suspension: 'suspension'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
 class StatusList2021Credential extends RevocationList2020Credential {

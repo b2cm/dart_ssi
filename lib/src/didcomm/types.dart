@@ -1,60 +1,69 @@
 import '../util/types.dart';
 
-enum DidcommProfiles { aip1, rfc19, rfc587, v2 }
+enum DidcommProfiles {
+  aip1,
+  rfc19,
+  rfc587,
+  v2;
 
-extension DidcommProfileExt on DidcommProfiles {
-  static const Map<DidcommProfiles, String> values = {
+  static const Map<DidcommProfiles, String> stringValues = {
     DidcommProfiles.aip1: 'didcomm/aip1',
     DidcommProfiles.rfc19: 'didcomm/aip2;env=rfc19',
     DidcommProfiles.rfc587: 'didcomm/aip2;env=rfc587',
     DidcommProfiles.v2: 'didcomm/v2'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
-enum DidcommMessageTyp { plain, signed, encrypted }
+enum DidcommMessageTyp {
+  plain,
+  signed,
+  encrypted;
 
-extension DidcommMessageTypExt on DidcommMessageTyp {
-  static const Map<DidcommMessageTyp, String> values = {
+  static const Map<DidcommMessageTyp, String> stringValues = {
     DidcommMessageTyp.plain: 'application/didcomm-plain+json',
     DidcommMessageTyp.signed: 'application/didcomm-signed+json',
     DidcommMessageTyp.encrypted: 'application/didcomm-encrypted+json'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
 abstract class DidcommMessage implements JsonObject {}
 
 /// Combination of Key-Wrap and Key agreement algorithm
-enum KeyWrapAlgorithm { ecdhES, ecdh1PU }
+enum KeyWrapAlgorithm {
+  ecdhES,
+  ecdh1PU;
 
-extension KeyWrapAlgorithmExt on KeyWrapAlgorithm {
-  static const Map<KeyWrapAlgorithm, String> values = {
+  static const Map<KeyWrapAlgorithm, String> stringValues = {
     KeyWrapAlgorithm.ecdhES: 'ECDH-ES+A256KW',
     KeyWrapAlgorithm.ecdh1PU: 'ECDH-1PU+A256KW',
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
-enum EncryptionAlgorithm { a256cbc, a256gcm }
+enum EncryptionAlgorithm {
+  a256cbc,
+  a256gcm;
 
-extension EncryptionAgorithmExt on EncryptionAlgorithm {
-  static const Map<EncryptionAlgorithm, String> values = {
+  static const Map<EncryptionAlgorithm, String> stringValues = {
     EncryptionAlgorithm.a256cbc: 'A256CBC-HS512',
     EncryptionAlgorithm.a256gcm: 'A256GCM',
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
-enum JwsSignatureAlgorithm { edDsa, es256, es256k }
+enum JwsSignatureAlgorithm {
+  edDsa,
+  es256,
+  es256k;
 
-extension JwsSignatureAlgorithmExt on JwsSignatureAlgorithm {
-  static const Map<JwsSignatureAlgorithm, String> values = {
+  static const Map<JwsSignatureAlgorithm, String> stringValues = {
     JwsSignatureAlgorithm.edDsa: 'EdDSA',
     JwsSignatureAlgorithm.es256: 'ES256',
     JwsSignatureAlgorithm.es256k: 'ES256K'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
 enum DidcommProtocol {
@@ -62,141 +71,138 @@ enum DidcommProtocol {
   presentProof,
   discoverFeature,
   invitation,
-  requestPresentation
-}
+  requestPresentation;
 
-extension DidcommProtocolsExt on DidcommProtocol {
-  static const Map<DidcommProtocol, String> values = {
+  static const Map<DidcommProtocol, String> stringValues = {
     DidcommProtocol.issueCredential: 'issue-credential',
     DidcommProtocol.presentProof: 'present-proof',
     DidcommProtocol.discoverFeature: 'discover-features',
     DidcommProtocol.invitation: 'invitation'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
-enum DidcommMessages {
-  proposeCredential,
-  offerCredential,
-  requestCredential,
-  issueCredential,
-  previewCredential,
-  emptyMessage,
-  presentation,
-  requestPresentation,
-  proposePresentation,
-  discoverFeatureQuery,
-  discoverFeatureDisclose,
-  invitation,
-  problemReport;
+class DidcommMessages {
+  static const String proposeCredential =
+      'https://didcomm.org/issue-credential/3.0/propose-credential';
 
-  // gets the enum type by its descriptive name will throw
-  // a [StateError] if it was not found
-  DidcommMessages byName(String name) {
-    return DidcommMessages.values
-        .firstWhere((element) => element.value == name);
-  }
+  static const offerCredential =
+      'https://didcomm.org/issue-credential/3.0/offer-credential';
+
+  static const requestCredential =
+      'https://didcomm.org/issue-credential/3.0/request-credential';
+
+  static const issueCredential =
+      'https://didcomm.org/issue-credential/3.0/issue-credential';
+
+  static const previewCredential =
+      'https://didcomm.org/issue-credential/3.0/credential-preview';
+
+  static const emptyMessage = 'https://didcomm.org/empty/1.0';
+
+  static const presentation =
+      'https://didcomm.org/present-proof/3.0/presentation';
+
+  static const requestPresentation =
+      'https://didcomm.org/present-proof/3.0/request-presentation';
+
+  static const proposePresentation =
+      'https://didcomm.org/present-proof/3.0/propose-presentation';
+
+  static const discoverFeatureQuery =
+      'https://didcomm.org/discover-features/2.0/queries';
+
+  static const discoverFeatureDisclose =
+      'https://didcomm.org/discover-features/1.0/disclose';
+
+  static const invitation = 'https://didcomm.org/out-of-band/2.0/invitation';
+
+  static const problemReport =
+      'https://didcomm.org/report-problem/2.0/problem-report';
+
+  List<String> get allValues => [
+        proposeCredential,
+        offerCredential,
+        requestCredential,
+        issueCredential,
+        previewCredential,
+        emptyMessage,
+        presentation,
+        requestPresentation,
+        proposePresentation,
+        discoverFeatureQuery,
+        discoverFeatureDisclose,
+        invitation,
+        problemReport
+      ];
 }
 
-extension DidcommMessagesExt on DidcommMessages {
-  static const Map<DidcommMessages, String> values = {
-    DidcommMessages.proposeCredential:
-        'https://didcomm.org/issue-credential/3.0/propose-credential',
-    DidcommMessages.offerCredential:
-        'https://didcomm.org/issue-credential/3.0/offer-credential',
-    DidcommMessages.requestCredential:
-        'https://didcomm.org/issue-credential/3.0/request-credential',
-    DidcommMessages.issueCredential:
-        'https://didcomm.org/issue-credential/3.0/issue-credential',
-    DidcommMessages.previewCredential:
-        'https://didcomm.org/issue-credential/3.0/credential-preview',
-    DidcommMessages.emptyMessage: 'https://didcomm.org/empty/1.0',
-    DidcommMessages.presentation:
-        'https://didcomm.org/present-proof/3.0/presentation',
-    DidcommMessages.requestPresentation:
-        'https://didcomm.org/present-proof/3.0/request-presentation',
-    DidcommMessages.proposePresentation:
-        'https://didcomm.org/present-proof/3.0/propose-presentation',
-    DidcommMessages.discoverFeatureQuery:
-        'https://didcomm.org/discover-features/2.0/queries',
-    DidcommMessages.discoverFeatureDisclose:
-        'https://didcomm.org/discover-features/1.0/disclose',
-    DidcommMessages.invitation:
-        'https://didcomm.org/out-of-band/2.0/invitation',
-    DidcommMessages.problemReport:
-        'https://didcomm.org/report-problem/2.0/problem-report'
-  };
-  String get value => values[this]!;
-  List<String> get allValues => values.values.toList();
+class AttachmentFormat {
+  static const presentationDefinition =
+      'dif/presentation-exchange/definitions@v1.0';
+  static const presentationDefinition2 =
+      'dif/presentation-exchange/definitions@v2.0';
+  static const presentationSubmission =
+      'dif/presentation-exchange/submission@v1.0';
+  static const presentationSubmission2 =
+      'dif/presentation-exchange/submission@v2.0';
+  static const ldProofVc = 'aries/ld-proof-vc@v1.0';
+  static const ldProofVcDetail = 'aries/ld-proof-vc-detail@v1.0';
+  static const credentialManifestAries = 'dif/credential-manifest@v1.0';
+  static const credentialManifest = 'dif/credential-manifest/manifest@v1.0';
+  static const credentialFulfillment =
+      'dif/credential-manifest/fulfillment@v1.0';
+  static const credentialApplication =
+      'dif/credential-manifest/application@v1.0';
+  static const indyProofRequest = 'hlindy/proof-req@v2.0';
+  static const indyProof = 'hlindy/proof@v2.0';
+  static const indyCredential = 'hlindy/cred@v2.0';
+  static const indyCredentialRequest = 'hlindy/cred-req@v2.0';
+  static const indyCredentialAbstract = 'hlindy/cred-abstract@v2.0';
+  static const indyCredentialFilter = 'hlindy/cred-filter@v2.0';
+
+  List<String> get allValues => [
+        presentationDefinition,
+        presentationDefinition2,
+        presentationSubmission,
+        presentationSubmission2,
+        ldProofVc,
+        ldProofVcDetail,
+        credentialManifestAries,
+        credentialManifest,
+        credentialFulfillment,
+        credentialApplication,
+        indyProofRequest,
+        indyProof,
+        indyCredential,
+        indyCredentialRequest,
+        indyCredentialAbstract,
+        indyCredentialFilter
+      ];
 }
 
-enum AttachmentFormat {
-  presentationDefinition,
-  presentationDefinition2,
-  presentationSubmission,
-  presentationSubmission2,
-  ldProofVc,
-  ldProofVcDetail,
-  credentialManifestAries,
-  credentialManifest,
-  credentialFulfillment,
-  credentialApplication,
-  indyProofRequest,
-  indyProof,
-  indyCredential,
-  indyCredentialRequest,
-  indyCredentialAbstract,
-  indyCredentialFilter
-}
+enum AcknowledgeStatus {
+  ok,
+  fail,
+  pending;
 
-extension AttachmentFormatExt on AttachmentFormat {
-  static const Map<AttachmentFormat, String> values = {
-    AttachmentFormat.presentationDefinition:
-        'dif/presentation-exchange/definitions@v1.0',
-    AttachmentFormat.presentationDefinition2:
-        'dif/presentation-exchange/definitions@v2.0',
-    AttachmentFormat.presentationSubmission:
-        'dif/presentation-exchange/submission@v1.0',
-    AttachmentFormat.presentationSubmission2:
-        'dif/presentation-exchange/submission@v2.0',
-    AttachmentFormat.ldProofVc: 'aries/ld-proof-vc@v1.0',
-    AttachmentFormat.ldProofVcDetail: 'aries/ld-proof-vc-detail@v1.0',
-    AttachmentFormat.credentialManifestAries: 'dif/credential-manifest@v1.0',
-    AttachmentFormat.credentialManifest:
-        'dif/credential-manifest/manifest@v1.0',
-    AttachmentFormat.credentialFulfillment:
-        'dif/credential-manifest/fulfillment@v1.0',
-    AttachmentFormat.credentialApplication:
-        'dif/credential-manifest/application@v1.0',
-    AttachmentFormat.indyProofRequest: 'hlindy/proof-req@v2.0',
-    AttachmentFormat.indyProof: 'hlindy/proof@v2.0',
-    AttachmentFormat.indyCredential: 'hlindy/cred@v2.0',
-    AttachmentFormat.indyCredentialRequest: 'hlindy/cred-req@v2.0',
-    AttachmentFormat.indyCredentialAbstract: 'hlindy/cred-abstract@v2.0',
-    AttachmentFormat.indyCredentialFilter: 'hlindy/cred-filter@v2.0'
-  };
-  String get value => values[this]!;
-  List<String> get allValues => values.values.toList();
-}
-
-enum AcknowledgeStatus { ok, fail, pending }
-
-extension AcknowledgeStatusExt on AcknowledgeStatus {
-  static const Map<AcknowledgeStatus, String> values = {
+  static const Map<AcknowledgeStatus, String> stringValues = {
     AcknowledgeStatus.ok: 'OK',
     AcknowledgeStatus.pending: 'PENDING',
     AcknowledgeStatus.fail: 'FAIL'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }
 
-enum ReturnRouteValue { none, all, thread }
+enum ReturnRouteValue {
+  none,
+  all,
+  thread;
 
-extension ReturnRouteValueExt on ReturnRouteValue {
-  static const Map<ReturnRouteValue, String> values = {
+  static const Map<ReturnRouteValue, String> stringValues = {
     ReturnRouteValue.none: 'none',
     ReturnRouteValue.all: 'all',
     ReturnRouteValue.thread: 'thread'
   };
-  String get value => values[this]!;
+  String get value => stringValues[this]!;
 }

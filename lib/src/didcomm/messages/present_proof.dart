@@ -35,7 +35,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.proposePresentation.value,
+            type: DidcommMessages.proposePresentation,
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -59,7 +59,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
         var attachment = Attachment(
             data: AttachmentData(json: d.toJson()),
             id: Uuid().v4(),
-            format: AttachmentFormat.presentationDefinition.value,
+            format: AttachmentFormat.presentationDefinition,
             mediaType: 'application/json');
         attachments!.add(attachment);
       }
@@ -68,7 +68,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
 
   ProposePresentation.fromJson(dynamic jsonObject)
       : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.proposePresentation.value) {
+    if (type != DidcommMessages.proposePresentation) {
       throw Exception('Unsupported type or version');
     }
     goalCode = body['goal_code'];
@@ -78,11 +78,11 @@ class ProposePresentation extends DidcommPlaintextMessage {
       presentationDefinition = [];
 
       for (var a in attachments!) {
-        if (a.format == AttachmentFormat.presentationDefinition.value) {
+        if (a.format == AttachmentFormat.presentationDefinition) {
           a.data.resolveData();
           presentationDefinition!
               .add(PresentationDefinition.fromJson(a.data.json));
-        } else if (a.format == AttachmentFormat.indyProofRequest.value) {
+        } else if (a.format == AttachmentFormat.indyProofRequest) {
           throw UnimplementedError('Indy proof request is not supported');
         } else {
           throw Exception('Unknown type');
@@ -120,7 +120,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.requestPresentation.value,
+            type: DidcommMessages.requestPresentation,
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -144,7 +144,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
-          format: AttachmentFormat.presentationDefinition2.value,
+          format: AttachmentFormat.presentationDefinition2,
           mediaType: 'application/json');
       attachments!.add(attachment);
     }
@@ -152,7 +152,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
 
   RequestPresentation.fromJson(dynamic jsonObject)
       : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.requestPresentation.value) {
+    if (type != DidcommMessages.requestPresentation) {
       throw Exception('Unsupported type or version');
     }
     goalCode = body['goal_code'];
@@ -163,12 +163,12 @@ class RequestPresentation extends DidcommPlaintextMessage {
       presentationDefinition = [];
 
       for (var a in attachments!) {
-        if (a.format == AttachmentFormat.presentationDefinition.value ||
-            a.format == AttachmentFormat.presentationDefinition2.value) {
+        if (a.format == AttachmentFormat.presentationDefinition ||
+            a.format == AttachmentFormat.presentationDefinition2) {
           a.data.resolveData();
           presentationDefinition
               .add(PresentationDefinitionWithOptions.fromJson(a.data.json!));
-        } else if (a.format == AttachmentFormat.indyProofRequest.value) {
+        } else if (a.format == AttachmentFormat.indyProofRequest) {
           throw UnimplementedError('Indy proof request is not supported');
         } else {
           throw Exception('Unknown type');
@@ -204,7 +204,7 @@ class Presentation extends DidcommPlaintextMessage {
       DidcommMessageTyp? typ})
       : super(
             id: id ?? Uuid().v4(),
-            type: DidcommMessages.presentation.value,
+            type: DidcommMessages.presentation,
             body: {},
             replyUrl: replyUrl,
             replyTo: replyTo,
@@ -231,14 +231,14 @@ class Presentation extends DidcommPlaintextMessage {
       var attachment = Attachment(
           data: AttachmentData(json: d.toJson()),
           id: Uuid().v4(),
-          format: AttachmentFormat.presentationSubmission2.value,
+          format: AttachmentFormat.presentationSubmission2,
           mediaType: 'application/json');
       attachments!.add(attachment);
     }
   }
 
   Presentation.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.presentation.value) {
+    if (type != DidcommMessages.presentation) {
       throw Exception('Unsupported type or version');
     }
     goalCode = body['goal_code'];
@@ -248,8 +248,8 @@ class Presentation extends DidcommPlaintextMessage {
       verifiablePresentation = [];
 
       for (var a in attachments!) {
-        if (a.format == AttachmentFormat.presentationSubmission.value ||
-            a.format == AttachmentFormat.presentationSubmission2.value) {
+        if (a.format == AttachmentFormat.presentationSubmission ||
+            a.format == AttachmentFormat.presentationSubmission2) {
           a.data.resolveData();
           var tmp = VerifiablePresentation.fromJson(a.data.json);
           if (tmp.presentationSubmission == null) {
@@ -257,7 +257,7 @@ class Presentation extends DidcommPlaintextMessage {
                 'The verifiable Presentation used here must contain a presentation submission');
           }
           verifiablePresentation.add(tmp);
-        } else if (a.format == AttachmentFormat.indyProof.value) {
+        } else if (a.format == AttachmentFormat.indyProof) {
           throw UnimplementedError('Indy proof request is not supported');
         } else {
           throw Exception('Unknown type: ${a.format}');

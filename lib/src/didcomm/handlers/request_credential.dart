@@ -2,12 +2,10 @@ import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_ssi/exceptions.dart';
 
-class DidcommRequestCredentialMessageHandler extends AbstractDidcommMessageHandler {
-
+class DidcommRequestCredentialMessageHandler
+    extends AbstractDidcommMessageHandler {
   @override
-  List<String> get supportedTypes => [
-    DidcommMessages.requestCredential.value
-  ];
+  List<String> get supportedTypes => [DidcommMessages.requestCredential];
 
   @override
   bool get needsConnectionDid => false;
@@ -37,11 +35,11 @@ class DidcommRequestCredentialMessageHandler extends AbstractDidcommMessageHandl
     // Hint: the REST API does some very basic check for that (see handler there)
     late String signed;
     try {
-        signed = await signCredential(wallet!,
-        credential,
-        challenge: request.detail!.first.options.challenge);
+      signed = await signCredential(wallet!, credential,
+          challenge: request.detail!.first.options.challenge);
     } on Exception catch (e) {
-      throw DidcommServiceException("Could not sign the credential "
+      throw DidcommServiceException(
+          "Could not sign the credential "
           "due to `${e.toString()}`",
           baseException: e,
           code: 3459340);
@@ -60,7 +58,8 @@ class DidcommRequestCredentialMessageHandler extends AbstractDidcommMessageHandl
     // itself to be acked)
     issue.pleaseAck ??= [];
 
-    if (!(issue.pleaseAck!.contains('') || issue.pleaseAck!.contains(issue.id))) {
+    if (!(issue.pleaseAck!.contains('') ||
+        issue.pleaseAck!.contains(issue.id))) {
       issue.pleaseAck!.add(issue.id);
     }
     return issue;
