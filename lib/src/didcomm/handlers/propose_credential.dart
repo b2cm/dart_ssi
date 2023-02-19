@@ -44,7 +44,7 @@ class DidcommProposeCredentialMessageHandler
       } on Exception catch (e) {
         throw DidcommServiceException(
             "The attachment at index $i is not "
-            "verifiable due to `{${e.toString()}`",
+            "verifiable due to `${e.toString()}`",
             baseException: e,
             code: 4823482309);
       }
