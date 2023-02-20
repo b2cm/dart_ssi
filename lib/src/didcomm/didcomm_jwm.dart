@@ -1,11 +1,18 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:base_codecs/base_codecs.dart';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
 import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 import 'types.dart';
+import 'package:http/http.dart';
+import 'package:dart_multihash/dart_multihash.dart';
+import 'package:crypto/crypto.dart';
 
 /// A plaintext-Message (json-web message) as per didcomm specification
 class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
@@ -295,7 +302,6 @@ class AttachmentData implements JsonObject {
     json = decoded['json'];
   }
 
-  //TODO check hash
   Future<void> resolveData() async {
     if (json != null) {
       return;
@@ -303,22 +309,46 @@ class AttachmentData implements JsonObject {
       json = jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(base64!))));
     } else if (links != null && links!.isNotEmpty) {
       if (hash == null) throw Exception('If links are used hash must be given');
+
       for (var link in links!) {
         try {
-          var client = await HttpClient()
-              .getUrl(Uri.parse(link))
-              .timeout(Duration(seconds: 15));
-          var res = await client.close();
+          var res = await get(Uri.parse(link),
+              headers: {
+                'Accept': 'application/json'
+              });
+
           if (res.statusCode == 200) {
-            var contents = StringBuffer();
-            await for (var data in res.transform(utf8.decoder)) {
-              contents.write(data);
+            String body = res.body;
+            // body should be a json object with an attachment property
+            var response = jsonDecode(body) as Map<String, dynamic>;
+            if (!response.containsKey('attachment')) {
+              throw Exception(
+                  "Response does not contain an attachment (Code: 948230942)");
             }
-            json = jsonDecode(contents.toString());
+
+            // attachment should be a json (checked later implicitly by converting)
+            String attachmentJson = response['attachment'];
+
+            try {
+              var baseDecoded = base64Decode(addPaddingToBase64(hash!));
+              var data = Uint8List.fromList(utf8.encode(attachmentJson));
+
+              if(!checkMultiHash(baseDecoded, data)) {
+                throw Exception('Hash does not match data (Code: 23482304928)');
+              };
+
+              // seems valid here
+              json = jsonDecode(attachmentJson);
+            } catch (e) {
+              throw Exception('Hash is not a valid base64 '
+                  'encoded multihash ($e) (Code: 34982093)');
+            }
+
             break;
           }
         } catch (e) {
-          throw Exception('Cant load link data for $link');
+          throw Exception('Cant load link data for $link due to `$e` '
+              '(Code: 49382903)');
         }
       }
       if (json == null) throw Exception('No data found');
