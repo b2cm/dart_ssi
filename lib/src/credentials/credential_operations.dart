@@ -548,22 +548,19 @@ Future<String> buildPresentation(
   if (additionalDids != null) {
     for (var element in additionalDids) {
       var signer = _determineSignerForDid(element, loadDocumentFunction);
-      signerTypes.add(signer.runtimeType);
+      var t = signer.runtimeType;
+      if (t == EcdsaRecoverySignature &&
+          !context.contains(ecdsaRecoveryContextIri)) {
+        context.add(ecdsaRecoveryContextIri);
+      } else if (t == EdDsaSigner && !context.contains(ed25519ContextIri)) {
+        context.add(ed25519ContextIri);
+      }
       proofList.add(await signer.buildProof(presentation, wallet, element,
           challenge: challenge, proofPurpose: 'authentication'));
     }
   }
 
-  // add contexts for used signature suites
-  for (var t in signerTypes) {
-    if (t == EcdsaRecoverySignature) {
-      context.add(ecdsaRecoveryContextIri);
-    } else if (t == EdDsaSigner) {
-      context.add(ed25519ContextIri);
-    }
-  }
-
-  presentation['proof'] = (proofList.length == 1) ? proofList.first : proofList;
+  presentation['proof'] = proofList;
 
   return jsonEncode(presentation);
 }

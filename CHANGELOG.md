@@ -1,3 +1,6 @@
+## 2.0.1
+- Bugfixes
+
 ## 2.0.0
 - **Breaking Change**: when using links in didcomm-attachments, checking the hash is now performed
 - add CredentialStatusList2021 for revocation

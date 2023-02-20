@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:http/http.dart';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
 import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 import 'types.dart';
-import 'package:http/http.dart';
 
 /// A plaintext-Message (json-web message) as per didcomm specification
 class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
@@ -308,32 +308,21 @@ class AttachmentData implements JsonObject {
       for (var link in links!) {
         try {
           var res = await get(Uri.parse(link),
-              headers: {
-                'Accept': 'application/json'
-              });
+              headers: {'Accept': 'application/json'});
 
           if (res.statusCode == 200) {
             String body = res.body;
-            // body should be a json object with an attachment property
-            var response = jsonDecode(body) as Map<String, dynamic>;
-            if (!response.containsKey('attachment')) {
-              throw Exception(
-                  "Response does not contain an attachment (Code: 948230942)");
-            }
-
-            // attachment should be a json (checked later implicitly by converting)
-            String attachmentJson = response['attachment'];
-
+            // body should be a json object
             try {
               var baseDecoded = base64Decode(addPaddingToBase64(hash!));
-              var data = Uint8List.fromList(utf8.encode(attachmentJson));
+              var data = Uint8List.fromList(utf8.encode(body));
 
-              if(!checkMultiHash(baseDecoded, data)) {
+              if (!checkMultiHash(baseDecoded, data)) {
                 throw Exception('Hash does not match data (Code: 23482304928)');
               }
 
               // seems valid here
-              json = jsonDecode(attachmentJson);
+              json = jsonDecode(body);
             } catch (e) {
               throw Exception('Hash is not a valid base64 '
                   'encoded multihash ($e) (Code: 34982093)');
