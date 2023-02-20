@@ -1,5 +1,10 @@
+## 2.0.0
+- **Breaking Change**: when using links in didcomm-attachments, checking the hash is now performed
+- add CredentialStatusList2021 for revocation
+- small improvements in verification and signing VP and VC
+
 ## 1.0.6
-- add CredentialsStausList2020 for revocation
+- add CredentialStatusList2020 for revocation
 - add resolution of did:web
 - some example handlers for didcomm-messages
 - bugfixes and improvements
