@@ -430,6 +430,5 @@ bool checkMultiHash(Uint8List hash, Uint8List data) {
       return false;
     }
   }
-  ;
   return hashedData.length == multihash.digest.length;
 }

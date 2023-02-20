@@ -1,9 +1,6 @@
 import 'dart:convert';
-import 'dart:ffi';
-import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:base_codecs/base_codecs.dart';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
@@ -11,8 +8,6 @@ import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 import 'types.dart';
 import 'package:http/http.dart';
-import 'package:dart_multihash/dart_multihash.dart';
-import 'package:crypto/crypto.dart';
 
 /// A plaintext-Message (json-web message) as per didcomm specification
 class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
@@ -335,7 +330,7 @@ class AttachmentData implements JsonObject {
 
               if(!checkMultiHash(baseDecoded, data)) {
                 throw Exception('Hash does not match data (Code: 23482304928)');
-              };
+              }
 
               // seems valid here
               json = jsonDecode(attachmentJson);
