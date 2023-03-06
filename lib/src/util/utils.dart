@@ -432,3 +432,11 @@ bool checkMultiHash(Uint8List hash, Uint8List data) {
   }
   return hashedData.length == multihash.digest.length;
 }
+
+String getDateTimeNowString() {
+  var date = DateTime.now();
+  var asString = date.toUtc().toIso8601String();
+  var xmlDate = asString.split('.').first;
+  xmlDate += 'Z';
+  return xmlDate;
+}

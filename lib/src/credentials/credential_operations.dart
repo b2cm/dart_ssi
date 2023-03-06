@@ -505,7 +505,11 @@ Future<String> buildPresentation(
     }
   }
 
-  List<String> context = ['https://www.w3.org/2018/credentials/v1'];
+  //TODO dynamically build context based on proof methods
+  List<String> context = [
+    'https://www.w3.org/2018/credentials/v1',
+    ed25519ContextIri
+  ];
   List<String> type = ['VerifiablePresentation'];
   if (submission != null) {
     context.add(
@@ -1426,6 +1430,73 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
     }
   });
   return true;
+}
+
+Map<String, dynamic> mergeSdJwt(String sdJwt) {
+  Map<String, dynamic> merged = {};
+  var split = sdJwt.split('.');
+  if (split.length != 3) {
+    throw Exception('JWT consists of 3 parts');
+  }
+
+  var sig = split.last;
+  var disclosures = sig.split('~');
+  disclosures.removeAt(0);
+
+  Map<String, Disclosure> disclosureMap = {};
+
+  Map<String, dynamic> payload = jsonDecode(split[1]);
+  var hashAlg = payload['_sd_hash_alg'];
+  if (hashAlg != 'sha-256') {
+    throw UnimplementedError('Only sha-256 hashing is supported');
+  }
+
+  for (var d in disclosures) {
+    var hash = sha256.convert(ascii.encode(d));
+    disclosureMap[base64UrlEncode(hash.bytes)] = Disclosure.fromBase64(d);
+  }
+
+  return merged;
+}
+
+Map<String, dynamic> _mergeSd(
+    Map<String, dynamic> payload, Map<String, Disclosure> disclosures) {
+  Map<String, dynamic> merged = {};
+  payload.forEach((key, value) {
+    if (key != '_sd' || (value is Map && value.containsKey('_sd'))) {
+      merged[key] = value;
+    } else {
+      if (key == '_sd') {
+      } else {
+        merged[key] = _mergeSd(value, disclosures);
+      }
+    }
+  });
+
+  return merged;
+}
+
+class Disclosure {
+  String salt;
+  String propertyName;
+  String base64;
+  dynamic value;
+
+  Disclosure(
+      {required this.salt,
+      required this.value,
+      required this.base64,
+      required this.propertyName});
+
+  factory Disclosure.fromBase64(String disclosure) {
+    List dis = jsonDecode(utf8.decode(base64Decode(disclosure)));
+
+    return Disclosure(
+        salt: dis.first,
+        value: dis.last,
+        base64: disclosure,
+        propertyName: dis[1]);
+  }
 }
 
 String buildProofOptions(

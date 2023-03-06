@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:base_codecs/base_codecs.dart';
 import 'package:crypto/crypto.dart';
+import 'package:crypto_keys/crypto_keys.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:json_ld_processor/json_ld_processor.dart';
@@ -295,7 +296,7 @@ class EdDsaSigner extends Signer {
 
     var pOptionsHash = sha256.convert(utf8.encode(pOptions)).bytes;
     var hash = pOptionsHash + hashToSign;
-    // print(hash);
+    print(hash);
 
     var privateKey = await wallet.getPrivateKeyForCredentialDid(did);
     privateKey ??= await wallet.getPrivateKeyForConnectionDid(did);
@@ -316,6 +317,7 @@ class EdDsaSigner extends Signer {
       var normal = await JsonLdProcessor.normalize(
           Map<String, dynamic>.from(data),
           options: JsonLdOptions(safeMode: true, documentLoader: loadDocument));
+      print(normal);
       return sha256.convert(utf8.encode(normal)).bytes;
     } else if (data is String) {
       return sha256.convert(utf8.encode(data)).bytes;
@@ -446,5 +448,97 @@ class EdDsaSigner extends Signer {
 
     return ed.verify(publicKey, ascii.encode(signingInput),
         base64Decode(addPaddingToBase64(splitted[2])));
+  }
+}
+
+class Es256Signer extends Signer {
+  @override
+  FutureOr<Map<String, dynamic>> buildProof(
+      data, WalletStore wallet, String did,
+      {String? challenge, String? domain, String? proofPurpose}) {
+    // TODO: implement buildProof
+    throw UnimplementedError();
+  }
+
+  @override
+  FutureOr<String> sign(data, WalletStore wallet, String did,
+      {bool detached = false, jwsHeader}) async {
+    Map<String, dynamic> header;
+    if (jwsHeader != null) {
+      header = credentialToMap(jwsHeader);
+      if (header['alg'] != 'ES256') {
+        throw Exception('Unsupported Signature Algorithm ${header['alg']}');
+      }
+      if (header['crv'] != 'P-256') {
+        throw Exception('Unsupported Curve ${header['crv']}');
+      }
+    } else {
+      header = {'alg': 'ES256', 'crv': 'P-256'};
+    }
+
+    String encodedHeader = removePaddingFromBase64(
+        base64UrlEncode(utf8.encode(jsonEncode(header))));
+    String encodedPayload = removePaddingFromBase64(
+        base64UrlEncode(utf8.encode(data is String ? data : jsonEncode(data))));
+    String signingInput = '$encodedHeader.$encodedPayload';
+
+    Map<String, dynamic>? key =
+        await wallet.getPrivateKeyForCredentialDidAsJwk(did);
+    key ??= await wallet.getPrivateKeyForConnectionDidAsJwk(did);
+    if (key == null) throw Exception('No key found in Wallet');
+
+    var privateKey = EcPrivateKey(
+        eccPrivateKey: web3_crypto
+            .bytesToUnsignedInt(base64Decode(addPaddingToBase64(key['d']))),
+        curve: curves.p256);
+
+    var signer = privateKey.createSigner(algorithms.signing.ecdsa.sha256);
+    var sig = signer.sign(ascii.encode(signingInput));
+
+    String encodedSig = removePaddingFromBase64(base64UrlEncode(sig.data));
+
+    return detached
+        ? '$encodedHeader..$encodedSig'
+        : '$signingInput.$encodedSig';
+  }
+
+  @override
+  FutureOr<bool> verify(String jws, String did, {data}) async {
+    var ddo =
+        (await resolveDidDocument(did)).resolveKeyIds().convertAllKeysToJwk();
+    Map<String, dynamic> signingKey =
+        ddo.verificationMethod!.first.publicKeyJwk!;
+
+    var splitted = jws.split('.');
+    if (splitted.length != 3) throw Exception('maleformed jws');
+
+    String encodedPayload;
+    if (data != null) {
+      encodedPayload = data is String
+          ? removePaddingFromBase64(base64UrlEncode(utf8.encode(data)))
+          : removePaddingFromBase64(
+              base64UrlEncode(utf8.encode(jsonEncode(credentialToMap(data)))));
+    } else {
+      encodedPayload = splitted[1];
+    }
+
+    var signingInput = '${splitted[0]}.$encodedPayload';
+
+    var pubKey = EcPublicKey(
+        xCoordinate: web3_crypto.bytesToUnsignedInt(
+            base64Decode(addPaddingToBase64(signingKey['x']))),
+        yCoordinate: web3_crypto.bytesToUnsignedInt(
+            base64Decode(addPaddingToBase64(signingKey['y']))),
+        curve: curves.p256);
+    var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha256);
+
+    return verifier.verify(ascii.encode(signingInput),
+        Signature(base64Decode(addPaddingToBase64(splitted[2]))));
+  }
+
+  @override
+  FutureOr<bool> verifyProof(proof, data, String did, {String? challenge}) {
+    // TODO: implement verifyProof
+    throw UnimplementedError();
   }
 }

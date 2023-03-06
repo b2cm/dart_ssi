@@ -107,7 +107,7 @@ class VerifiableCredential implements JsonObject {
     jsonObject['type'] = type;
     jsonObject['credentialSubject'] = credentialSubject;
     jsonObject['issuer'] = issuer;
-    jsonObject['issuanceDate'] = issuanceDate.toIso8601String();
+    jsonObject['issuanceDate'] = issuanceDate.toUtc().toIso8601String();
     if (proof != null) jsonObject['proof'] = proof!.toJson();
     if (status != null) jsonObject['credentialStatus'] = status!.toJson();
     if (credentialSchema != null) {

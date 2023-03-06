@@ -22,7 +22,8 @@ dependencies:
   base_codecs: ^1.0.1
   ed25519_edwards: ^0.3.1
   ed25519_hd_key: ^2.2.0
-  json_ld_processor: ^1.0.1
+  json_ld_processor:
+    path: ../json_ld_processor
   http: ^0.13.5
   dart_multihash: ^0.0.1
 
