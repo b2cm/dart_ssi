@@ -239,7 +239,11 @@ class CredentialsSupportedObject implements JsonObject {
     if (jsonObject.containsKey('types')) {
       types = jsonObject['types'].cast<String>();
     } else {
-      throw Exception('types property needed');
+      if (jsonObject.containsKey('type')) {
+        types = [jsonObject['type']];
+      } else {
+        throw Exception('type(s) property needed');
+      }
     }
 
     if (jsonObject.containsKey('context')) {
