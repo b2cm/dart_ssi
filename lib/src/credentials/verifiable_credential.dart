@@ -282,7 +282,7 @@ class VerifiablePresentation implements JsonObject {
   late List<String> context;
   String? id;
   late List<String> type;
-  late List<VerifiableCredential> verifiableCredential;
+  List<VerifiableCredential>? verifiableCredential;
   String? holder;
   List<LinkedDataProof>? proof;
   PresentationSubmission? presentationSubmission;
@@ -293,7 +293,7 @@ class VerifiablePresentation implements JsonObject {
   VerifiablePresentation(
       {required this.context,
       required this.type,
-      required this.verifiableCredential,
+      this.verifiableCredential,
       this.id,
       this.holder,
       this.proof,
@@ -319,12 +319,10 @@ class VerifiablePresentation implements JsonObject {
       verifiableCredential = [];
       List tmp = presentation['verifiableCredential'];
       for (var c in tmp) {
-        verifiableCredential.add(VerifiableCredential.fromJson(c));
+        verifiableCredential!.add(VerifiableCredential.fromJson(c));
       }
-    } else {
-      throw FormatException(
-          'verifiable credential property is needed in verifiable presentation');
     }
+
     id = presentation['id'];
     holder = presentation['holder'];
     if (presentation.containsKey('proof')) {
@@ -359,11 +357,13 @@ class VerifiablePresentation implements JsonObject {
     Map<String, dynamic> jsonObject = {};
     jsonObject['@context'] = context;
     jsonObject['type'] = type;
-    List tmp = [];
-    for (var c in verifiableCredential) {
-      tmp.add(c.toJson());
+    if (verifiableCredential != null) {
+      List tmp = [];
+      for (var c in verifiableCredential!) {
+        tmp.add(c.toJson());
+      }
+      jsonObject['verifiableCredential'] = tmp;
     }
-    jsonObject['verifiableCredential'] = tmp;
     if (id != null) jsonObject['id'] = id;
     if (holder != null) jsonObject['holder'] = holder;
     if (presentationSubmission != null) {
@@ -376,7 +376,7 @@ class VerifiablePresentation implements JsonObject {
       jsonObject['credential_application'] = credentialApplication!.toJson();
     }
     if (proof != null) {
-      tmp = [];
+      List tmp = [];
       for (var p in proof!) {
         tmp.add(p.toJson());
       }

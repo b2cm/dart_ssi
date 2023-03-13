@@ -462,8 +462,9 @@ class SignatureException implements Exception {
 /// If not only the ownership of the dids in the credentials should be proofed a List of [additionalDids]
 /// could be given and a proof section for each did is added.
 Future<String> buildPresentation(
-    List<dynamic> credentials, WalletStore wallet, String challenge,
-    {List<String>? additionalDids,
+    List<dynamic>? credentials, WalletStore wallet, String challenge,
+    {String? holder,
+    List<String>? additionalDids,
     List<dynamic>? disclosedCredentials,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
         loadDocumentStrict}) async {
@@ -471,38 +472,48 @@ Future<String> buildPresentation(
   List<String?> holderDids = [];
 
   PresentationSubmission? submission;
-  for (var element in credentials) {
-    if (element is FilterResult) {
-      List<InputDescriptorMappingObject> mapping = [];
-      if (submission != null) {
-        mapping = submission.descriptorMap;
-      }
-      for (var cred in element.credentials) {
-        var credEntry = cred.toJson();
-        credMapList.add(credEntry);
-        holderDids.add(getHolderDidFromCredential(credEntry));
-        for (var descriptor in element.matchingDescriptorIds) {
-          var map = InputDescriptorMappingObject(
-              id: descriptor,
-              format: 'ldp_vc',
-              path: JsonPath(
-                  '\$.verifiableCredential[${credMapList.length - 1}]'));
-          mapping.add(map);
+  if (credentials != null) {
+    for (var element in credentials) {
+      if (element is FilterResult) {
+        List<InputDescriptorMappingObject> mapping = [];
+        if (submission != null) {
+          mapping = submission.descriptorMap;
         }
-      }
-      submission = PresentationSubmission(
-          presentationDefinitionId: element.presentationDefinitionId,
-          descriptorMap: mapping);
-    } else {
-      Map<String, dynamic> credMap;
-      if (element is VerifiableCredential) {
-        credMap = element.toJson();
+        for (var cred in element.credentials) {
+          var credEntry = cred.toJson();
+          credMapList.add(credEntry);
+          holderDids.add(getHolderDidFromCredential(credEntry));
+          for (var descriptor in element.matchingDescriptorIds) {
+            var map = InputDescriptorMappingObject(
+                id: descriptor,
+                format: 'ldp_vc',
+                path: JsonPath(
+                    '\$.verifiableCredential[${credMapList.length - 1}]'));
+            mapping.add(map);
+          }
+        }
+        submission = PresentationSubmission(
+            presentationDefinitionId: element.presentationDefinitionId,
+            descriptorMap: mapping);
       } else {
-        credMap = credentialToMap(element);
+        Map<String, dynamic> credMap;
+        if (element is VerifiableCredential) {
+          credMap = element.toJson();
+        } else {
+          credMap = credentialToMap(element);
+        }
+        credMapList.add(credMap);
+        holderDids.add(getHolderDidFromCredential(credMap));
       }
-      credMapList.add(credMap);
-      holderDids.add(getHolderDidFromCredential(credMap));
     }
+  }
+
+  if (holder != null) {
+    holderDids.add(holder);
+  }
+
+  if (holderDids.isEmpty) {
+    throw Exception('No holder did given. Can\'t generate Presentation');
   }
 
   //TODO dynamically build context based on proof methods
@@ -517,11 +528,15 @@ Future<String> buildPresentation(
     type.add('PresentationSubmission');
   }
 
-  Map<String, dynamic> presentation = {
-    '@context': context,
-    'type': type,
-    'verifiableCredential': credMapList
-  };
+  Map<String, dynamic> presentation = {'@context': context, 'type': type};
+
+  if (credMapList.isNotEmpty) {
+    presentation['verifiableCredential'] = credMapList;
+  }
+
+  if (holder != null) {
+    presentation['holder'] = holder;
+  }
 
   if (submission != null) {
     presentation['presentation_submission'] = submission.toJson();

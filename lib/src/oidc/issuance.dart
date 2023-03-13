@@ -207,7 +207,7 @@ class CredentialIssuerMetaData implements JsonObject {
 class CredentialsSupportedObject implements JsonObject {
   late String format;
   String? id;
-  late List<String> types;
+  late List<String> type;
   List<String>? context;
   List<String>? cryptographicBindingMethods;
   List<String>? cryptographicSuitesSupported;
@@ -217,7 +217,7 @@ class CredentialsSupportedObject implements JsonObject {
 
   CredentialsSupportedObject(
       {required this.format,
-      required this.types,
+      required this.type,
       this.id,
       this.context,
       this.display,
@@ -237,10 +237,10 @@ class CredentialsSupportedObject implements JsonObject {
     id = jsonObject['id'];
 
     if (jsonObject.containsKey('types')) {
-      types = jsonObject['types'].cast<String>();
+      type = jsonObject['types'].cast<String>();
     } else {
       if (jsonObject.containsKey('type')) {
-        types = [jsonObject['type']];
+        type = [jsonObject['type']];
       } else {
         throw Exception('type(s) property needed');
       }
@@ -283,7 +283,7 @@ class CredentialsSupportedObject implements JsonObject {
 
   @override
   Map<String, dynamic> toJson() {
-    Map<String, dynamic> jsonObject = {'format': format, 'types': types};
+    Map<String, dynamic> jsonObject = {'format': format, 'type': type};
     if (id != null) {
       jsonObject['id'] = id;
     }
