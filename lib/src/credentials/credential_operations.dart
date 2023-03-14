@@ -462,8 +462,9 @@ class SignatureException implements Exception {
 /// If not only the ownership of the dids in the credentials should be proofed a List of [additionalDids]
 /// could be given and a proof section for each did is added.
 Future<String> buildPresentation(
-    List<dynamic> credentials, WalletStore wallet, String challenge,
-    {List<String>? additionalDids,
+    List<dynamic>? credentials, WalletStore wallet, String challenge,
+    {String? holder,
+    List<String>? additionalDids,
     List<dynamic>? disclosedCredentials,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
         loadDocumentStrict}) async {
@@ -471,41 +472,55 @@ Future<String> buildPresentation(
   List<String?> holderDids = [];
 
   PresentationSubmission? submission;
-  for (var element in credentials) {
-    if (element is FilterResult) {
-      List<InputDescriptorMappingObject> mapping = [];
-      if (submission != null) {
-        mapping = submission.descriptorMap;
-      }
-      for (var cred in element.credentials) {
-        var credEntry = cred.toJson();
-        credMapList.add(credEntry);
-        holderDids.add(getHolderDidFromCredential(credEntry));
-        for (var descriptor in element.matchingDescriptorIds) {
-          var map = InputDescriptorMappingObject(
-              id: descriptor,
-              format: 'ldp_vc',
-              path: JsonPath(
-                  '\$.verifiableCredential[${credMapList.length - 1}]'));
-          mapping.add(map);
+  if (credentials != null) {
+    for (var element in credentials) {
+      if (element is FilterResult) {
+        List<InputDescriptorMappingObject> mapping = [];
+        if (submission != null) {
+          mapping = submission.descriptorMap;
         }
-      }
-      submission = PresentationSubmission(
-          presentationDefinitionId: element.presentationDefinitionId,
-          descriptorMap: mapping);
-    } else {
-      Map<String, dynamic> credMap;
-      if (element is VerifiableCredential) {
-        credMap = element.toJson();
+        for (var cred in element.credentials) {
+          var credEntry = cred.toJson();
+          credMapList.add(credEntry);
+          holderDids.add(getHolderDidFromCredential(credEntry));
+          for (var descriptor in element.matchingDescriptorIds) {
+            var map = InputDescriptorMappingObject(
+                id: descriptor,
+                format: 'ldp_vc',
+                path: JsonPath(
+                    '\$.verifiableCredential[${credMapList.length - 1}]'));
+            mapping.add(map);
+          }
+        }
+        submission = PresentationSubmission(
+            presentationDefinitionId: element.presentationDefinitionId,
+            descriptorMap: mapping);
       } else {
-        credMap = credentialToMap(element);
+        Map<String, dynamic> credMap;
+        if (element is VerifiableCredential) {
+          credMap = element.toJson();
+        } else {
+          credMap = credentialToMap(element);
+        }
+        credMapList.add(credMap);
+        holderDids.add(getHolderDidFromCredential(credMap));
       }
-      credMapList.add(credMap);
-      holderDids.add(getHolderDidFromCredential(credMap));
     }
   }
 
-  List<String> context = ['https://www.w3.org/2018/credentials/v1'];
+  if (holder != null) {
+    holderDids.add(holder);
+  }
+
+  if (holderDids.isEmpty) {
+    throw Exception('No holder did given. Can\'t generate Presentation');
+  }
+
+  //TODO dynamically build context based on proof methods
+  List<String> context = [
+    'https://www.w3.org/2018/credentials/v1',
+    ed25519ContextIri
+  ];
   List<String> type = ['VerifiablePresentation'];
   if (submission != null) {
     context.add(
@@ -513,11 +528,15 @@ Future<String> buildPresentation(
     type.add('PresentationSubmission');
   }
 
-  Map<String, dynamic> presentation = {
-    '@context': context,
-    'type': type,
-    'verifiableCredential': credMapList
-  };
+  Map<String, dynamic> presentation = {'@context': context, 'type': type};
+
+  if (credMapList.isNotEmpty) {
+    presentation['verifiableCredential'] = credMapList;
+  }
+
+  if (holder != null) {
+    presentation['holder'] = holder;
+  }
 
   if (submission != null) {
     presentation['presentation_submission'] = submission.toJson();
@@ -1426,6 +1445,73 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
     }
   });
   return true;
+}
+
+Map<String, dynamic> mergeSdJwt(String sdJwt) {
+  Map<String, dynamic> merged = {};
+  var split = sdJwt.split('.');
+  if (split.length != 3) {
+    throw Exception('JWT consists of 3 parts');
+  }
+
+  var sig = split.last;
+  var disclosures = sig.split('~');
+  disclosures.removeAt(0);
+
+  Map<String, Disclosure> disclosureMap = {};
+
+  Map<String, dynamic> payload = jsonDecode(split[1]);
+  var hashAlg = payload['_sd_hash_alg'];
+  if (hashAlg != 'sha-256') {
+    throw UnimplementedError('Only sha-256 hashing is supported');
+  }
+
+  for (var d in disclosures) {
+    var hash = sha256.convert(ascii.encode(d));
+    disclosureMap[base64UrlEncode(hash.bytes)] = Disclosure.fromBase64(d);
+  }
+
+  return merged;
+}
+
+Map<String, dynamic> _mergeSd(
+    Map<String, dynamic> payload, Map<String, Disclosure> disclosures) {
+  Map<String, dynamic> merged = {};
+  payload.forEach((key, value) {
+    if (key != '_sd' || (value is Map && value.containsKey('_sd'))) {
+      merged[key] = value;
+    } else {
+      if (key == '_sd') {
+      } else {
+        merged[key] = _mergeSd(value, disclosures);
+      }
+    }
+  });
+
+  return merged;
+}
+
+class Disclosure {
+  String salt;
+  String propertyName;
+  String base64;
+  dynamic value;
+
+  Disclosure(
+      {required this.salt,
+      required this.value,
+      required this.base64,
+      required this.propertyName});
+
+  factory Disclosure.fromBase64(String disclosure) {
+    List dis = jsonDecode(utf8.decode(base64Decode(disclosure)));
+
+    return Disclosure(
+        salt: dis.first,
+        value: dis.last,
+        base64: disclosure,
+        propertyName: dis[1]);
+  }
 }
 
 String buildProofOptions(
