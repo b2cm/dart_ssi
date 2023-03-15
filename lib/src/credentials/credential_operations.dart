@@ -292,12 +292,43 @@ Signer _determineSignerForDid(String did,
   }
 }
 
+Signer _determineSignerForJwk(Map<String, dynamic> jwk,
+    Function(Uri url, LoadDocumentOptions? options)? loadDocumentFunction) {
+  if (jwk['crv'] == 'P-256') {
+    return Es256Signer();
+  } else if (jwk['crv'] == 'Ed25519') {
+    return EdDsaSigner(loadDocumentFunction);
+  } else if (jwk['crv'] == 'secp256k1') {
+    return EcdsaRecoverySignature(loadDocumentFunction);
+  } else {
+    throw Exception('could not examine signature type');
+  }
+}
+
 Signer _determineSignerForType(String type,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction) {
   if (type == 'Ed25519Signature2020') {
     return EdDsaSigner(loadDocumentFunction);
   } else if (type == 'EcdsaSecp256k1RecoverySignature2020') {
     return EcdsaRecoverySignature(loadDocumentFunction);
+  } else {
+    throw Exception('could not examine signature type');
+  }
+}
+
+Signer _determineSignerForJwsHeader(String jwsHeader,
+    Function(Uri url, LoadDocumentOptions? options)? loadDocumentFunction) {
+  var header =
+      jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(jwsHeader))));
+  var alg = header['alg'];
+  if (alg == 'EdDSA') {
+    return EdDsaSigner(loadDocumentFunction);
+  } else if (alg == 'ES256K-R') {
+    return EcdsaRecoverySignature(loadDocumentFunction);
+  } else if (alg == 'ES256') {
+    return Es256Signer();
+  } else if (alg == 'ES256K') {
+    return Es256k1Signer();
   } else {
     throw Exception('could not examine signature type');
   }
@@ -1050,11 +1081,23 @@ String getHolderDidFromCredential(dynamic credential) {
 /// If a custom one should be used, it has to be given in its json representation (dart String or Map) and the value of alg has to be ES256K-R or EdDSA with curve Ed25519,
 /// because for now this is the only supported signature algorithm.
 Future<String> signStringOrJson(
-    WalletStore wallet, String didToSignWith, dynamic toSign,
-    {Signer? signer, bool detached = false, dynamic jwsHeader}) async {
-  signer ??= _determineSignerForDid(didToSignWith, null);
-  return signer.sign(toSign, wallet, didToSignWith,
-      detached: detached, jwsHeader: jwsHeader);
+    {WalletStore? wallet,
+    String? didToSignWith,
+    Map<String, dynamic>? jwk,
+    required dynamic toSign,
+    Signer? signer,
+    bool detached = false,
+    dynamic jwsHeader}) async {
+  signer ??= jwk != null
+      ? _determineSignerForJwk(jwk, null)
+      : _determineSignerForDid(didToSignWith!, null);
+  return signer.sign(
+      data: toSign,
+      wallet: wallet,
+      did: didToSignWith,
+      jwk: jwk,
+      detached: detached,
+      jwsHeader: jwsHeader);
 }
 
 /// Extracts the did used for signing [jws].
@@ -1096,14 +1139,19 @@ Future<String> getDidFromSignature(String jws,
 ///
 /// If a detached jws is given the signed string must be given separately as [toSign].
 /// [toSign] could be a String or a json-object (Dart Map).
-Future<bool> verifyStringSignature(String jws, String expectedDid,
-    {dynamic toSign, Erc1056? erc1056}) async {
-  var signer = _determineSignerForDid(expectedDid, null);
-  if (expectedDid.startsWith('did:ethr') && erc1056 != null) {
+Future<bool> verifyStringSignature(String jws,
+    {String? expectedDid,
+    Map<String, dynamic>? jwk,
+    dynamic toSign,
+    Erc1056? erc1056}) async {
+  var signer = _determineSignerForJwsHeader(jws.split('.').first, null);
+  if (expectedDid != null &&
+      expectedDid.startsWith('did:ethr') &&
+      erc1056 != null) {
     expectedDid = await erc1056.identityOwner(expectedDid);
   }
 
-  return signer.verify(jws, expectedDid, data: toSign);
+  return signer.verify(jws, did: expectedDid, jwk: jwk, data: toSign);
 }
 
 List<FilterResult> searchCredentialsForPresentationDefinition(

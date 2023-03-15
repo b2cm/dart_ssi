@@ -1634,10 +1634,11 @@ void main() async {
       await w.openBoxes('password');
       await w.initialize();
       var did = await w.getNextCredentialDID();
-      var jws = await signStringOrJson(w, did, toSign);
+      var jws =
+          await signStringOrJson(wallet: w, didToSignWith: did, toSign: toSign);
 
-      var verified = await verifyStringSignature(jws, did,
-          erc1056: erc1056, toSign: toSign);
+      var verified = await verifyStringSignature(jws,
+          expectedDid: did, erc1056: erc1056, toSign: toSign);
 
       expect(verified, true);
 
@@ -1651,9 +1652,11 @@ void main() async {
       await w.openBoxes('password');
       await w.initialize();
       var did = await w.getNextCredentialDID(KeyType.ed25519);
-      var jws = await signStringOrJson(w, did, toSign);
+      var jws =
+          await signStringOrJson(wallet: w, didToSignWith: did, toSign: toSign);
 
-      var verified = await verifyStringSignature(jws, did, toSign: toSign);
+      var verified =
+          await verifyStringSignature(jws, expectedDid: did, toSign: toSign);
 
       expect(verified, true);
 
@@ -1972,9 +1975,10 @@ void main() async {
     test('sign String', () async {
       var toSign = 'test';
       var didToSignWith = await wallet.getNextConnectionDID();
-      var jws = await signStringOrJson(wallet, didToSignWith, toSign);
-      var checked =
-          await verifyStringSignature(jws, didToSignWith, erc1056: ercWithId);
+      var jws = await signStringOrJson(
+          wallet: wallet, didToSignWith: didToSignWith, toSign: toSign);
+      var checked = await verifyStringSignature(jws,
+          expectedDid: didToSignWith, erc1056: ercWithId);
       expect(checked, true);
     });
 

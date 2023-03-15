@@ -378,8 +378,11 @@ class AttachmentData implements JsonObject {
     } else {
       throw Exception('nothing to sign');
     }
-    jws =
-        await signStringOrJson(wallet, didToSignWith, payload, detached: true);
+    jws = await signStringOrJson(
+        wallet: wallet,
+        didToSignWith: didToSignWith,
+        toSign: payload,
+        detached: true);
   }
 
   Future<bool> verifyJws(String expectedDid) async {
@@ -393,7 +396,8 @@ class AttachmentData implements JsonObject {
     } else {
       throw Exception('nothing to sign');
     }
-    return verifyStringSignature(jws, expectedDid, toSign: payload);
+    return verifyStringSignature(jws,
+        expectedDid: expectedDid, toSign: payload);
   }
 }
 

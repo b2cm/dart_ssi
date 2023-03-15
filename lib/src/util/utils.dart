@@ -90,7 +90,7 @@ Future<List<String>> getDidFromDidConfiguration(String url) async {
         var jwt = element['jwt'];
         var did = element['did'];
         print(did);
-        var verified = await verifyStringSignature(jwt, did);
+        var verified = await verifyStringSignature(jwt, expectedDid: did);
         print(verified);
         if (verified) didsInConfig.add(did);
       });

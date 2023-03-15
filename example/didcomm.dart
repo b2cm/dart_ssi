@@ -151,7 +151,7 @@ void main() async {
   //check if the credential inside matches the presentation Definition
   var result = searchCredentialsForPresentationDefinition([
     presentationMessageReceived
-        .verifiablePresentation[0].verifiableCredential[0]
+        .verifiablePresentation[0].verifiableCredential![0]
   ], presentationDefinition);
   if (result.length != 1) throw Exception('Credential dont match definition');
 

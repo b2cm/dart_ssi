@@ -929,7 +929,7 @@ void main() async {
   });
 
   group('signing test from didcomm spec', () {
-    test('ed25519', () {
+    test('ed25519', () async {
       var signedMessage3 = DidcommSignedMessage.fromJson({
         "payload":
             "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJ0eXBlIjoiaHR0cDovL2V4YW1wbGUuY29tL3Byb3RvY29scy9sZXRzX2RvX2x1bmNoLzEuMC9wcm9wb3NhbCIsImZyb20iOiJkaWQ6ZXhhbXBsZTphbGljZSIsInRvIjpbImRpZDpleGFtcGxlOmJvYiJdLCJjcmVhdGVkX3RpbWUiOjE1MTYyNjkwMjIsImV4cGlyZXNfdGltZSI6MTUxNjM4NTkzMSwiYm9keSI6eyJtZXNzYWdlc3BlY2lmaWNhdHRyaWJ1dGUiOiJhbmQgaXRzIHZhbHVlIn19",
@@ -950,9 +950,9 @@ void main() async {
         "crv": "Ed25519",
         "x": "G-boxFB6vOZBu-wXkm-9Lh79I8nf9Z50cILaOgKKGww"
       };
-      expect(signedMessage3.verify(key3), true);
+      expect(await signedMessage3.verify(key3), true);
     });
-    test('es256', () {
+    test('es256', () async {
       var signedMessage = DidcommSignedMessage.fromJson({
         "payload":
             "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJ0eXBlIjoiaHR0cDovL2V4YW1wbGUuY29tL3Byb3RvY29scy9sZXRzX2RvX2x1bmNoLzEuMC9wcm9wb3NhbCIsImZyb20iOiJkaWQ6ZXhhbXBsZTphbGljZSIsInRvIjpbImRpZDpleGFtcGxlOmJvYiJdLCJjcmVhdGVkX3RpbWUiOjE1MTYyNjkwMjIsImV4cGlyZXNfdGltZSI6MTUxNjM4NTkzMSwiYm9keSI6eyJtZXNzYWdlc3BlY2lmaWNhdHRyaWJ1dGUiOiJhbmQgaXRzIHZhbHVlIn19",
@@ -975,9 +975,9 @@ void main() async {
         "x": "2syLh57B-dGpa0F8p1JrO6JU7UUSF6j7qL-vfk1eOoY",
         "y": "BgsGtI7UPsObMRjdElxLOrgAO9JggNMjOcfzEPox18w"
       };
-      expect(signedMessage.verify(key), true);
+      expect(await signedMessage.verify(key), true);
     });
-    test('es259k', () {
+    test('es259k', () async {
       var signedMessage2 = DidcommSignedMessage.fromJson({
         "payload":
             "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJ0eXBlIjoiaHR0cDovL2V4YW1wbGUuY29tL3Byb3RvY29scy9sZXRzX2RvX2x1bmNoLzEuMC9wcm9wb3NhbCIsImZyb20iOiJkaWQ6ZXhhbXBsZTphbGljZSIsInRvIjpbImRpZDpleGFtcGxlOmJvYiJdLCJjcmVhdGVkX3RpbWUiOjE1MTYyNjkwMjIsImV4cGlyZXNfdGltZSI6MTUxNjM4NTkzMSwiYm9keSI6eyJtZXNzYWdlc3BlY2lmaWNhdHRyaWJ1dGUiOiJhbmQgaXRzIHZhbHVlIn19",
@@ -999,12 +999,12 @@ void main() async {
         "x": "aToW5EaTq5mlAf8C5ECYDSkqsJycrW-e1SQ6_GJcAOk",
         "y": "JAGX94caA21WKreXwYUaOCYTBMrqaX4KWIlsQZTHWCk"
       };
-      expect(signedMessage2.verify(key2), true);
+      expect(await signedMessage2.verify(key2), true);
     });
   });
 
   group('Signing message locally', () {
-    test('ed25519', () {
+    test('ed25519', () async {
       var key3 = {
         "kid": "did:example:alice#key-1",
         "kty": "OKP",
@@ -1012,11 +1012,11 @@ void main() async {
         "crv": "Ed25519",
         "x": "G-boxFB6vOZBu-wXkm-9Lh79I8nf9Z50cILaOgKKGww"
       };
-      var sig3 =
-          DidcommSignedMessage.sign(payload: message, jwkToSignWith: [key3]);
-      expect(sig3.verify(key3), true);
+      var sig3 = DidcommSignedMessage(payload: message);
+      await sig3.sign([key3]);
+      expect(await sig3.verify(key3), true);
     });
-    test('es256', () {
+    test('es256', () async {
       var key = {
         "kid": "did:example:alice#key-2",
         "kty": "EC",
@@ -1025,11 +1025,11 @@ void main() async {
         "x": "2syLh57B-dGpa0F8p1JrO6JU7UUSF6j7qL-vfk1eOoY",
         "y": "BgsGtI7UPsObMRjdElxLOrgAO9JggNMjOcfzEPox18w"
       };
-      var sig3 =
-          DidcommSignedMessage.sign(payload: message, jwkToSignWith: [key]);
-      expect(sig3.verify(key), true);
+      var sig3 = DidcommSignedMessage(payload: message);
+      await sig3.sign([key]);
+      expect(await sig3.verify(key), true);
     });
-    test('es259k', () {
+    test('es259k', () async {
       var key2 = {
         "kid": "did:example:alice#key-3",
         "kty": "EC",
@@ -1038,14 +1038,14 @@ void main() async {
         "x": "aToW5EaTq5mlAf8C5ECYDSkqsJycrW-e1SQ6_GJcAOk",
         "y": "JAGX94caA21WKreXwYUaOCYTBMrqaX4KWIlsQZTHWCk"
       };
-      var sig3 =
-          DidcommSignedMessage.sign(payload: message, jwkToSignWith: [key2]);
-      expect(sig3.verify(key2), true);
+      var sig3 = DidcommSignedMessage(payload: message);
+      await sig3.sign([key2]);
+      expect(await sig3.verify(key2), true);
     });
   });
 
   group('combination', () {
-    test('signed in encrypted', () {
+    test('signed in encrypted', () async {
       Map<String, dynamic> aliceEncryptionKey = {
         "kid": "did:example:alice#key-x25519-1",
         "kty": "OKP",
@@ -1069,10 +1069,10 @@ void main() async {
         "x": "GDTrI66K0pFfO54tlCSvfjjNapIs44dzpneBgyx0S3E"
       };
 
-      var signedMessage = DidcommSignedMessage.sign(
-          payload: message, jwkToSignWith: [aliceSigningKey]);
+      var signedMessage = DidcommSignedMessage(payload: message);
+      await signedMessage.sign([aliceSigningKey]);
 
-      expect(signedMessage.verify(aliceSigningKey), true);
+      expect(await signedMessage.verify(aliceSigningKey), true);
 
       var encrypted = DidcommEncryptedMessage.fromPlaintext(
           senderPrivateKeyJwk: aliceEncryptionKey,

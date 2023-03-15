@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:crypto_keys/crypto_keys.dart';
-import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
-import 'package:web3dart/crypto.dart';
+import 'package:json_ld_processor/json_ld_processor.dart';
 
+import '../credentials/credential_operations.dart';
+import '../credentials/credential_signer.dart' as signer;
 import '../util/types.dart';
 import '../util/utils.dart';
 import 'didcomm_jwe.dart';
@@ -13,10 +13,10 @@ import 'types.dart';
 /// A signed didcomm message
 class DidcommSignedMessage implements JsonObject, DidcommMessage {
   late DidcommMessage payload;
-  late List<SignatureObject> signatures;
+  List<SignatureObject>? signatures;
   String? _base64Payload;
 
-  DidcommSignedMessage({required this.payload, required this.signatures});
+  DidcommSignedMessage({required this.payload, this.signatures});
 
   DidcommSignedMessage.fromJson(dynamic jsonObject) {
     var sig = credentialToMap(jsonObject);
@@ -45,7 +45,7 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
       if (tmp.isNotEmpty) {
         signatures = [];
         for (var s in tmp) {
-          signatures.add(SignatureObject.fromJson(s));
+          signatures!.add(SignatureObject.fromJson(s));
         }
       } else {
         throw Exception('Empty Signatures');
@@ -55,122 +55,63 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
     }
   }
 
-  DidcommSignedMessage.sign(
-      {required this.payload,
-      required List<Map<String, dynamic>> jwkToSignWith}) {
-    signatures = [];
-    for (var key in jwkToSignWith) {
-      signatures.add(_sign(key));
-    }
-  }
-
-  SignatureObject _sign(Map<String, dynamic> jwkToSignWith) {
-    var crv = jwkToSignWith['crv'];
-    if (crv == null) throw Exception('Jwk without crv parameter');
-    Map<String, dynamic> protected = {'typ': DidcommMessageTyp.signed.value};
-    if (crv == 'secp256k1') {
-      protected['alg'] = JwsSignatureAlgorithm.es256k.value;
-      var privateKey = EcPrivateKey(
-          eccPrivateKey: bytesToUnsignedInt(
-              base64Decode(addPaddingToBase64(jwkToSignWith['d']))),
-          curve: curves.p256k);
-
-      var encodedHeader = removePaddingFromBase64(
-          base64UrlEncode(utf8.encode(jsonEncode(protected))));
-      var signer = privateKey.createSigner(algorithms.signing.ecdsa.sha256);
-      var sig = signer.sign(ascii.encode(
-          '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'));
-      return SignatureObject(
-          signature: removePaddingFromBase64(base64UrlEncode(sig.data)),
-          protected: protected);
-    } else if (crv == 'P-256') {
-      protected['alg'] = JwsSignatureAlgorithm.es256.value;
-      var privateKey = EcPrivateKey(
-          eccPrivateKey: bytesToUnsignedInt(
-              base64Decode(addPaddingToBase64(jwkToSignWith['d']))),
-          curve: curves.p256);
-
-      var encodedHeader = removePaddingFromBase64(
-          base64UrlEncode(utf8.encode(jsonEncode(protected))));
-      var signer = privateKey.createSigner(algorithms.signing.ecdsa.sha256);
-      var sig = signer.sign(ascii.encode(
-          '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'));
-      return SignatureObject(
-          signature: removePaddingFromBase64(base64UrlEncode(sig.data)),
-          protected: protected);
-    } else if (crv == 'Ed25519') {
-      protected['alg'] = JwsSignatureAlgorithm.edDsa.value;
-      var privateKey = ed
-          .newKeyFromSeed(base64Decode(addPaddingToBase64(jwkToSignWith['d'])));
-
-      var encodedHeader = removePaddingFromBase64(
-          base64UrlEncode(utf8.encode(jsonEncode(protected))));
-
-      var sig = ed.sign(
-          privateKey,
-          ascii.encode(
-              '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'));
-      return SignatureObject(
-          signature: removePaddingFromBase64(base64UrlEncode(sig)),
-          protected: protected);
+  signer.Signer _determineSignerForJwk(Map<String, dynamic> jwk,
+      Function(Uri url, LoadDocumentOptions? options)? loadDocumentFunction) {
+    if (jwk['crv'] == 'P-256') {
+      return signer.Es256Signer();
+    } else if (jwk['crv'] == 'Ed25519') {
+      return signer.EdDsaSigner(loadDocumentFunction);
+    } else if (jwk['crv'] == 'secp256k1') {
+      return signer.Es256k1Signer();
     } else {
-      throw UnimplementedError('Other curves or algorithms are not supported');
+      throw Exception('could not examine signer');
     }
   }
 
-  bool verify(Map<String, dynamic> publicKeyJwk) {
+  Future<void> sign(List<Map<String, dynamic>> jwkToSignWith) async {
+    signatures ??= [];
+    for (var jwk in jwkToSignWith) {
+      var signerImpl = _determineSignerForJwk(jwk, null);
+      Map<String, dynamic> protected = {
+        'typ': DidcommMessageTyp.signed.value,
+        'alg': signerImpl.algValue,
+        'crv': signerImpl.crvValue
+      };
+      var jws = await signStringOrJson(
+          jwk: jwk,
+          jwsHeader: protected,
+          signer: signerImpl,
+          toSign: _base64Payload != null
+              ? utf8.decode(base64Decode(_base64Payload!))
+              : payload.toJson(),
+          detached: true);
+      signatures!.add(SignatureObject(
+          signature: jws.split('..').last, protected: protected));
+    }
+    return;
+  }
+
+  Future<bool> verify(Map<String, dynamic> publicKeyJwk) async {
     var crv = publicKeyJwk['crv'];
     if (crv == null) throw Exception('Jwk without crv parameter');
     bool valid = true;
-    for (var s in signatures) {
-      var alg = s.protected!['alg'];
-      if (alg == null) {
-        throw Exception('alg property must be present');
-      } else if (alg == JwsSignatureAlgorithm.edDsa.value) {
-        if (crv != 'Ed25519') throw Exception('wrong curve for algorithm $alg');
-        var publicKey =
-            ed.PublicKey(base64Decode(addPaddingToBase64(publicKeyJwk['x'])));
-        var encodedHeader = removePaddingFromBase64(
-            base64UrlEncode(utf8.encode(jsonEncode(s.protected))));
-        valid = ed.verify(
-            publicKey,
-            ascii.encode(
-                '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'),
-            base64Decode(addPaddingToBase64(s.signature)));
-      } else if (alg == JwsSignatureAlgorithm.es256.value) {
-        if (crv != 'P-256') throw Exception('wrong curve for algorithm $alg');
-        var pubKey = EcPublicKey(
-            xCoordinate: bytesToUnsignedInt(
-                base64Decode(addPaddingToBase64(publicKeyJwk['x']))),
-            yCoordinate: bytesToUnsignedInt(
-                base64Decode(addPaddingToBase64(publicKeyJwk['y']))),
-            curve: curves.p256);
-        var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha256);
-        var encodedHeader = removePaddingFromBase64(
-            base64UrlEncode(utf8.encode(jsonEncode(s.protected))));
-        valid = verifier.verify(
-            ascii.encode(
-                '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'),
-            Signature(base64Decode(addPaddingToBase64(s.signature))));
-      } else if (alg == JwsSignatureAlgorithm.es256k.value) {
-        if (crv != 'secp256k1') {
-          throw Exception('wrong curve for algorithm $alg');
-        }
-        var pubKey = EcPublicKey(
-            xCoordinate: bytesToUnsignedInt(
-                base64Decode(addPaddingToBase64(publicKeyJwk['x']))),
-            yCoordinate: bytesToUnsignedInt(
-                base64Decode(addPaddingToBase64(publicKeyJwk['y']))),
-            curve: curves.p256k);
-        var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha256);
-        var encodedHeader = removePaddingFromBase64(
-            base64UrlEncode(utf8.encode(jsonEncode(s.protected))));
-        valid = verifier.verify(
-            ascii.encode(
-                '$encodedHeader.${_base64Payload ?? removePaddingFromBase64(base64UrlEncode(utf8.encode(payload.toString())))}'),
-            Signature(base64Decode(addPaddingToBase64(s.signature))));
-      } else {
-        throw UnimplementedError('Other signing algorithms are not supported');
+
+    if (signatures == null || signatures!.isEmpty) {
+      throw Exception('Nothing to verify');
+    }
+
+    for (var s in signatures!) {
+      var encodedHeader = removePaddingFromBase64(
+          base64UrlEncode(utf8.encode(jsonEncode(s.protected))));
+      var encodedPayload = _base64Payload ??
+          removePaddingFromBase64(
+              base64UrlEncode(utf8.encode(payload.toString())));
+      var encodedSignature = s.signature;
+      valid = await verifyStringSignature(
+          '$encodedHeader.$encodedPayload.$encodedSignature',
+          jwk: publicKeyJwk);
+      if (!valid) {
+        throw Exception('A Signature is wrong');
       }
     }
     return valid;
@@ -181,11 +122,15 @@ class DidcommSignedMessage implements JsonObject, DidcommMessage {
     Map<String, dynamic> jsonObject = {};
     jsonObject['payload'] = removePaddingFromBase64(
         base64UrlEncode(utf8.encode(payload.toString())));
-    List sigs = [];
-    for (var s in signatures) {
-      sigs.add(s.toJson());
+
+    if (signatures != null) {
+      List sigs = [];
+      for (var s in signatures!) {
+        sigs.add(s.toJson());
+      }
+      jsonObject['signatures'] = sigs;
     }
-    jsonObject['signatures'] = sigs;
+
     return jsonObject;
   }
 
