@@ -11,4 +11,5 @@ export 'src/credentials/jsonLdContext/vc_status_list_2021.dart';
 export 'src/credentials/jsonLdContext/vc_status_rl_2020.dart';
 export 'src/credentials/presentation_exchange.dart';
 export 'src/credentials/revocation.dart';
+export 'src/credentials/revocation_list_2020.dart';
 export 'src/credentials/verifiable_credential.dart';

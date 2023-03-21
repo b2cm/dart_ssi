@@ -181,11 +181,13 @@ class StatusList2021Credential extends RevocationList2020Credential {
     type = ["VerifiableCredential", "StatusList2021Credential"];
     context = [credentialsV1Iri, statusList2021ContextIri];
     credentialSubject = {
-      subjectId != null ? 'id' : subjectId: null,
       'type': 'StatusList2021',
       'statusPurpose': statusPurpose.value,
       'encodedList': revocationList.toEncodedString()
     };
+    if (subjectId != null) {
+      credentialSubject['id'] = subjectId;
+    }
   }
 
   StatusList2021Credential.fromJson(dynamic jsonData)
@@ -221,10 +223,12 @@ class RevocationList2020Credential extends VerifiableCredential {
             issuer: issuer,
             expirationDate: expirationDate) {
     credentialSubject = {
-      subjectId != null ? 'id' : subjectId: null,
       'type': 'RevocationList2020',
       'encodedList': revocationList.toEncodedString()
     };
+    if (subjectId != null) {
+      credentialSubject['id'] = subjectId;
+    }
   }
 
   RevocationList2020Credential.fromJson(dynamic jsonData)
@@ -290,7 +294,8 @@ class BitString {
     }
     var posInData = position ~/ 8;
     var posInByte = position % 8;
-    var mask = pow(2, posInByte).toInt();
+    var mask = pow(2, 7 - posInByte).toInt();
+    print(mask.toRadixString(2));
 
     _data[posInData] ^= mask;
   }
@@ -322,7 +327,7 @@ class BitString {
   String toString() => _data.fold(
       '',
       (previousValue, element) =>
-          '${element.toRadixString(2).padLeft(8, '0')} $previousValue');
+          '$previousValue ${element.toRadixString(2).padLeft(8, '0')}');
 
   Uint8List get data => _data;
   int get length => _length;

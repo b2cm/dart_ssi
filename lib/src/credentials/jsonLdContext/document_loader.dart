@@ -1,11 +1,5 @@
+import 'package:dart_ssi/credentials.dart';
 import 'package:json_ld_processor/json_ld_processor.dart';
-
-import 'credentials_v1.dart';
-import 'ecdsa_recovery_2020.dart';
-import 'ed25519_signature.dart';
-import 'presentation_submission_context.dart';
-import 'schema_org.dart';
-import 'vc_status_rl_2020.dart';
 
 RemoteDocument loadDocumentStrict(Uri url, LoadDocumentOptions? options) {
   if (url.toString() == credentialsV1Iri) {
@@ -20,6 +14,8 @@ RemoteDocument loadDocumentStrict(Uri url, LoadDocumentOptions? options) {
     return RemoteDocument(document: presentationSubmissionContext);
   } else if (url.toString() == revocationList202ContextIri) {
     return RemoteDocument(document: revocationList202Context);
+  } else if (url.toString() == statusList2021ContextIri) {
+    return RemoteDocument(document: statusList2021Context);
   } else {
     throw JsonLdError('Document loading failed: could not find $url locally');
   }
@@ -39,6 +35,8 @@ Future<RemoteDocument> loadDocumentFast(
     return RemoteDocument(document: presentationSubmissionContext);
   } else if (url.toString() == revocationList202ContextIri) {
     return RemoteDocument(document: revocationList202Context);
+  } else if (url.toString() == statusList2021ContextIri) {
+    return RemoteDocument(document: statusList2021Context);
   } else {
     return await loadDocument(url, options);
   }

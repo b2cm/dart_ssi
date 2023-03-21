@@ -365,8 +365,15 @@ Future<bool> verifyCredential(dynamic credential,
   } else {
     credMap = credentialToMap(credential);
   }
+
   if (!credMap.containsKey('proof')) {
     throw Exception('no proof section found');
+  }
+
+  var revoked = await checkForRevocation(credential,
+      erc1056: erc1056, revocationRegistry: revocationRegistry);
+  if (revoked) {
+    throw RevokedException('Credential was revoked', 'rev');
   }
 
   // determine issuer
@@ -388,6 +395,18 @@ Future<bool> verifyCredential(dynamic credential,
   credMap['proof'] = proof;
   if (!verified) {
     throw SignatureException('Credentials Signature incorrect', 'sig');
+  }
+
+  return verified;
+}
+
+Future<bool> checkForRevocation(dynamic credential,
+    {Erc1056? erc1056, RevocationRegistry? revocationRegistry}) async {
+  Map<String, dynamic> credMap;
+  if (credential is VerifiableCredential) {
+    credMap = credential.toJson();
+  } else {
+    credMap = credentialToMap(credential);
   }
 
   // check for Revocation
@@ -471,7 +490,7 @@ Future<bool> verifyCredential(dynamic credential,
     }
   }
 
-  return verified;
+  return false;
 }
 
 class RevokedException implements Exception {
