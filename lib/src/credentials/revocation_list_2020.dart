@@ -295,7 +295,6 @@ class BitString {
     var posInData = position ~/ 8;
     var posInByte = position % 8;
     var mask = pow(2, 7 - posInByte).toInt();
-    print(mask.toRadixString(2));
 
     _data[posInData] ^= mask;
   }

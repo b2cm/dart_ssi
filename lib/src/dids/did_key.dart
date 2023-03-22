@@ -4,7 +4,10 @@ import 'package:dart_ssi/src/util/private_util.dart';
 import 'did_document.dart';
 
 DidDocument resolveDidKey(String did) {
-  if (!did.startsWith('did:key')) throw Exception('Expected did to start with `did:key`. However `$did` did not');
+  if (!did.startsWith('did:key')) {
+    throw Exception(
+        'Expected did to start with `did:key`. However `$did` did not');
+  }
   var splited = did.split(':');
   if (splited.length != 3) throw Exception('malformed did: `$did`');
 
@@ -18,15 +21,29 @@ DidDocument resolveDidKey(String did) {
     "https://w3id.org/security/suites/x25519-2020/v1"
   ];
 
+  var context2 = [
+    "https://www.w3.org/ns/did/v1",
+    'https://ns.did.ai/suites/multikey-2021/v1/'
+  ];
+
   var id = did;
 
   if (multibaseIndicator != 'z') {
     throw UnimplementedError('Only Base58 is supported yet');
   }
+
   if (keyPart.startsWith('6Mk')) {
     return _buildEDDoc(context, id, keyPart);
   } else if (keyPart.startsWith('6LS')) {
     return _buildXDoc(context, id, keyPart);
+  } else if (keyPart.startsWith('Dn')) {
+    return _buildOtherDoc(context2, id, keyPart, 'P256Key2021');
+  } else if (keyPart.startsWith('Q3s')) {
+    return _buildOtherDoc(context2, id, keyPart, 'Secp256k1Key2021');
+  } else if (keyPart.startsWith('82')) {
+    return _buildOtherDoc(context2, id, keyPart, 'P384Key2021');
+  } else if (keyPart.startsWith('2J9')) {
+    return _buildOtherDoc(context2, id, keyPart, 'P512Key2021');
   } else {
     throw UnimplementedError('Only Ed25519 and X25519 keys are supported now');
   }
@@ -76,4 +93,22 @@ DidDocument _buildXDoc(List<String> context, String id, String keyPart) {
       id: id,
       verificationMethod: [verification],
       keyAgreement: [verificationKeyId]);
+}
+
+DidDocument _buildOtherDoc(
+    List<String> context, String id, String keyPart, String type) {
+  String verificationKeyId = '$id#z$keyPart';
+  var verification = VerificationMethod(
+      id: verificationKeyId,
+      controller: id,
+      type: type,
+      publicKeyMultibase: 'z$keyPart');
+  return DidDocument(
+      context: context,
+      id: id,
+      verificationMethod: [verification],
+      assertionMethod: [verificationKeyId],
+      authentication: [verificationKeyId],
+      capabilityDelegation: [verificationKeyId],
+      capabilityInvocation: [verificationKeyId]);
 }

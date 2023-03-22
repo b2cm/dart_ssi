@@ -7,6 +7,7 @@ import 'package:base_codecs/base_codecs.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_multihash/dart_multihash.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
+import 'package:elliptic/elliptic.dart';
 import 'package:web3dart/crypto.dart';
 
 import '../credentials/credential_operations.dart';
@@ -38,6 +39,42 @@ Map<String, dynamic> multibaseKeyToJwk(String multibaseKey) {
     jwk['kty'] = 'OKP';
     jwk['crv'] = 'X25519';
     jwk['x'] = removePaddingFromBase64(base64UrlEncode(key));
+  } else if (indicatorHex == '8024') {
+    jwk['kty'] = 'EC';
+    jwk['crv'] = 'P-256';
+    var c = getP256();
+    var pub = c.compressedHexToPublicKey(hex.encode(key));
+    jwk['x'] = removePaddingFromBase64(base64UrlEncode(
+        pub.X < BigInt.zero ? intToBytes(pub.X) : unsignedIntToBytes(pub.X)));
+    jwk['y'] = removePaddingFromBase64(base64UrlEncode(
+        pub.Y < BigInt.zero ? intToBytes(pub.Y) : unsignedIntToBytes(pub.Y)));
+  } else if (indicatorHex == 'e701') {
+    jwk['kty'] = 'EC';
+    jwk['crv'] = 'secp256k1';
+    var c = getSecp256k1();
+    var pub = c.compressedHexToPublicKey(hex.encode(key));
+    jwk['x'] = removePaddingFromBase64(base64UrlEncode(
+        pub.X < BigInt.zero ? intToBytes(pub.X) : unsignedIntToBytes(pub.X)));
+    jwk['y'] = removePaddingFromBase64(base64UrlEncode(
+        pub.Y < BigInt.zero ? intToBytes(pub.Y) : unsignedIntToBytes(pub.Y)));
+  } else if (indicatorHex == '8124') {
+    jwk['kty'] = 'EC';
+    jwk['crv'] = 'P-384';
+    var c = getP384();
+    var pub = c.compressedHexToPublicKey(hex.encode(key));
+    jwk['x'] = removePaddingFromBase64(base64UrlEncode(
+        pub.X < BigInt.zero ? intToBytes(pub.X) : unsignedIntToBytes(pub.X)));
+    jwk['y'] = removePaddingFromBase64(base64UrlEncode(
+        pub.Y < BigInt.zero ? intToBytes(pub.Y) : unsignedIntToBytes(pub.Y)));
+  } else if (indicatorHex == '8224') {
+    jwk['kty'] = 'EC';
+    jwk['crv'] = 'P-512';
+    var c = getP521();
+    var pub = c.compressedHexToPublicKey(hex.encode(key));
+    jwk['x'] = removePaddingFromBase64(base64UrlEncode(
+        pub.X < BigInt.zero ? intToBytes(pub.X) : unsignedIntToBytes(pub.X)));
+    jwk['y'] = removePaddingFromBase64(base64UrlEncode(
+        pub.Y < BigInt.zero ? intToBytes(pub.Y) : unsignedIntToBytes(pub.Y)));
   } else {
     throw UnimplementedError(
         'Unsupported multicodec indicator 0x$indicatorHex');
