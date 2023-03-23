@@ -105,12 +105,12 @@ addElementToListOrInit(Json json, SimpleJsonPath path, dynamic value) {
   if (parent[key] == null) {
     parent[key] = [value];
   } else {
-    var value = parent[key];
-    if (value.runtimeType != List) {
+    var listValue = parent[key];
+    if (listValue.runtimeType != List) {
       throw JsonPathException('Expected element at ${path.prettyPrint()} to '
           'be a list, (or not being set at all) '
           'but a `${value.runtimeType}` was found,', code: 423423423);
     }
-    parent[key].add(value);
+    listValue.add(value);
   }
 }

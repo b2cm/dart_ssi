@@ -116,7 +116,7 @@ class VerifiableCredential implements JsonObject {
     if (credentialSchema != null) {
       jsonObject['credentialSchema'] = credentialSchema!.toJson();
     }
-    print(jsonObject);
+
     return jsonObject;
   }
 

@@ -32,6 +32,9 @@ OutOfBandMessage oobOfferCredential({
         code: 234234543);
   }
 
+  // have @context only having unique entries
+  credential['@context'] = (credential['@context'] as List).toSet().toList();
+
   try {
     forceAsList(credential, ['type']);
   } on JsonPathException catch (e) {
@@ -41,16 +44,57 @@ OutOfBandMessage oobOfferCredential({
         code: 34583495834);
   }
 
-  /// @TODO why that?
   if (!credential.containsKey('id')) {
     credential['id'] = 'did:key:000';
   }
+
+  String? expirationDateStr = credential.remove('expirationDate');
+  DateTime? expirationDate;
+
+  if (expirationDateStr != null) {
+    try {
+         expirationDate = DateTime.parse(expirationDateStr);
+    } catch (e) {
+      throw OobTemplateWrongValueException("The expirationDate could not be parsed.\n"
+          'Details: `$e`',
+          code: 84758394);
+    }
+  }
+
+  String? issuanceDateStr = credential.remove('issuanceDate');
+  DateTime? issuanceDate;
+
+  if(issuanceDateStr != null) {
+    try {
+      issuanceDate = DateTime.parse(issuanceDateStr);
+    } catch (e) {
+      throw OobTemplateWrongValueException("The issuanceDate could not be parsed"
+          'Details: `$e`',
+          code: 989043853904);
+    }
+  }
+
+  if(!credential.containsKey('credentialSubject')) {
+    throw OobTemplateMissingValueException(
+        "The credential must have a `credentialSubject`"
+        " field set.",
+        code: 84309583490);
+  }
+
+  if (credential['credentialSubject'] is! Map) {
+    throw OobTemplateWrongValueException(
+        "The credentialSubject must be a mapping.",
+        code: 543453499);
+  }
+
   var vc = VerifiableCredential(
       context: (credential.remove('@context') as List).cast<String>(),
       type: ['VerifiableCredential', ...credential.remove('type')],
       issuer: issuerDid,
-      credentialSubject: credential,
-      issuanceDate: DateTime.now());
+      expirationDate: expirationDate,
+      credentialSubject: credential['credentialSubject'],
+      issuanceDate: issuanceDate ?? DateTime.now()
+  );
 
   var offer = OfferCredential(
       id: oobId,
