@@ -1,3 +1,9 @@
+## 2.1.0
+- add experimental implementation of openid4VC/VP
+- add more keytypes for did:key resolution
+- small API-Change for signStringOrJson / VerifyStringSignature : use named parameters
+- bugfixes
+
 ## 2.0.1
 - Bugfixes
 
