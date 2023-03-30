@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:dart_ssi/credentials.dart';
-import 'package:dart_ssi/src/credentials/revocation_list_2020.dart';
 import 'package:http/http.dart';
 import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:json_path/json_path.dart';
@@ -514,6 +513,7 @@ class SignatureException implements Exception {
 Future<String> buildPresentation(
     List<dynamic>? credentials, WalletStore wallet, String challenge,
     {String? holder,
+    String? domain,
     List<String>? additionalDids,
     List<dynamic>? disclosedCredentials,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
@@ -611,7 +611,7 @@ Future<String> buildPresentation(
     var signer = _determineSignerForDid(element!, loadDocumentFunction);
     signerTypes.add(signer.runtimeType);
     proofList.add(await signer.buildProof(presentation, wallet, element,
-        challenge: challenge, proofPurpose: 'authentication'));
+        challenge: challenge, proofPurpose: 'authentication', domain: domain));
   }
 
   if (additionalDids != null) {
@@ -625,7 +625,9 @@ Future<String> buildPresentation(
         context.add(ed25519ContextIri);
       }
       proofList.add(await signer.buildProof(presentation, wallet, element,
-          challenge: challenge, proofPurpose: 'authentication'));
+          challenge: challenge,
+          proofPurpose: 'authentication',
+          domain: domain));
     }
   }
 
@@ -664,25 +666,29 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   proofs as List;
   presentationMap.remove('proof');
 
-  // verify credentials
-  var credentials = presentationMap['verifiableCredential'] as List;
   List<String> holderDids = [];
-  await Future.forEach(credentials, (dynamic element) async {
-    bool verified = await verifyCredential(element,
-        erc1056: erc1056,
-        revocationRegistry: revocationRegistry,
-        signerSelector: signerSelector,
-        loadDocumentFunction: loadDocumentFunction);
-    if (!verified) {
-      throw Exception('A credential could not been verified');
-    } else {
-      var did = getHolderDidFromCredential(element);
-      if (erc1056 != null) did = await erc1056.identityOwner(did);
-      if (did.isNotEmpty && did.startsWith('did:')) {
-        holderDids.add(did);
+  var credentials = [];
+
+  // verify credentials
+  if (presentationMap.containsKey('verifiableCredential')) {
+    credentials = presentationMap['verifiableCredential'] as List;
+    await Future.forEach(credentials, (dynamic element) async {
+      bool verified = await verifyCredential(element,
+          erc1056: erc1056,
+          revocationRegistry: revocationRegistry,
+          signerSelector: signerSelector,
+          loadDocumentFunction: loadDocumentFunction);
+      if (!verified) {
+        throw Exception('A credential could not been verified');
+      } else {
+        var did = getHolderDidFromCredential(element);
+        if (erc1056 != null) did = await erc1056.identityOwner(did);
+        if (did.isNotEmpty && did.startsWith('did:')) {
+          holderDids.add(did);
+        }
       }
-    }
-  });
+    });
+  }
 
   // check for holder property
   if (presentationMap.containsKey('holder')) {
