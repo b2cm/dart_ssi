@@ -2034,7 +2034,7 @@ void main() async {
         "https://www.w3.org/2018/credentials/examples/v1"
       ],
       "id": "http://example.gov/credentials/3732",
-      "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+      "type": ["VerifiableCredential", "NameAddress"],
       "issuer": "https://example2.edu",
       "issuanceDate": "2010-01-01T19:23:24Z",
       "credentialSubject": {
@@ -2045,6 +2045,32 @@ void main() async {
         'address': {
           'streetAddress': 'Am Schwanenteich 8',
           'postalCode': '09648'
+        }
+      },
+      "proof": {
+        "type": "Ed25519Signature2020",
+        "created": "2021-11-13T18:19:39Z",
+        "verificationMethod": "https://example.edu/issuers/14#key-1",
+        "proofPurpose": "assertionMethod",
+        "proofValue":
+            "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+      }
+    };
+
+    Map<String, dynamic> vc3 = {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://www.w3.org/2018/credentials/examples/v1"
+      ],
+      "id": "http://example.gov/credentials/3732",
+      "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+      "issuer": {'id': "https://example2.edu"},
+      "issuanceDate": "2010-01-01T19:23:24Z",
+      "credentialSubject": {
+        "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+        "degree": {
+          "type": "BachelorDegree",
+          "name": "Bachelor of Science and Arts"
         }
       },
       "proof": {
@@ -2087,34 +2113,10 @@ void main() async {
         VerifiableCredential.fromJson(vc2)
       ], PresentationDefinition.fromJson(presentationDefinition));
       expect(result.length, 1);
+      expect(result.first.credentials.length, 1);
     });
 
     test('filter issuer id (plain or object)', () {
-      var vc3 = {
-        "@context": [
-          "https://www.w3.org/2018/credentials/v1",
-          "https://www.w3.org/2018/credentials/examples/v1"
-        ],
-        "id": "http://example.gov/credentials/3732",
-        "type": ["VerifiableCredential", "UniversityDegreeCredential"],
-        "issuer": {'id': "https://example2.edu"},
-        "issuanceDate": "2010-01-01T19:23:24Z",
-        "credentialSubject": {
-          "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
-          "degree": {
-            "type": "BachelorDegree",
-            "name": "Bachelor of Science and Arts"
-          }
-        },
-        "proof": {
-          "type": "Ed25519Signature2020",
-          "created": "2021-11-13T18:19:39Z",
-          "verificationMethod": "https://example.edu/issuers/14#key-1",
-          "proofPurpose": "assertionMethod",
-          "proofValue":
-              "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
-        }
-      };
       Map<String, dynamic> presentationDefinition = {
         "presentation_definition": {
           "id": "Scalable trust example",
@@ -2143,6 +2145,46 @@ void main() async {
         VerifiableCredential.fromJson(vc3)
       ], PresentationDefinition.fromJson(presentationDefinition));
       expect(result.length, 1);
+      expect(result.first.credentials.length, 1);
+    });
+
+    test('filter for multiple fields', () {
+      Map<String, dynamic> presentationDefinition = {
+        "presentation_definition": {
+          "id": "Scalable trust example",
+          "input_descriptors": [
+            {
+              "id": "any type of credit card from any bank",
+              "name": "any type of credit card from any bank",
+              "purpose": "Please provide your student Card from the university",
+              "constraints": {
+                "fields": [
+                  {
+                    "path": [r"$.issuer", r'$.issuer.id'],
+                    "filter": {
+                      "type": "string",
+                      "pattern": "https://example2.edu"
+                    }
+                  },
+                  {
+                    "path": [r"$.type"],
+                    "filter": {
+                      "type": "array",
+                      "contains": {"type": "string", "const": "NameAddress"}
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      };
+      var result = searchCredentialsForPresentationDefinition([
+        VerifiableCredential.fromJson(vc1),
+        VerifiableCredential.fromJson(vc2)
+      ], PresentationDefinition.fromJson(presentationDefinition));
+      expect(result.length, 1);
+      expect(result.first.credentials.length, 1);
     });
   });
 }

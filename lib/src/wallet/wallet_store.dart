@@ -889,12 +889,7 @@ class WalletStore {
 
   Future<void> storeConversationEntry(
       DidcommPlaintextMessage message, String myDid) async {
-    String? thid;
-    if (message.threadId != null) {
-      thid = message.threadId;
-    } else {
-      thid = message.id;
-    }
+    String thid = message.threadId ?? message.id;
 
     DidcommProtocol protocol;
     if (message.type.contains('issue-credential')) {
@@ -913,6 +908,11 @@ class WalletStore {
 
     await _didcommConversations!.put(
         thid, DidcommConversation(message.toString(), protocol.value, myDid));
+  }
+
+  Future<void> deleteConversationEntry(DidcommPlaintextMessage message) async {
+    String thid = message.threadId ?? message.id;
+    await _didcommConversations!.delete(thid);
   }
 }
 
