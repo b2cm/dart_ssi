@@ -323,15 +323,26 @@ class AttachmentData implements JsonObject {
                 json = jsonDecode(body);
               } else {
                 // now check if answer is json-Object with attachment property
-                var decoded = jsonDecode(body) as Map<String, dynamic>;
-                String attachmentJson = decoded['attachment'];
+                var decoded = jsonDecode(body);
+                if (decoded is Map<String, dynamic>) {
+                  String attachmentJson = decoded['attachment'];
 
-                var attData = Uint8List.fromList(utf8.encode(attachmentJson));
-                if (!checkMultiHash(baseDecoded, attData)) {
-                  throw Exception(
-                      'Hash does not match data (Code: 23482304928)');
+                  var attData = Uint8List.fromList(utf8.encode(attachmentJson));
+                  if (!checkMultiHash(baseDecoded, attData)) {
+                    throw Exception(
+                        'Hash does not match data (Code: 23482304928)');
+                  }
+                  json = jsonDecode(attachmentJson);
+                } else if (decoded is List) {
+                  var attach = decoded.first as Map;
+                  var attData =
+                      Uint8List.fromList(utf8.encode(jsonEncode(attach)));
+                  if (!checkMultiHash(baseDecoded, attData)) {
+                    throw Exception(
+                        'Hash does not match data (Code: 23482304928)');
+                  }
+                  json = attach;
                 }
-                json = jsonDecode(attachmentJson);
               }
             } catch (e) {
               throw Exception('Hash is not a valid base64 '
