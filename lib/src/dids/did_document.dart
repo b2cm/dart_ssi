@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'package:http/http.dart' as http;
 
 import '../util/types.dart';
 import '../util/utils.dart';
@@ -495,16 +496,11 @@ Future<DidDocument> resolveDidDocument(String did,
           'The did con only be resolved using universal resolver, therefore the resolver address is required');
     }
     try {
-      var client = await HttpClient()
-          .getUrl(Uri.parse('$resolverAddress/1.0/identifiers/$did'))
+      var res = await http
+          .get(Uri.parse('$resolverAddress/1.0/identifiers/$did'))
           .timeout(Duration(seconds: 30));
-      var res = await client.close();
       if (res.statusCode == 200) {
-        var contents = StringBuffer();
-        await for (var data in res.transform(utf8.decoder)) {
-          contents.write(data);
-        }
-        var didResolution = jsonDecode(contents.toString());
+        var didResolution = jsonDecode(res.body);
         return DidDocument.fromJson(didResolution['didDocument']);
       } else {
         throw Exception('Bad status code ${res.statusCode}');

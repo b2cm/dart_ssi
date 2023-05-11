@@ -319,7 +319,7 @@ class InputDescriptorField implements JsonObject {
     Map<String, dynamic> jsonObject = {};
     List<String> paths = [];
     for (var p in path) {
-      paths.add(p.expression);
+      paths.add(p.toString());
     }
     jsonObject['path'] = paths;
 
@@ -510,13 +510,15 @@ class SubmissionRequirement implements JsonObject {
       } else if (tmpRule == 'pick') {
         rule = SubmissionRequirementRule.pick;
         if (requirement.containsKey('min')) {
-          min = int.parse(requirement['min']);
+          var minTmp = requirement['min'];
+          min = minTmp is int ? minTmp : int.parse(minTmp);
           if (min! < 0) {
             throw Exception('min value must be greater than or equal to zero');
           }
         }
         if (requirement.containsKey('max')) {
-          max = int.parse(requirement['max']);
+          var maxTmp = requirement['max'];
+          max = maxTmp is int ? maxTmp : int.parse(maxTmp);
           if (max! <= 0) throw Exception('max value must be greater than zero');
           if (min != null && max! <= min!) {
             throw Exception('max must be greater than min');
@@ -836,7 +838,7 @@ class InputDescriptorMappingObject implements JsonObject {
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
     jsonObject['format'] = format;
-    jsonObject['path'] = path.expression;
+    jsonObject['path'] = path.toString();
     return jsonObject;
   }
 
