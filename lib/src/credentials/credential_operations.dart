@@ -1181,6 +1181,7 @@ Future<bool> verifyStringSignature(String jws,
 
 List<FilterResult> searchCredentialsForPresentationDefinition(
     List<dynamic> credentials, PresentationDefinition presentationDefinition) {
+  //cast everything
   var creds = <VerifiableCredential>[];
   for (var entry in credentials) {
     if (entry is VerifiableCredential) {
@@ -1225,12 +1226,14 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
           _processInputDescriptor(descriptor, globalFormat, creds);
       filterResultPerDescriptor[descriptor.id] = filteredCreds;
     }
+
     //Evaluate submission requirements
     List<FilterResult> finalCredList = [];
     for (var requirement in presentationDefinition.submissionRequirement!) {
       finalCredList.add(_processSubmissionRequirement(filterResultPerDescriptor,
           descriptorGroups, requirement, presentationDefinition.id));
     }
+
     return finalCredList;
   } else {
     List<VerifiableCredential> inputCreds = creds;
@@ -1251,7 +1254,8 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
           selfIssuable: allSelfIssuables.isNotEmpty ? allSelfIssuables : null,
           credentials: inputCreds,
           matchingDescriptorIds: allDescriptorIds,
-          presentationDefinitionId: presentationDefinition.id)
+          presentationDefinitionId: presentationDefinition.id,
+          fulfilled: inputCreds.isEmpty || allSelfIssuables.isEmpty)
     ];
   }
 }
@@ -1262,7 +1266,6 @@ FilterResult _processSubmissionRequirement(
     SubmissionRequirement requirement,
     String definitionId) {
   if (requirement.fromNested != null) {
-    //for (var nestedRequirement in requirement.fromNested!) {}
     //TODO:process path nested in submission requirement
     throw UnimplementedError('Cant process from nested entries yet');
   }
@@ -1270,6 +1273,7 @@ FilterResult _processSubmissionRequirement(
   List<String> accordingDescriptors = descriptorGroups[requirement.from];
   List<VerifiableCredential> creds = [];
   List<InputDescriptorConstraints> selfIssuable = [];
+  bool fulfilled = true;
 
   for (String d in accordingDescriptors) {
     var descriptor = filterResultPerDescriptor[d]!;
@@ -1277,11 +1281,14 @@ FilterResult _processSubmissionRequirement(
       selfIssuable.addAll(descriptor.selfIssuable!);
     }
     var credsForDescriptor = descriptor.credentials;
+
     if (requirement.rule == SubmissionRequirementRule.all) {
       if (credsForDescriptor.isEmpty && descriptor.selfIssuable == null) {
-        throw Exception('Can\'t fulfill submission requirement');
+        fulfilled = false;
+        //throw Exception('Can\'t fulfill submission requirement');
       }
     }
+
     if (creds.isEmpty) {
       creds = credsForDescriptor;
     } else {
@@ -1301,7 +1308,8 @@ FilterResult _processSubmissionRequirement(
     if (requirement.count != null) notLower = requirement.count!;
     if (requirement.min != null) notLower = requirement.min!;
     if (creds.length < notLower && selfIssuable.isEmpty) {
-      throw Exception('Could not fullfill submission requirement');
+      // throw Exception('Could not fullfill submission requirement');
+      fulfilled = false;
     }
   }
 
@@ -1310,11 +1318,13 @@ FilterResult _processSubmissionRequirement(
       credentials: creds,
       matchingDescriptorIds: accordingDescriptors,
       submissionRequirement: requirement,
-      presentationDefinitionId: definitionId);
+      presentationDefinitionId: definitionId,
+      fulfilled: fulfilled);
 }
 
 FilterResult _processInputDescriptor(InputDescriptor descriptor,
     FormatProperty? globalFormat, List<VerifiableCredential> creds) {
+  // evaluate Format
   var localFormat = globalFormat;
   if (descriptor.format != null) {
     if (descriptor.format != null) {
@@ -1405,6 +1415,7 @@ FilterResult _processInputDescriptor(InputDescriptor descriptor,
         matchingDescriptorIds: [descriptor.id],
         presentationDefinitionId: '');
   }
+
   return FilterResult(
       selfIssuable: descriptor.constraints?.subjectIsIssuer != null
           ? [descriptor.constraints!]
