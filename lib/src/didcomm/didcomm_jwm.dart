@@ -2,12 +2,42 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart';
+import 'package:json_schema2/json_schema2.dart';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
 import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 import 'types.dart';
+
+var plaintextSchema = JsonSchema.createSchema({
+  'type': 'object',
+  'properties': {
+    'id': {'type': 'string'},
+    'type': {'type': 'string'},
+    'to': {
+      'type': 'array',
+      'contains': {'type': 'string'}
+    },
+    'from': {'type': 'string'},
+    'thid': {'type': 'string'},
+    'pthid': {'type': 'string'},
+    'expires_time': {'type': 'integer', 'min': 0},
+    'created_time': {'type': 'integer', 'min': 0},
+    'body': {'type': 'object'},
+    'attachments': {
+      'type': 'array',
+      'contains': {'type': 'object'}
+    }
+  },
+  'additionalProperties': true,
+  'required': ['id', 'type']
+});
+
+bool isPlaintextMessage(dynamic message) {
+  var asMap = credentialToMap(message);
+  return plaintextSchema.validate(asMap);
+}
 
 /// A plaintext-Message (json-web message) as per didcomm specification
 class DidcommPlaintextMessage implements JsonObject, DidcommMessage {

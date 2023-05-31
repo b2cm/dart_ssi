@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:json_ld_processor/json_ld_processor.dart';
+import 'package:json_schema2/json_schema2.dart';
 
 import '../credentials/credential_operations.dart';
 import '../credentials/credential_signer.dart' as signer;
@@ -9,6 +10,33 @@ import '../util/utils.dart';
 import 'didcomm_jwe.dart';
 import 'didcomm_jwm.dart';
 import 'types.dart';
+
+var signedMessageSchema = JsonSchema.createSchema({
+  'type': 'object',
+  'properties': {
+    'payload': {'type': 'string'},
+    'signatures': {
+      'type': 'array',
+      'contains': {
+        'type': 'object',
+        'properties': {
+          'signature': {
+            'type': 'string',
+          },
+          'header': {'type': 'object'},
+          'protected': {'type': 'string'}
+        },
+        'required': ['signature']
+      }
+    }
+  },
+  'required': ['payload', 'signatures']
+});
+
+bool isSignedMessage(dynamic message) {
+  var asMap = credentialToMap(message);
+  return signedMessageSchema.validate(asMap);
+}
 
 /// A signed didcomm message
 class DidcommSignedMessage implements JsonObject, DidcommMessage {

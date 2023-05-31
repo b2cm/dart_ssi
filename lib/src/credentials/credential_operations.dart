@@ -1240,6 +1240,7 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
       //Without any requirements, all input_descriptors must be fulfilled
       allDescriptorIds.add(descriptor.id);
       var res = _processInputDescriptor(descriptor, globalFormat, inputCreds);
+      // TODO: I think this way is wrong. The input_descriptor can be fulfilled by multiple credentials.
       inputCreds = res.credentials;
       if (res.selfIssuable != null) {
         allSelfIssuables.addAll(res.selfIssuable!);
