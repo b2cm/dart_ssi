@@ -53,9 +53,10 @@ OutOfBandMessage oobOfferCredential({
 
   if (expirationDateStr != null) {
     try {
-         expirationDate = DateTime.parse(expirationDateStr);
+      expirationDate = DateTime.parse(expirationDateStr);
     } catch (e) {
-      throw OobTemplateWrongValueException("The expirationDate could not be parsed.\n"
+      throw OobTemplateWrongValueException(
+          "The expirationDate could not be parsed.\n"
           'Details: `$e`',
           code: 84758394);
     }
@@ -64,17 +65,18 @@ OutOfBandMessage oobOfferCredential({
   String? issuanceDateStr = credential.remove('issuanceDate');
   DateTime? issuanceDate;
 
-  if(issuanceDateStr != null) {
+  if (issuanceDateStr != null) {
     try {
       issuanceDate = DateTime.parse(issuanceDateStr);
     } catch (e) {
-      throw OobTemplateWrongValueException("The issuanceDate could not be parsed"
+      throw OobTemplateWrongValueException(
+          "The issuanceDate could not be parsed"
           'Details: `$e`',
           code: 989043853904);
     }
   }
 
-  if(!credential.containsKey('credentialSubject')) {
+  if (!credential.containsKey('credentialSubject')) {
     throw OobTemplateMissingValueException(
         "The credential must have a `credentialSubject`"
         " field set.",
@@ -87,14 +89,20 @@ OutOfBandMessage oobOfferCredential({
         code: 543453499);
   }
 
+  var issuer = credential['issuer'];
+  if (issuer == null) {
+    issuer = issuerDid;
+  } else if (issuer is Map) {
+    issuer['id'] = issuerDid;
+  }
+
   var vc = VerifiableCredential(
       context: (credential.remove('@context') as List).cast<String>(),
       type: ['VerifiableCredential', ...credential.remove('type')],
-      issuer: issuerDid,
+      issuer: issuer,
       expirationDate: expirationDate,
       credentialSubject: credential['credentialSubject'],
-      issuanceDate: issuanceDate ?? DateTime.now()
-  );
+      issuanceDate: issuanceDate ?? DateTime.now());
 
   var offer = OfferCredential(
       id: oobId,
