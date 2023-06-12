@@ -32,11 +32,15 @@ class DidcommPresentationRequestMessageHandler
 
     List<FilterResult> finalSend = [];
     for (var result in res) {
-      finalSend.add(FilterResult(
-          credentials: allCredentialFlattened,
-          matchingDescriptorIds: result.matchingDescriptorIds,
-          presentationDefinitionId: result.presentationDefinitionId,
-          submissionRequirement: result.submissionRequirement));
+      if (result.fulfilled) {
+        finalSend.add(FilterResult(
+            credentials: allCredentialFlattened,
+            matchingDescriptorIds: result.matchingDescriptorIds,
+            presentationDefinitionId: result.presentationDefinitionId,
+            submissionRequirement: result.submissionRequirement));
+      } else {
+        throw Exception('Cant\'t fulfill presentation definition');
+      }
     }
 
     var vp = await buildPresentation(finalSend, wallet!,
