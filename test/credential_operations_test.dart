@@ -5,7 +5,7 @@ import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/wallet.dart';
 import 'package:http/http.dart';
-import 'package:json_schema2/json_schema2.dart';
+import 'package:json_schema2/json_schema.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web3dart/web3dart.dart';
@@ -60,7 +60,7 @@ void main() async {
       "additionalProperties": false
     };
 
-    var jScheme = JsonSchema.createSchema(hashedAttributeSchema);
+    var jScheme = JsonSchema.create(hashedAttributeSchema);
     test('normal key-value-pairs (given as Map)', () {
       var plaintext = {'name': 'Max'};
 
@@ -74,9 +74,9 @@ void main() async {
           'id': {'type': 'string'}
         }
       };
-      var jSchema = JsonSchema.createSchema(schema);
+      var jSchema = JsonSchema.create(schema);
       expect(credObject['name']['value'], 'Max');
-      expect(jSchema.validate(credObject), true);
+      expect(jSchema.validate(credObject).isValid, true);
     });
 
     test('normal key-value-pairs (given as String)', () {
@@ -92,9 +92,9 @@ void main() async {
           'id': {'type': 'string'}
         }
       };
-      var jSchema = JsonSchema.createSchema(schema);
+      var jSchema = JsonSchema.create(schema);
       expect(credObject['name']['value'], 'Max');
-      expect(jSchema.validate(credObject), true);
+      expect(jSchema.validate(credObject).isValid, true);
     });
 
     test('array with string, num, boolean (given as map)', () {
@@ -109,7 +109,7 @@ void main() async {
 
       for (int i = 0; i < plaintext['hobbies']!.length; i++) {
         expect(plaintext['hobbies']![i], credObject['hobbies'][i]['value']);
-        expect(jScheme.validate(credObject['hobbies'][i]), true);
+        expect(jScheme.validate(credObject['hobbies'][i]).isValid, true);
       }
     });
 
@@ -122,7 +122,7 @@ void main() async {
       expect(credObject['hobbies'].length, 4);
 
       for (int i = 0; i < credObject['hobbies'].length; i++) {
-        expect(jScheme.validate(credObject['hobbies'][i]), true);
+        expect(jScheme.validate(credObject['hobbies'][i]).isValid, true);
       }
     });
 
@@ -139,8 +139,10 @@ void main() async {
 
       expect(credObject['hobbies'].length, plaintext['hobbies']!.length);
       for (int i = 1; i < credObject['hobbies'].length; i++) {
-        expect(jScheme.validate(credObject['hobbies'][i]['name']), true);
-        expect(jScheme.validate(credObject['hobbies'][i]['duration']), true);
+        expect(
+            jScheme.validate(credObject['hobbies'][i]['name']).isValid, true);
+        expect(jScheme.validate(credObject['hobbies'][i]['duration']).isValid,
+            true);
       }
     });
 
@@ -153,8 +155,10 @@ void main() async {
 
       expect(credObject['hobbies'].length, 2);
       for (int i = 1; i < credObject['hobbies'].length; i++) {
-        expect(jScheme.validate(credObject['hobbies'][i]['name']), true);
-        expect(jScheme.validate(credObject['hobbies'][i]['duration']), true);
+        expect(
+            jScheme.validate(credObject['hobbies'][i]['name']).isValid, true);
+        expect(jScheme.validate(credObject['hobbies'][i]['duration']).isValid,
+            true);
       }
     });
 
@@ -178,8 +182,8 @@ void main() async {
       var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
-      expect(jScheme.validate(credObject['mother']['name']), true);
-      expect(jScheme.validate(credObject['mother']['surname']), true);
+      expect(jScheme.validate(credObject['mother']['name']).isValid, true);
+      expect(jScheme.validate(credObject['mother']['surname']).isValid, true);
       expect(credObject['mother']['name']['value'], 'Mustermann');
       expect(credObject['mother']['surname']['value'], 'Erika');
       expect(credObject['mother'].length, plaintext['mother']!.length);
@@ -191,8 +195,8 @@ void main() async {
       var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
 
-      expect(jScheme.validate(credObject['mother']['name']), true);
-      expect(jScheme.validate(credObject['mother']['surname']), true);
+      expect(jScheme.validate(credObject['mother']['name']).isValid, true);
+      expect(jScheme.validate(credObject['mother']['surname']).isValid, true);
       expect(credObject['mother']['name']['value'], 'Mustermann');
       expect(credObject['mother']['surname']['value'], 'Erika');
       expect(credObject['mother'].length, 2);
@@ -208,7 +212,7 @@ void main() async {
       expect(credObject['hashAlg'], 'keccak-256');
       expect(credObject['@context'][0], 'https://hs-mittweida.de');
       expect(credObject.keys.length, 3);
-      expect(jScheme.validate(credObject['@context']), false);
+      expect(jScheme.validate(credObject['@context']).isValid, false);
     });
 
     test('ignore @context (as String)', () {
@@ -216,7 +220,7 @@ void main() async {
       var cred = buildPlaintextCredential(plaintext, 'did:ethr:0x123');
       var credObject = jsonDecode(cred);
       expect(credObject['@context'], 'https://hs-mittweida.de');
-      expect(jScheme.validate(credObject['@context']), false);
+      expect(jScheme.validate(credObject['@context']).isValid, false);
     });
 
     test('maleformed json-String', () {
@@ -239,7 +243,7 @@ void main() async {
       var credObject = jsonDecode(cred);
 
       expect(credObject['key']['value'], value);
-      expect(jScheme.validate(credObject['key']), true);
+      expect(jScheme.validate(credObject['key']).isValid, true);
     });
 
     group('collect types', () {
@@ -361,7 +365,7 @@ void main() async {
       }
     };
 
-    var w3cCredSchema = JsonSchema.createSchema(credSchema);
+    var w3cCredSchema = JsonSchema.create(credSchema);
 
     test('plaintext has normal key-value Object', () {
       var plaintext =
@@ -369,7 +373,7 @@ void main() async {
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
       expect(w3cObj['credentialSubject']['givenName'],
           '0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4');
     });
@@ -392,7 +396,7 @@ void main() async {
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
       expect(w3cObj['credentialSubject']['courseOfStudies'].length, 2);
       expect(w3cObj['credentialSubject']['courseOfStudies'][0],
           '0x12915d6160b6c9359dc4a0382388012786b8e3cd2351ccfff485683ae0e2fa10');
@@ -418,7 +422,7 @@ void main() async {
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
       expect(w3cObj['credentialSubject']['address']['postalCode'],
           '0x68c9b55a1fb3cc542942d2c27978ab34433e171ecd91bf91ba882dfd4e0b08f6');
       expect(w3cObj['credentialSubject']['address']['addressLocality'],
@@ -438,7 +442,7 @@ void main() async {
       var plaintext = buildPlaintextCredential(value, 'did:ethr:0x123456');
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
     });
 
     test('ignore type', () {
@@ -453,7 +457,7 @@ void main() async {
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
       expect(w3cObj['credentialSubject']['givenName'],
           '0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4');
       expect(w3cObj['credentialSubject']['type'], 'Person');
@@ -471,7 +475,7 @@ void main() async {
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
       var w3cObj = jsonDecode(w3c);
 
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
       expect(w3cObj['credentialSubject']['givenName'],
           '0x42892f9a183f8e47ea6b56cb4a0047e96effba9927cd44c3ba2097ff4fad70b4');
       expect(w3cObj['credentialSubject']['@type'], 'Person');
@@ -490,7 +494,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             type: 'VerifiableCredential');
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['type'].length, 1);
       });
 
@@ -506,7 +510,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             type: ['VerifiableCredential']);
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['type'].length, 1);
       });
 
@@ -521,7 +525,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             type: 'ImmaCredential');
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['type'].length, 2);
         expect(w3cObj['type'].contains('VerifiableCredential'), true);
         expect(w3cObj['type'].contains('ImmaCredential'), true);
@@ -538,7 +542,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             type: ['ImmaCredential', 'Immatrikulation']);
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['type'].length, 3);
         expect(w3cObj['type'].contains('VerifiableCredential'), true);
         expect(w3cObj['type'].contains('ImmaCredential'), true);
@@ -560,7 +564,7 @@ void main() async {
               'VerifiableCredential'
             ]);
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['type'].length, 3);
         expect(w3cObj['type'].contains('VerifiableCredential'), true);
         expect(w3cObj['type'].contains('ImmaCredential'), true);
@@ -605,7 +609,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: 'https://www.w3.org/2018/credentials/v1');
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['@context'].length, 1);
         expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
       });
@@ -623,7 +627,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: ['https://www.w3.org/2018/credentials/v1']);
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['@context'].length, 1);
         expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
       });
@@ -640,7 +644,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: 'https://hs-mittweida.de/creds');
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['@context'].length, 2);
         expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
         expect(
@@ -659,7 +663,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: ['https://hs-mittweida.de/creds']);
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['@context'].length, 2);
         expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
         expect(
@@ -678,7 +682,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: ['https://hs-mittweida.de/creds', 'https://schema.org']);
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['@context'].length, 3);
         expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
         expect(
@@ -699,7 +703,7 @@ void main() async {
         var w3c =
             buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['@context'].length, 2);
         expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
         expect(w3cObj['@context'].contains('https://schema.org'), true);
@@ -718,7 +722,7 @@ void main() async {
         var w3c =
             buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678');
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['@context'].length, 2);
         expect(w3cObj['@context'][0], 'https://www.w3.org/2018/credentials/v1');
         expect(w3cObj['@context'].contains('https://schema.org'), true);
@@ -781,7 +785,7 @@ void main() async {
         var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
             context: 'https://schema.org');
         var w3cObj = jsonDecode(w3c);
-        expect(w3cCredSchema.validate(w3cObj), true);
+        expect(w3cCredSchema.validate(w3cObj).isValid, true);
         expect(w3cObj['@context'].length, 2);
         expect(
             w3cObj['@context']
@@ -803,7 +807,7 @@ void main() async {
       var w3c = buildW3cCredentialwithHashes(plaintext, 'did:ethr:0x12345678',
           revocationRegistryAddress: '0x456127387');
       var w3cObj = jsonDecode(w3c);
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
       expect(w3cObj.containsKey('credentialStatus'), true);
       expect(w3cObj['credentialStatus']['type'], 'EthereumRevocationList');
       expect(w3cObj['credentialStatus']['id'], '0x456127387');
@@ -826,7 +830,7 @@ void main() async {
           });
       var w3cObj = jsonDecode(w3c);
       Map<String, dynamic> issInfo = w3cObj['issuer'];
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
       expect(issInfo.length, 3);
       expect(issInfo['id'], 'did:ethr:0x12345678');
       expect(issInfo['url'], 'hs-mittweida.de');
@@ -849,7 +853,7 @@ void main() async {
       );
       var w3cObj = jsonDecode(w3c);
       var issInfo = w3cObj['issuer'];
-      expect(w3cCredSchema.validate(w3cObj), true);
+      expect(w3cCredSchema.validate(w3cObj).isValid, true);
       expect(issInfo.runtimeType, String);
       expect(issInfo, 'did:ethr:0x12345678');
     });
@@ -1274,9 +1278,9 @@ void main() async {
       expect(signedMap['proof'].containsKey('created'), true);
 
       expect(
-          await verifyCredential(signedMap,
+          () async => await verifyCredential(signedMap,
               erc1056: erc1056, revocationRegistry: revocationRegistry),
-          false);
+          throwsA(predicate((SignatureException e) => e.code == 'sig')));
     });
 
     test(
@@ -1294,9 +1298,9 @@ void main() async {
       signedMap['proof']['created'] = DateTime.now().toUtc().toIso8601String();
 
       expect(
-          await verifyCredential(signedMap,
+          () async => await verifyCredential(signedMap,
               erc1056: erc1056, revocationRegistry: revocationRegistry),
-          false);
+          throwsA(predicate((SignatureException e) => e.code == 'sig')));
     });
 
     test('call verify without proof', () {
@@ -1554,8 +1558,7 @@ void main() async {
       expect(
           () async => await verifyPresentation(presMap, challenge,
               erc1056: erc1056, revocationRegistry: revocationRegistry),
-          throwsA(predicate((dynamic e) =>
-              e.message == 'A credential could not been verified')));
+          throwsA(predicate((SignatureException e) => e.code == 'sig')));
     });
 
     test('one holder did was changed', () async {

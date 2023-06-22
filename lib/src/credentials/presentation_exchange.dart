@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:dart_ssi/credentials.dart';
 import 'package:json_path/json_path.dart';
-import 'package:json_schema2/json_schema2.dart';
+import 'package:json_schema2/json_schema.dart';
 import 'package:uuid/uuid.dart';
 
 import '../util/types.dart';
@@ -299,7 +299,7 @@ class InputDescriptorField implements JsonObject {
     if (field.containsKey('purpose')) purpose = field['purpose'];
     if (field.containsKey('name')) name = field['name'];
     if (field.containsKey('filter')) {
-      filter = JsonSchema.createSchema(field['filter']);
+      filter = JsonSchema.create(field['filter']);
     }
     if (field.containsKey('optional')) optional = field['optional'];
     if (field.containsKey('predicate')) {

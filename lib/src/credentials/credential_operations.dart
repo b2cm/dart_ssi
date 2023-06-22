@@ -6,7 +6,7 @@ import 'package:dart_ssi/credentials.dart';
 import 'package:http/http.dart';
 import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:json_path/json_path.dart';
-import 'package:json_schema2/json_schema2.dart';
+import 'package:json_schema2/json_schema.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web3dart/credentials.dart';
 import 'package:web3dart/crypto.dart';
@@ -25,10 +25,9 @@ final _hashedAttributeSchemaMap = {
   },
   "additionalProperties": false
 };
-final _hashedAttributeSchema =
-    JsonSchema.createSchema(_hashedAttributeSchemaMap);
+final _hashedAttributeSchema = JsonSchema.create(_hashedAttributeSchemaMap);
 
-final _hashedAttributeSchemaStrict = JsonSchema.createSchema({
+final _hashedAttributeSchemaStrict = JsonSchema.create({
   "type": "object",
   "required": ["salt", "value"],
   "properties": {
@@ -40,7 +39,7 @@ final _hashedAttributeSchemaStrict = JsonSchema.createSchema({
   "additionalProperties": false
 });
 
-final _mapOfHashedAttributesSchema = JsonSchema.createSchema({
+final _mapOfHashedAttributesSchema = JsonSchema.create({
   'type': 'object',
   'properties': {r'^.*$': _hashedAttributeSchemaMap}
 });
@@ -804,14 +803,14 @@ String discloseValues(
         key == 'id' ||
         key == 'hashAlg')) {
       // if key is in map it should be a single string
-      if (_hashedAttributeSchemaStrict.validate(value)) {
+      if (_hashedAttributeSchemaStrict.validate(value).isValid) {
         // check if key should be disclosed
         if (valuesToDisclose.contains(key)) {
           result.remove(key);
         }
       }
       // new Object found
-      else if (_mapOfHashedAttributesSchema.validate(value)) {
+      else if (_mapOfHashedAttributesSchema.validate(value).isValid) {
         List<String> valuesSeen = [];
         List<String> valuesToDiscloseNew = [];
         //search in valuesToDisclose if sth. starts with key
@@ -853,12 +852,15 @@ String discloseValues(
           else if (element.split('.').first == key) {
             int arrayIndex = int.parse(element.split('.')[1]);
             if (_hashedAttributeSchemaStrict
-                .validate(value[arrayIndex - removed])) {
+                .validate(value[arrayIndex - removed])
+                .isValid) {
               result[key].removeAt(arrayIndex - removed);
               removed++;
             }
             //Object in Array
-            else if (_mapOfHashedAttributesSchema.validate(value[arrayIndex])) {
+            else if (_mapOfHashedAttributesSchema
+                .validate(value[arrayIndex])
+                .isValid) {
               //search in given keys, if sth. else should be disclosed
               List<String> valuesToDiscloseNew = [];
               for (var element in valuesToDisclose) {
@@ -950,7 +952,7 @@ PresentationDefinition buildPresentationDefinitionForCredential(
   if (type.isNotEmpty) {
     var typeField = InputDescriptorField(
         path: [JsonPath(r'$.type')],
-        filter: JsonSchema.createSchema({
+        filter: JsonSchema.create({
           'type': 'array',
           'contains': {'type': 'string', 'pattern': type}
         }));
@@ -966,12 +968,11 @@ PresentationDefinition buildPresentationDefinitionForCredential(
     var value = asJsonPath.read(vcAsJson).first.value;
     var field = InputDescriptorField(path: [JsonPath('\$..$path')]);
     if (value is String) {
-      field.filter =
-          JsonSchema.createSchema({'type': 'string', 'pattern': value});
+      field.filter = JsonSchema.create({'type': 'string', 'pattern': value});
     } else if (value is num) {
-      field.filter = JsonSchema.createSchema({'type': 'number'});
+      field.filter = JsonSchema.create({'type': 'number'});
     } else if (value is bool) {
-      field.filter = JsonSchema.createSchema({'type': 'boolean'});
+      field.filter = JsonSchema.create({'type': 'boolean'});
     }
     fields.add(field);
   }
@@ -1379,7 +1380,7 @@ FilterResult _processInputDescriptor(InputDescriptor descriptor,
             if (matchList.isEmpty &&
                 (field.optional == null || field.optional == false)) continue;
             if (field.filter != null) {
-              if (field.filter!.validate(matchList[0].value) &&
+              if (field.filter!.validate(matchList[0].value).isValid &&
                   (field.optional == null || field.optional == false)) {
                 pathMatch = true;
               }
@@ -1452,12 +1453,12 @@ String _collectHashes(dynamic credential,
         List<dynamic> hashList = [];
         for (var element in value) {
           if (element is Map<String, dynamic> &&
-              _hashedAttributeSchema.validate(element)) {
+              _hashedAttributeSchema.validate(element).isValid) {
             hashList.add(bytesToHex(
                 keccakUtf8('${element['salt']}${element['value']}'),
                 include0x: true));
           } else if (element is Map<String, dynamic> &&
-              _mapOfHashedAttributesSchema.validate(element)) {
+              _mapOfHashedAttributesSchema.validate(element).isValid) {
             hashList.add(jsonDecode(_collectHashes(element)));
           } else {
             throw Exception('unknown type  with key $key');
@@ -1465,12 +1466,12 @@ String _collectHashes(dynamic credential,
           hashCred[key] = hashList;
         }
       } else if (value is Map<String, dynamic> &&
-          _hashedAttributeSchema.validate(value)) {
+          _hashedAttributeSchema.validate(value).isValid) {
         hashCred[key] = bytesToHex(
             keccakUtf8('${value['salt']}${value['value']}'),
             include0x: true);
       } else if (value is Map<String, dynamic> &&
-          _mapOfHashedAttributesSchema.validate(value)) {
+          _mapOfHashedAttributesSchema.validate(value).isValid) {
         hashCred[key] = jsonDecode(_collectHashes(value));
       } else {
         throw Exception('unknown type  with key $key');
@@ -1488,7 +1489,7 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
         key == 'id' ||
         key == 'hashAlg')) {
       if (value is Map<String, dynamic>) {
-        if (_hashedAttributeSchemaStrict.validate(value)) {
+        if (_hashedAttributeSchemaStrict.validate(value).isValid) {
           //a disclosed value -> rehash and check
           var hash = bytesToHex(
               keccakUtf8(value['salt'] + value['value'].toString()),
@@ -1497,8 +1498,8 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
             throw Exception(
                 'Given hash and calculated hash do ot match at $key');
           }
-        } else if (_mapOfHashedAttributesSchema.validate(value) &&
-            _mapOfHashedAttributesSchema.validate(w3c[key])) {
+        } else if (_mapOfHashedAttributesSchema.validate(value).isValid &&
+            _mapOfHashedAttributesSchema.validate(w3c[key]).isValid) {
           // a new Object
           _checkHashes(w3c[key], value);
         } else if (value.length == 1) {
@@ -1508,7 +1509,7 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
         List<dynamic> fromW3c = w3c[key];
         for (int i = 0; i < value.length; i++) {
           if (value[i] is Map<String, dynamic> &&
-              _hashedAttributeSchemaStrict.validate(value[i])) {
+              _hashedAttributeSchemaStrict.validate(value[i]).isValid) {
             // a disclosed value -> rehash and check
             var hash = bytesToHex(
                 keccakUtf8(value[i]['salt'] + value[i]['value'].toString()),
@@ -1518,7 +1519,7 @@ bool _checkHashes(Map<String, dynamic> w3c, Map<String, dynamic> plainHash) {
                   'Calculated and given Hash in List at $key do not match');
             }
           } else if (value[i] is Map<String, dynamic> &&
-              _mapOfHashedAttributesSchema.validate(value[i])) {
+              _mapOfHashedAttributesSchema.validate(value[i]).isValid) {
             if (value[i].length > 0) _checkHashes(fromW3c[i], value[i]);
           } else {
             throw Exception('unknown datatype at List $key and index $i');

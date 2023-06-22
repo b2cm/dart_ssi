@@ -7,7 +7,7 @@ import 'package:dart_ssi/src/dids/did_document.dart';
 import 'package:dart_ssi/src/wallet/wallet_store.dart';
 import 'package:elliptic/ecdh.dart' as ecdh;
 import 'package:elliptic/elliptic.dart' as elliptic;
-import 'package:json_schema2/json_schema2.dart';
+import 'package:json_schema2/json_schema.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:x25519/x25519.dart' as x25519;
 
@@ -17,7 +17,7 @@ import 'didcomm_jwm.dart';
 import 'didcomm_jws.dart';
 import 'types.dart';
 
-var encryptedMessageSchema = JsonSchema.createSchema({
+var encryptedMessageSchema = JsonSchema.create({
   'type': 'object',
   'properties': {
     'ciphertext': {'type': 'string'},
@@ -43,7 +43,7 @@ var encryptedMessageSchema = JsonSchema.createSchema({
 
 bool isEncryptedMessage(dynamic message) {
   var asMap = credentialToMap(message);
-  return encryptedMessageSchema.validate(asMap);
+  return encryptedMessageSchema.validate(asMap).isValid;
 }
 
 ///A didcomm encrypted message

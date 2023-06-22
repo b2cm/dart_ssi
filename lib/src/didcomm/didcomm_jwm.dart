@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart';
-import 'package:json_schema2/json_schema2.dart';
+import 'package:json_schema2/json_schema.dart';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';
@@ -10,7 +10,7 @@ import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 import 'types.dart';
 
-var plaintextSchema = JsonSchema.createSchema({
+var plaintextSchema = JsonSchema.create({
   'type': 'object',
   'properties': {
     'id': {'type': 'string'},
@@ -36,7 +36,7 @@ var plaintextSchema = JsonSchema.createSchema({
 
 bool isPlaintextMessage(dynamic message) {
   var asMap = credentialToMap(message);
-  return plaintextSchema.validate(asMap);
+  return plaintextSchema.validate(asMap).isValid;
 }
 
 /// A plaintext-Message (json-web message) as per didcomm specification
@@ -153,7 +153,7 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
     if (decoded.containsKey('please_ack') && decoded['please_ack'] != null) {
       pleaseAck = decoded['please_ack'].cast<String>();
     }
-    if (decoded.containsKey('ack') && decoded['please_ack'] != null) {
+    if (decoded.containsKey('ack') && decoded['ack'] != null) {
       ack = decoded['ack'].cast<String>();
     }
 

@@ -1,3 +1,10 @@
+## 3.0.0
+- **Breaking change** in the function searchCredentialsForPresentationDefintion: No longer throws Exception, when there are not enough mathcing credentials in Wallet but uses fulfillable-property of FilterResult to indicate, that an inputDescriptor or submissionRequirement cant be fulfilled
+- add Functions to check typ of DidcommMessage (Plaintext, Signed or Encrypted; based on JsonSchema)
+- restructuring for better web compatibility
+- update json_schema2 version
+- bugfixes
+
 ## 2.1.0
 - add experimental implementation of openid4VC/VP
 - add more keytypes for did:key resolution
