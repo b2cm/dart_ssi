@@ -1,5 +1,5 @@
 ## 3.0.0
-- **Breaking change** in the function searchCredentialsForPresentationDefintion: No longer throws Exception, when there are not enough mathcing credentials in Wallet but uses fulfillable-property of FilterResult to indicate, that an inputDescriptor or submissionRequirement cant be fulfilled
+- **Breaking change** in the function searchCredentialsForPresentationDefintion: No longer throws Exception, when there are not enough matching credentials in Wallet but uses fulfillable-property of FilterResult to indicate, that an inputDescriptor or submissionRequirement cant be fulfilled
 - add Functions to check typ of DidcommMessage (Plaintext, Signed or Encrypted; based on JsonSchema)
 - restructuring for better web compatibility
 - update json_schema2 version

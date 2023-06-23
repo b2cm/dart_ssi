@@ -23,7 +23,7 @@ import 'package:dart_ssi/didcomm.dart';
 import 'package:dart_ssi/util.dart';
 import 'package:dart_ssi/wallet.dart';
 import 'package:json_path/json_path.dart';
-import 'package:json_schema2/json_schema2.dart';
+import 'package:json_schema2/json_schema.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
@@ -48,7 +48,7 @@ void main() async {
         constraints: InputDescriptorConstraints(fields: [
           InputDescriptorField(
               path: [JsonPath(r'$.type')],
-              filter: JsonSchema.createSchema({
+              filter: JsonSchema.create({
                 'type': 'array',
                 'contains': {'type': 'string', 'pattern': 'StudentCard'}
               }))
