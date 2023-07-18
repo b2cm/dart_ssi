@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart';
-import 'package:json_schema2/json_schema.dart';
+import 'package:json_schema/json_schema.dart';
 
 import '../credentials/credential_operations.dart';
 import '../util/types.dart';

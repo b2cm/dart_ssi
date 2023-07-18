@@ -5,7 +5,7 @@ import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:dart_ssi/wallet.dart';
 import 'package:http/http.dart';
-import 'package:json_schema2/json_schema.dart';
+import 'package:json_schema/json_schema.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web3dart/web3dart.dart';

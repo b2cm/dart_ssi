@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:json_ld_processor/json_ld_processor.dart';
-import 'package:json_schema2/json_schema.dart';
+import 'package:json_schema/json_schema.dart';
 
 import '../credentials/credential_operations.dart';
 import '../credentials/credential_signer.dart' as signer;

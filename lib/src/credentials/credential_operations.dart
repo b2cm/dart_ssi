@@ -6,7 +6,7 @@ import 'package:dart_ssi/credentials.dart';
 import 'package:http/http.dart';
 import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:json_path/json_path.dart';
-import 'package:json_schema2/json_schema.dart';
+import 'package:json_schema/json_schema.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web3dart/credentials.dart';
 import 'package:web3dart/crypto.dart';

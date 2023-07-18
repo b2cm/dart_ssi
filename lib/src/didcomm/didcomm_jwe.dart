@@ -7,7 +7,7 @@ import 'package:dart_ssi/src/dids/did_document.dart';
 import 'package:dart_ssi/src/wallet/wallet_store.dart';
 import 'package:elliptic/ecdh.dart' as ecdh;
 import 'package:elliptic/elliptic.dart' as elliptic;
-import 'package:json_schema2/json_schema.dart';
+import 'package:json_schema/json_schema.dart';
 import 'package:web3dart/crypto.dart';
 import 'package:x25519/x25519.dart' as x25519;
 

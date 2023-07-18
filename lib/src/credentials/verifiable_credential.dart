@@ -100,7 +100,7 @@ class VerifiableCredential implements JsonObject {
 
   @override
   Map<String, dynamic> toJson() {
-    if (_originalDoc != null) return _originalDoc!;
+    if (_originalDoc != null) return Map.from(_originalDoc!);
     Map<String, dynamic> jsonObject = {};
     jsonObject['@context'] = context;
     if (id != null) jsonObject['id'] = id;
@@ -213,7 +213,7 @@ class LinkedDataProof implements JsonObject {
 
   @override
   Map<String, dynamic> toJson() {
-    if (_originalDoc != null) return _originalDoc!;
+    if (_originalDoc != null) return Map.from(_originalDoc!);
 
     Map<String, dynamic> jsonObject = {};
     jsonObject['type'] = type;
@@ -266,7 +266,7 @@ class CredentialStatus implements JsonObject {
 
   @override
   Map<String, dynamic> toJson() {
-    if (_originalDoc != null) return _originalDoc!;
+    if (_originalDoc != null) return Map.from(_originalDoc!);
 
     Map<String, dynamic> jsonObject = {};
     jsonObject['id'] = id;
@@ -356,7 +356,7 @@ class VerifiablePresentation implements JsonObject {
 
   @override
   Map<String, dynamic> toJson() {
-    if (_originalDoc != null) return _originalDoc!;
+    if (_originalDoc != null) return Map.from(_originalDoc!);
     Map<String, dynamic> jsonObject = {};
     jsonObject['@context'] = context;
     jsonObject['type'] = type;
