@@ -75,14 +75,21 @@ class EcdsaRecoverySignature implements Signer {
       proofOptions['challenge'] = challenge;
     }
 
-    List<int> hashToSign = await _dataToHash(data);
+    List<int> hash = await _dataToHash(data);
 
     var pOptionsHash = sha256
         .convert(utf8.encode(await JsonLdProcessor.normalize(proofOptions,
             options:
                 JsonLdOptions(safeMode: true, documentLoader: loadDocument))))
         .bytes;
-    var hash = sha256.convert(pOptionsHash + hashToSign).bytes;
+    var payload = pOptionsHash + hash;
+
+    var critical = <String, dynamic>{};
+    critical['b64'] = false;
+    var header = buildJwsHeader(alg: 'ES256K-R', extra: critical);
+    var headerEnc = removePaddingFromBase64(header);
+
+    var hashToSign = sha256.convert(utf8.encode('$headerEnc.') + payload).bytes;
 
     proofOptions.remove('@context');
 
@@ -91,14 +98,12 @@ class EcdsaRecoverySignature implements Signer {
     if (privateKeyHex == null) throw Exception('Could not find a private key');
     var key = EthPrivateKey.fromHex(privateKeyHex);
 
-    var sigArray = _buildSignatureArray(Uint8List.fromList(hash), key);
+    var sigArray = _buildSignatureArray(Uint8List.fromList(hashToSign), key);
     while (sigArray.length != 65) {
-      sigArray = _buildSignatureArray(Uint8List.fromList(hash), key);
+      sigArray = _buildSignatureArray(Uint8List.fromList(hashToSign), key);
     }
 
-    var critical = <String, dynamic>{};
-    critical['b64'] = false;
-    proofOptions['jws'] = '${buildJwsHeader(alg: 'ES256K-R', extra: critical)}.'
+    proofOptions['jws'] = '$headerEnc.'
         '.${base64UrlEncode(sigArray)}';
 
     return proofOptions;
@@ -235,24 +240,58 @@ class EcdsaRecoverySignature implements Signer {
 
     List<int> hash = await _dataToHash(data);
 
-    var jws = proof.remove('jws');
+    String jws = proof.remove('jws');
     proof['@context'] = ecdsaRecoveryContextIri;
+
     var proofHash = sha256
         .convert(utf8.encode(await JsonLdProcessor.normalize(proof,
             options:
                 JsonLdOptions(safeMode: true, documentLoader: loadDocument))))
         .bytes;
-    var hashToSign = sha256.convert(proofHash + hash).bytes;
+    var payload = proofHash + hash;
 
     proof['jws'] = jws;
     proof.remove('@context');
 
+    var header = jws.split('.').first;
+
+    var hashToSign = sha256.convert(utf8.encode('$header.') + payload).bytes;
+
     var pubKey = web3_crypto.ecRecover(hashToSign as Uint8List, signature);
 
-    var givenAddress = EthereumAddress.fromHex(did.split(':').last);
+    if (did.startsWith('did:ethr')) {
+      var givenAddress = EthereumAddress.fromHex(did.split(':').last);
 
-    return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
-        givenAddress.hexEip55;
+      return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
+          givenAddress.hexEip55;
+    } else if (did.startsWith('did:key')) {
+      var recoveredDid = 'did:key:z${base58Bitcoin.encode(Uint8List.fromList([
+            231,
+            1
+          ] + pubKey))}';
+      return did == recoveredDid;
+    } else if (did.startsWith('did:jwk')) {
+      var jwk = jsonDecode(utf8.decode(base64Decode(
+          addPaddingToBase64(did.split(':')[2].split('#').first))));
+      if (jwk['crv'] != 'secp256k1') {
+        throw Exception('curve does not match');
+      }
+
+      var recoveredX = pubKey.sublist(0, 32);
+      var recoveredY = pubKey.sublist(32);
+
+      return removePaddingFromBase64(base64UrlEncode(recoveredX)) == jwk['x'] &&
+          removePaddingFromBase64(base64UrlEncode(recoveredY)) == jwk['y'];
+    } else if (did.startsWith('did:example')) {
+      var recoveredX = pubKey.sublist(0, 32);
+      var recoveredY = pubKey.sublist(32);
+      print(base64Encode(recoveredX));
+      print(base64Encode(recoveredY));
+      print(EthereumAddress.fromPublicKey(pubKey).hexEip55);
+      return true;
+    } else {
+      throw Exception('unsupported did method');
+    }
   }
 
   web3_crypto.MsgSignature _getSignatureFromJws(String jws) {
