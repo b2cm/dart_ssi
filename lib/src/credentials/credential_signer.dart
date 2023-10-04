@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'package:crypto_keys/crypto_keys.dart';
 import 'package:dart_ssi/did.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
+import 'package:elliptic/elliptic.dart' as el;
 import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:web3dart/credentials.dart';
 import 'package:web3dart/crypto.dart' as web3_crypto;
@@ -265,10 +266,16 @@ class EcdsaRecoverySignature implements Signer {
       return EthereumAddress.fromPublicKey(pubKey).hexEip55 ==
           givenAddress.hexEip55;
     } else if (did.startsWith('did:key')) {
+      var c = el.getSecp256k1();
+      var compressed = c.publicKeyToCompressedHex(el.PublicKey(
+          c,
+          web3_crypto.bytesToInt(pubKey.sublist(0, 32)),
+          web3_crypto.bytesToInt(pubKey.sublist(32))));
       var recoveredDid = 'did:key:z${base58Bitcoin.encode(Uint8List.fromList([
             231,
             1
-          ] + pubKey))}';
+          ] + web3_crypto.hexToBytes(compressed)))}';
+      print(recoveredDid);
       return did == recoveredDid;
     } else if (did.startsWith('did:jwk')) {
       var jwk = jsonDecode(utf8.decode(base64Decode(
