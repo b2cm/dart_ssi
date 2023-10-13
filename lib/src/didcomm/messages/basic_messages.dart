@@ -105,7 +105,11 @@ class ProblemReport extends DidcommPlaintextMessage {
   }
 
   ProblemReport.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
-    if (type != DidcommMessages.problemReport) {
+    if (![
+      DidcommMessages.problemReport,
+      DidcommMessages.issueCredentialProblem,
+      DidcommMessages.requestPresentationProblem
+    ].contains(type)) {
       throw Exception('Wrong message type');
     }
     if (body.containsKey('code')) {

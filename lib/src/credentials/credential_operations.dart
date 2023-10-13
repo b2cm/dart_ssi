@@ -285,6 +285,11 @@ Signer _determineSignerForDid(String did,
     return EdDsaSigner(loadDocumentFunction);
   } else if (did.startsWith('did:ethr')) {
     return EcdsaRecoverySignature(loadDocumentFunction);
+  } else if (did.startsWith('did:key:zDn') ||
+      did.startsWith('did:key:z82') ||
+      did.startsWith('did:key:z2J9') ||
+      did.startsWith('did:key:zQ3s')) {
+    return JsonWebSignature2020Signer(loadDocumentFunction);
   } else {
     throw Exception('could not examine signature type');
   }
@@ -309,6 +314,8 @@ Signer _determineSignerForType(String type,
     return EdDsaSigner(loadDocumentFunction);
   } else if (type == 'EcdsaSecp256k1RecoverySignature2020') {
     return EcdsaRecoverySignature(loadDocumentFunction);
+  } else if (type == 'JsonWebSignature2020') {
+    return JsonWebSignature2020Signer(loadDocumentFunction);
   } else {
     throw Exception('could not examine signature type');
   }

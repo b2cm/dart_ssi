@@ -330,9 +330,13 @@ class VerifiablePresentation implements JsonObject {
     holder = presentation['holder'];
     if (presentation.containsKey('proof')) {
       proof = [];
-      List tmp = presentation['proof'];
-      for (var c in tmp) {
-        proof!.add(LinkedDataProof.fromJson(c));
+      var tmp = presentation['proof'];
+      if (tmp is List) {
+        for (var c in tmp) {
+          proof!.add(LinkedDataProof.fromJson(c));
+        }
+      } else if (tmp is Map) {
+        proof!.add(LinkedDataProof.fromJson(tmp));
       }
     }
 

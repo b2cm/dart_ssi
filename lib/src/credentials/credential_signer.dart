@@ -6,6 +6,7 @@ import 'package:base_codecs/base_codecs.dart';
 import 'package:crypto/crypto.dart';
 import 'package:crypto_keys/crypto_keys.dart';
 import 'package:dart_ssi/did.dart';
+import 'package:dart_ssi/src/credentials/jsonLdContext/json_web_signature_2020_context.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:elliptic/elliptic.dart' as el;
 import 'package:json_ld_processor/json_ld_processor.dart';
@@ -802,4 +803,247 @@ class Es256k1Signer implements Signer {
     // TODO: implement verifyProof
     throw UnimplementedError();
   }
+}
+
+class JsonWebSignature2020Signer implements Signer {
+  @override
+  final String typeName = 'JsonWebSignature2020';
+
+  final Function(Uri url, LoadDocumentOptions? options)? loadDocument;
+
+  JsonWebSignature2020Signer(this.loadDocument);
+  @override
+  FutureOr<Map<String, dynamic>> buildProof(
+      data, WalletStore wallet, String did,
+      {String? challenge, String? domain, String? proofPurpose}) async {
+    var proofOptions = {
+      '@context': jsonWebSignature2020ContextIri,
+      'type': typeName,
+      'proofPurpose': proofPurpose ?? 'assertionMethod',
+      'verificationMethod': '$did#${did.split(':')[2]}',
+      'created': DateTime.now().toUtc().toIso8601String()
+    };
+    if (domain != null) {
+      proofOptions['domain'] = domain;
+    }
+    if (challenge != null) {
+      proofOptions['challenge'] = challenge;
+    }
+
+    List<int> hash = await _dataToHash(data);
+
+    var pOptionsHash = sha256
+        .convert(utf8.encode(await JsonLdProcessor.normalize(proofOptions,
+            options:
+                JsonLdOptions(safeMode: true, documentLoader: loadDocument))))
+        .bytes;
+    var payload = pOptionsHash + hash;
+
+    String alg;
+    Identifier c, a;
+
+    if (did.startsWith('did:key:zQ3s')) {
+      c = curves.p256k;
+      alg = 'ES256K';
+      a = algorithms.signing.ecdsa.sha256;
+    } else if (did.startsWith('did:key:z82')) {
+      c = curves.p384;
+      alg = 'ES384';
+      a = algorithms.signing.ecdsa.sha384;
+    } else if (did.startsWith('did:key:z2J9')) {
+      c = curves.p521;
+      alg = 'ES512';
+      a = algorithms.signing.ecdsa.sha512;
+    } else {
+      c = curves.p256;
+      alg = 'ES256K';
+      a = algorithms.signing.ecdsa.sha256;
+    }
+
+    var critical = <String, dynamic>{};
+    critical['b64'] = false;
+    var header = buildJwsHeader(alg: alg, extra: critical);
+    var headerEnc = removePaddingFromBase64(header);
+
+    var hashToSign = sha256.convert(utf8.encode('$headerEnc.') + payload).bytes;
+
+    proofOptions.remove('@context');
+
+    var privateKeyHex = await wallet.getPrivateKeyForCredentialDid(did);
+    privateKeyHex ??= await wallet.getPrivateKeyForConnectionDid(did);
+    if (privateKeyHex == null) throw Exception('Could not find a private key');
+
+    var privateKey = EcPrivateKey(
+        eccPrivateKey: web3_crypto.hexToInt(privateKeyHex), curve: c);
+
+    var signer = privateKey.createSigner(a);
+    var sig = signer.sign(hashToSign);
+
+    proofOptions['jws'] = '$headerEnc.'
+        '.${base64UrlEncode(sig.data)}';
+
+    return proofOptions;
+  }
+
+  @override
+  FutureOr<String> sign(
+      {data,
+      WalletStore? wallet,
+      String? did,
+      Map<String, dynamic>? jwk,
+      bool detached = false,
+      jwsHeader}) {
+    // TODO: implement sign
+    throw UnimplementedError();
+  }
+
+  @override
+  FutureOr<bool> verify(String jws,
+      {String? did, Map<String, dynamic>? jwk, data}) {
+    // TODO: implement verify
+    throw UnimplementedError();
+  }
+
+  @override
+  FutureOr<bool> verifyProof(proof, data, String did,
+      {String? challenge}) async {
+    //compare challenge
+    if (challenge != null) {
+      var containedChallenge = proof['challenge'];
+      if (containedChallenge == null) {
+        throw Exception('Expected challenge in this credential');
+      }
+      if (containedChallenge != challenge) {
+        throw Exception('a challenge do not match expected challenge');
+      }
+    }
+
+    List<int> hash = await _dataToHash(data);
+
+    String jws = proof.remove('jws');
+    proof['@context'] = jsonWebSignature2020ContextIri;
+
+    var proofHash = sha256
+        .convert(utf8.encode(await JsonLdProcessor.normalize(proof,
+            options:
+                JsonLdOptions(safeMode: true, documentLoader: loadDocument))))
+        .bytes;
+    var payload = proofHash + hash;
+
+    proof['jws'] = jws;
+    proof.remove('@context');
+
+    var ddo = await resolveDidDocument(did);
+    ddo = ddo.resolveKeyIds().convertAllKeysToJwk();
+
+    var verificationMethod = proof['verificationMethod'];
+    dynamic usedJwk;
+    for (var k in ddo.verificationMethod!) {
+      if (k.id == verificationMethod) {
+        usedJwk = k.publicKeyJwk!;
+        break;
+      }
+    }
+
+    if (usedJwk == null) {
+      throw Exception(
+          'Can\'t find public key for id $verificationMethod in did document');
+    }
+
+    var header = jws.split('.').first;
+    var decodedHeader =
+        jsonDecode(utf8.decode(base64Decode(addPaddingToBase64(header))));
+    var alg = decodedHeader['alg'];
+    if (alg == null || alg is! String) {
+      throw Exception('alg Header missing in jws-header');
+    }
+
+    var hashToSign = sha256.convert(utf8.encode('$header.') + payload).bytes;
+
+    var signature = Uint8List.fromList(
+        base64Decode(addPaddingToBase64(jws.split('.').last)));
+
+    if (alg == 'EdDSA') {
+      if (usedJwk['crv'] != 'Ed25519') {
+        throw Exception(
+            'Wrong crv value ${usedJwk['crv']} for this signature suite (ed25519 needed)');
+      }
+      var decodedKey = base64Decode(addPaddingToBase64(usedJwk['x']));
+      return ed.verify(
+          ed.PublicKey(decodedKey), Uint8List.fromList(hashToSign), signature);
+    } else if (alg.startsWith('ES256k')) {
+      var pubKey = EcPublicKey(
+          xCoordinate: web3_crypto.bytesToUnsignedInt(
+              base64Decode(addPaddingToBase64(usedJwk['x']))),
+          yCoordinate: web3_crypto.bytesToUnsignedInt(
+              base64Decode(addPaddingToBase64(usedJwk['y']))),
+          curve: curves.p256k);
+      var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha256);
+
+      return verifier.verify(
+          Uint8List.fromList(hashToSign), Signature(signature));
+    } else if (alg.startsWith('ES256')) {
+      var pubKey = EcPublicKey(
+          xCoordinate: web3_crypto.bytesToUnsignedInt(
+              base64Decode(addPaddingToBase64(usedJwk['x']))),
+          yCoordinate: web3_crypto.bytesToUnsignedInt(
+              base64Decode(addPaddingToBase64(usedJwk['y']))),
+          curve: curves.p256);
+      var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha256);
+
+      return verifier.verify(
+          Uint8List.fromList(hashToSign), Signature(signature));
+    } else if (alg.startsWith('ES384')) {
+      var pubKey = EcPublicKey(
+          xCoordinate: web3_crypto.bytesToUnsignedInt(
+              base64Decode(addPaddingToBase64(usedJwk['x']))),
+          yCoordinate: web3_crypto.bytesToUnsignedInt(
+              base64Decode(addPaddingToBase64(usedJwk['y']))),
+          curve: curves.p384);
+      var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha384);
+
+      return verifier.verify(
+          Uint8List.fromList(hashToSign), Signature(signature));
+    } else if (alg.startsWith('ES512')) {
+      var pubKey = EcPublicKey(
+          xCoordinate: web3_crypto.bytesToUnsignedInt(
+              base64Decode(addPaddingToBase64(usedJwk['x']))),
+          yCoordinate: web3_crypto.bytesToUnsignedInt(
+              base64Decode(addPaddingToBase64(usedJwk['y']))),
+          curve: curves.p521);
+      var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha512);
+
+      return verifier.verify(
+          Uint8List.fromList(hashToSign), Signature(signature));
+    } else {
+      throw Exception('Unknown Signature algorithm');
+    }
+  }
+
+  FutureOr<List<int>> _dataToHash(dynamic data) async {
+    if (data is Uint8List) {
+      return data.toList();
+    } else if (data is List<int>) {
+      return data;
+    } else if (data is Map<String, dynamic>) {
+      return sha256
+          .convert(utf8.encode(await JsonLdProcessor.normalize(
+              Map<String, dynamic>.from(data),
+              options:
+                  JsonLdOptions(safeMode: true, documentLoader: loadDocument))))
+          .bytes;
+    } else if (data is String) {
+      return sha256.convert(utf8.encode(data)).bytes;
+    } else {
+      throw Exception('Unknown datatype for data');
+    }
+  }
+
+  @override
+  // TODO: implement algValue
+  String get algValue => throw UnimplementedError();
+
+  @override
+  // TODO: implement crvValue
+  String get crvValue => throw UnimplementedError();
 }

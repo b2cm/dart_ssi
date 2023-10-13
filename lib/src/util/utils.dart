@@ -68,7 +68,7 @@ Map<String, dynamic> multibaseKeyToJwk(String multibaseKey) {
         pub.Y < BigInt.zero ? intToBytes(pub.Y) : unsignedIntToBytes(pub.Y)));
   } else if (indicatorHex == '8224') {
     jwk['kty'] = 'EC';
-    jwk['crv'] = 'P-512';
+    jwk['crv'] = 'P-521';
     var c = getP521();
     var pub = c.compressedHexToPublicKey(hex.encode(key));
     jwk['x'] = removePaddingFromBase64(base64UrlEncode(

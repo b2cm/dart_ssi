@@ -44,8 +44,8 @@ class CredentialManifest implements JsonObject {
     } else {
       throw Exception('issuer property needed');
     }
-    if (map.containsKey('output_descriptor')) {
-      var descriptorList = map['output_descriptor'];
+    if (map.containsKey('output_descriptors')) {
+      var descriptorList = map['output_descriptors'];
       outputDescriptor = [];
       for (var d in descriptorList) {
         outputDescriptor.add(OutputDescriptor.fromJson(d));
@@ -228,7 +228,7 @@ class DisplayProperty implements JsonObject {
   DisplayMappingObject? title;
   DisplayMappingObject? subtitle;
   DisplayMappingObject? description;
-  LabeledDisplayMappingObject? properties;
+  List<LabeledDisplayMappingObject>? properties;
 
   DisplayProperty(
       {this.title, this.subtitle, this.description, this.properties});
@@ -245,7 +245,9 @@ class DisplayProperty implements JsonObject {
       description = DisplayMappingObject.fromJson(map['description']);
     }
     if (map.containsKey('properties')) {
-      properties = LabeledDisplayMappingObject.fromJson(map['properties']);
+      List tmp = map['properties'];
+      properties =
+          tmp.map((e) => LabeledDisplayMappingObject.fromJson(e)).toList();
     }
   }
 
@@ -262,7 +264,7 @@ class DisplayProperty implements JsonObject {
       map['description'] = description!.toJson();
     }
     if (properties != null) {
-      map['properties'] = properties!.toJson();
+      map['properties'] = properties!.map((e) => e.toJson()).toList();
     }
     return map;
   }
@@ -274,33 +276,45 @@ class DisplayProperty implements JsonObject {
 }
 
 class DisplayMappingObject implements JsonObject {
-  late JsonPath path;
-  late SchemaObject schema;
+  List<JsonPath>? path;
+  String? text;
+  SchemaObject? schema;
   String? fallback;
 
-  DisplayMappingObject(
-      {required this.path, required this.schema, this.fallback});
+  DisplayMappingObject({this.text, this.path, this.schema, this.fallback}) {
+    if (path == null && text == null) {
+      throw Exception('Must contain either pth or text');
+    }
+  }
 
   DisplayMappingObject.fromJson(dynamic jsonObject) {
     var map = credentialToMap(jsonObject);
     if (map.containsKey('path')) {
-      path = JsonPath(map['path']);
-    } else {
-      throw Exception('path property needed');
+      List tmp = map['path'];
+      path = tmp.map((e) => JsonPath(e)).toList();
     }
-
     if (map.containsKey('schema')) {
       schema = SchemaObject.fromJson(map['schema']);
-    } else {
-      throw Exception('schema property needed');
     }
 
+    text = map['text'];
+
     fallback = map['fallback'];
+
+    if (path == null && text == null) {
+      throw Exception('Must contain either pth or text');
+    }
   }
 
   @override
   Map<String, dynamic> toJson() {
-    var map = {'path': path.toString(), 'schema': schema.toJson()};
+    Map<String, dynamic> map = {'path': path.toString()};
+    if (text != null) {
+      map['text'] = text;
+    }
+    if (schema != null) {
+      map['schema'] = schema!.toJson();
+    }
     if (fallback != null) {
       map['fallback'] = fallback!;
     }
@@ -318,7 +332,7 @@ class LabeledDisplayMappingObject extends DisplayMappingObject {
 
   LabeledDisplayMappingObject(
       {required this.label,
-      required JsonPath path,
+      required List<JsonPath> path,
       required SchemaObject schema,
       String? fallback})
       : super(path: path, schema: schema, fallback: fallback);
@@ -503,7 +517,7 @@ class CredentialFulfillment implements JsonObject {
   late String id;
   late String manifestId;
   String? applicationId;
-  late InputDescriptorMappingObject descriptorMap;
+  late List<InputDescriptorMappingObject> descriptorMap;
 
   CredentialFulfillment(
       {String? id,
@@ -529,8 +543,9 @@ class CredentialFulfillment implements JsonObject {
     applicationId = map['application_id'];
 
     if (map.containsKey('descriptor_map')) {
+      List tmp = map['descriptor_map'];
       descriptorMap =
-          InputDescriptorMappingObject.fromJson(map['descriptor_map']);
+          tmp.map((e) => InputDescriptorMappingObject.fromJson(e)).toList();
     } else {
       throw Exception(
           'descriptor_map property needed in credential fulfillment');
@@ -543,7 +558,7 @@ class CredentialFulfillment implements JsonObject {
     if (applicationId != null) {
       map['application_id'] = applicationId!;
     }
-    map['descriptor_map'] = descriptorMap.toJson();
+    map['descriptor_map'] = descriptorMap.map((e) => e.toJson()).toList();
     return map;
   }
 

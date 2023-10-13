@@ -173,6 +173,7 @@ class DidDocument implements JsonObject {
         var s = v.id.split('#');
         if (s.length == 2) {
           veriMap[s[1]] = v;
+          veriMap['#${s[1]}'] = v;
         }
       }
     }

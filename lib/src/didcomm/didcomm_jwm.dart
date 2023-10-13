@@ -94,7 +94,12 @@ class DidcommPlaintextMessage implements JsonObject, DidcommMessage {
       replyTo = decoded['reply_to'].cast<String>();
     }
     if (decoded.containsKey('body')) {
-      body = decoded['body']!;
+      Map tmp = decoded['body'];
+      if (tmp.isEmpty) {
+        body = {};
+      } else {
+        body = tmp.cast<String, dynamic>();
+      }
     } else {
       body = {};
       if (type != 'https://didcomm.org/empty/1.0') {

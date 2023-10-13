@@ -109,7 +109,7 @@ class OfferCredential extends DidcommPlaintextMessage {
   String? replacementId;
   PreviewCredential? credentialPreview;
   List<LdProofVcDetail>? detail;
-  CredentialManifest? credentialManifest;
+  CredentialManifestAttachment? credentialManifest;
   VerifiablePresentation? fulfillment;
 
   OfferCredential(
@@ -213,7 +213,8 @@ class OfferCredential extends DidcommPlaintextMessage {
               'dif credential Manifest Attachment as specified in Aries RFC 0511 is not supported yet');
         } else if (a.format != null &&
             a.format == AttachmentFormat.credentialManifest) {
-          credentialManifest = CredentialManifest.fromJson(a.data.json);
+          credentialManifest =
+              CredentialManifestAttachment.fromJson(a.data.json);
         } else if (a.format != null &&
             a.format == AttachmentFormat.credentialFulfillment) {
           fulfillment = VerifiablePresentation.fromJson(a.data.json);
@@ -608,6 +609,56 @@ class LdProofVcDetailOptions implements JsonObject {
       jsonObject['credentialStatus'] = {'type': credentialStatusType};
     }
     return jsonObject;
+  }
+
+  @override
+  String toString() {
+    return jsonEncode(toJson());
+  }
+}
+
+class CredentialManifestAttachment implements JsonObject {
+  late String challenge;
+  late String domain;
+  late CredentialManifest credentialManifest;
+
+  CredentialManifestAttachment(
+      {required this.challenge,
+      required this.domain,
+      required this.credentialManifest});
+
+  CredentialManifestAttachment.fromJson(dynamic jsonObject) {
+    var data = credentialToMap(jsonObject);
+    Map? options = data['options'];
+    if (options == null || options.isEmpty) {
+      throw Exception('Options needed');
+    }
+    if (options.containsKey('challenge')) {
+      challenge = options['challenge'];
+    } else {
+      throw Exception('Challenge property needed');
+    }
+    if (options.containsKey('domain')) {
+      domain = options['domain'];
+    } else {
+      throw Exception('Domain Property needed');
+    }
+
+    if (data.containsKey('credential_manifest')) {
+      credentialManifest =
+          CredentialManifest.fromJson(data['credential_manifest']);
+    } else {
+      throw Exception('credential_manifest property needed');
+    }
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'challenge': challenge,
+      'domain': domain,
+      'credential_manifest': credentialManifest.toJson()
+    };
   }
 
   @override

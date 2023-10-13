@@ -95,6 +95,9 @@ class DidcommMessages {
   static const issueCredential =
       'https://didcomm.org/issue-credential/3.0/issue-credential';
 
+  static const issueCredentialProblem =
+      'https://didcomm.org/issue-credential/3.0/problem-report';
+
   static const previewCredential =
       'https://didcomm.org/issue-credential/3.0/credential-preview';
 
@@ -108,6 +111,9 @@ class DidcommMessages {
 
   static const proposePresentation =
       'https://didcomm.org/present-proof/3.0/propose-presentation';
+
+  static const requestPresentationProblem =
+      'https://didcomm.org/present-proof/3.0/problem-report';
 
   static const discoverFeatureQuery =
       'https://didcomm.org/discover-features/2.0/queries';

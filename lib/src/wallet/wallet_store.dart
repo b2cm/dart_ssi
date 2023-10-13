@@ -7,6 +7,7 @@ import 'package:bip39/bip39.dart';
 import 'package:crypto/crypto.dart';
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
 import 'package:ed25519_hd_key/ed25519_hd_key.dart';
+import 'package:elliptic/elliptic.dart';
 import 'package:hive/hive.dart';
 import 'package:web3dart/credentials.dart';
 import 'package:web3dart/crypto.dart';
@@ -410,17 +411,49 @@ class WalletStore {
 
   /// Returns a new DID a credential could be issued for.
   Future<String> getNextCredentialDID(
-      [KeyType keyType = KeyType.secp256k1]) async {
+      [KeyType keyType = KeyType.secp256k1, bool isDidKey = false]) async {
     if (keyType == KeyType.secp256k1) {
-      return _getNextCredentialDidEthr();
+      return _getNextCredentialDidEthr(isDidKey);
     } else if (keyType == KeyType.ed25519) {
       return _getNextCredentialDIDWithEdKey();
+    } else if (keyType == KeyType.p384 ||
+        keyType == KeyType.p256 ||
+        keyType == KeyType.p521) {
+      return _generatePdid(keyType, 'lastCredentialDidP');
     } else {
       throw Exception('Unsupported Credential KeyType `$keyType`');
     }
   }
 
-  Future<String> _getNextCredentialDidEthr() async {
+  Future<String> _generatePdid(KeyType keyType, String config) async {
+    Curve c;
+    List<int> prefix;
+    if (keyType == KeyType.p521) {
+      c = getP521();
+      prefix = [130, 36];
+    } else if (keyType == KeyType.p384) {
+      c = getP384();
+      prefix = [129, 36];
+    } else {
+      c = getP256();
+      prefix = [128, 36];
+    }
+
+    var privateKey = c.generatePrivateKey();
+    var did =
+        'did:key:z${base58BitcoinEncode(Uint8List.fromList(prefix + hexToBytes(privateKey.publicKey.toCompressedHex())))}';
+
+    //store temporarily
+    await _configBox!.put(config, did);
+    if (config.contains('Connection')) {
+      await _connection!.put(did, Connection(privateKey.toHex(), '', ''));
+    } else {
+      await _credentialBox!.put(did, Credential(privateKey.toHex(), '', ''));
+    }
+    return did;
+  }
+
+  Future<String> _getNextCredentialDidEthr([bool isDidKey = false]) async {
     //generate new keypair
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var lastIndex = _keyBox!.get('lastCredentialIndex');
@@ -431,7 +464,7 @@ class WalletStore {
     lastIndex++;
     await _keyBox!.put('lastCredentialIndex', lastIndex);
 
-    var did = _bip32KeyToDid(key);
+    var did = _bip32KeyToDid(key, isDidKey);
 
     //store temporarily
     await _configBox!.put('lastCredentialDid', did);
@@ -462,13 +495,17 @@ class WalletStore {
 
   /// Returns a new connection-DID.
   Future<String> getNextConnectionDID(
-      [KeyType keyType = KeyType.secp256k1]) async {
+      [KeyType keyType = KeyType.secp256k1, bool isDidKey = false]) async {
     if (keyType == KeyType.secp256k1) {
-      return _getNextConnectionDidEthr();
+      return _getNextConnectionDidEthr(isDidKey);
     } else if (keyType == KeyType.ed25519) {
       return _getNextConnectionDIDWithEdKey();
     } else if (keyType == KeyType.x25519) {
       return _getNextConnectionDidXKey();
+    } else if (keyType == KeyType.p384 ||
+        keyType == KeyType.p256 ||
+        keyType == KeyType.p521) {
+      return _generatePdid(keyType, 'lastConnectionDidP');
     } else {
       throw Exception('Unknown KeyType');
     }
@@ -493,7 +530,7 @@ class WalletStore {
     return did;
   }
 
-  Future<String> _getNextConnectionDidEthr() async {
+  Future<String> _getNextConnectionDidEthr([bool isDidKey = false]) async {
     //generate new keypair
     var master = BIP32.fromSeed(_keyBox!.get('seed'));
     var lastIndex = _keyBox!.get('lastConnectionIndex');
@@ -504,7 +541,7 @@ class WalletStore {
     lastIndex++;
     await _keyBox!.put('lastConnectionIndex', lastIndex);
 
-    var did = _bip32KeyToDid(key);
+    var did = _bip32KeyToDid(key, isDidKey);
 
     //store temporarily
     await _configBox!.put('lastConnectionDid', did);
@@ -538,6 +575,10 @@ class WalletStore {
       return _configBox!.get('lastCredentialDid');
     } else if (keyType == KeyType.ed25519) {
       return _configBox!.get('lastCredentialDidEd');
+    } else if (keyType == KeyType.p384 ||
+        keyType == KeyType.p256 ||
+        keyType == KeyType.p521) {
+      return _configBox!.get('lastCredentialDidP');
     } else {
       throw Exception('Unknown KeyType');
     }
@@ -550,6 +591,10 @@ class WalletStore {
       return _configBox!.get('lastConnectionDidEd');
     } else if (keyType == KeyType.x25519) {
       return _configBox!.get('lastConnectionDidX');
+    } else if (keyType == KeyType.p384 ||
+        keyType == KeyType.p256 ||
+        keyType == KeyType.p521) {
+      return _configBox!.get('lastConnectionDidP');
     } else {
       throw Exception('Unknown KeyType');
     }
@@ -570,6 +615,24 @@ class WalletStore {
       var key = await ED25519_HD_KEY.derivePath(
           hdPath, _keyBox!.get('seed').toList());
       return await _edKeyToXKeyDid(key);
+    } else if (keyType == KeyType.p384 ||
+        keyType == KeyType.p256 ||
+        keyType == KeyType.p521) {
+      Curve c;
+      List<int> prefix;
+      if (keyType == KeyType.p521) {
+        c = getP521();
+        prefix = [130, 36];
+      } else if (keyType == KeyType.p384) {
+        c = getP384();
+        prefix = [129, 36];
+      } else {
+        c = getP256();
+        prefix = [128, 36];
+      }
+
+      var k = PrivateKey(c, hexToInt(hdPath));
+      return 'did:key:z${base58BitcoinEncode(Uint8List.fromList(prefix + hexToBytes(k.publicKey.toCompressedHex())))}';
     } else {
       throw Exception('Unknown KeyType');
     }
@@ -591,6 +654,10 @@ class WalletStore {
           hdPath, _keyBox!.get('seed').toList());
       return bytesToHex(
           _edPrivateToXPrivate(ed.newKeyFromSeed(Uint8List.fromList(key.key))));
+    } else if (keyType == KeyType.p384 ||
+        keyType == KeyType.p256 ||
+        keyType == KeyType.p521) {
+      return hdPath;
     } else {
       throw Exception('Unknown KeyType');
     }
@@ -617,6 +684,21 @@ class WalletStore {
       key['crv'] = 'Ed25519';
       key['d'] = removePaddingFromBase64(
           base64UrlEncode(hexToBytes(privateKeyHex).sublist(0, 32)));
+    } else if (keyType == KeyType.p384 ||
+        keyType == KeyType.p256 ||
+        keyType == KeyType.p521) {
+      String crv;
+      if (keyType == KeyType.p521) {
+        crv = 'P-521';
+      } else if (keyType == KeyType.p384) {
+        crv = 'P-384';
+      } else {
+        crv = 'P-256';
+      }
+      key['kty'] = 'EC';
+      key['crv'] = crv;
+      key['d'] =
+          removePaddingFromBase64(base64UrlEncode(hexToBytes(privateKeyHex)));
     } else {
       throw Exception('Unknown keyType');
     }
@@ -641,6 +723,19 @@ class WalletStore {
           hdPath, _keyBox!.get('seed').toList());
       return bytesToHex(
           _edPrivateToXPublic(ed.newKeyFromSeed(Uint8List.fromList(key.key))));
+    } else if (keyType == KeyType.p384 ||
+        keyType == KeyType.p256 ||
+        keyType == KeyType.p521) {
+      Curve c;
+      if (keyType == KeyType.p521) {
+        c = getP521();
+      } else if (keyType == KeyType.p384) {
+        c = getP384();
+      } else {
+        c = getP256();
+      }
+      var k = PrivateKey(c, hexToInt(hdPath));
+      return k.publicKey.toHex();
     } else {
       throw Exception('Unknown KeyType');
     }
@@ -650,13 +745,25 @@ class WalletStore {
   Future<String?> getPrivateKeyForCredentialDid(
     String did,
   ) async {
-    if (did.startsWith('did:ethr')) {
+    if (did.startsWith('did:ethr') || did.startsWith('did:key:zQ3s')) {
       return _getPrivateKeyForCredentialDidEthr(did);
     } else if (did.startsWith('did:key:z6Mk')) {
       return _getPrivateKeyForCredentialDidEd(did);
+    } else if (did.startsWith('did:key:zDn')) {
+      return _getPrivateKeyForPCredentialDid(did, getP256());
+    } else if (did.startsWith('did:key:z82')) {
+      return _getPrivateKeyForPCredentialDid(did, getP384());
+    } else if (did.startsWith('did:key:z2J9')) {
+      return _getPrivateKeyForPCredentialDid(did, getP521());
     } else {
       throw Exception('Unknown KeyType');
     }
+  }
+
+  Future<String?> _getPrivateKeyForPCredentialDid(String did, Curve c) async {
+    var cred = getCredential(did);
+    if (cred == null) return null;
+    return bytesToHex(PrivateKey(c, hexToInt(cred.hdPath)).bytes);
   }
 
   Future<String?> _getPrivateKeyForCredentialDidEd(String did) async {
@@ -678,41 +785,58 @@ class WalletStore {
 
   Future<Map<String, dynamic>?> getPrivateKeyForCredentialDidAsJwk(
       String did) async {
-    if (did.startsWith('did:ethr')) {
-      var private = _getPrivateKeyForCredentialDidEthr(did);
-      if (private == null) return null;
-      Map<String, dynamic> key = {};
-      key['kid'] = '$did#${did.split(':').last}';
-      key['kty'] = 'EC';
-      key['crv'] = 'secp256k1';
-      key['d'] = removePaddingFromBase64(base64UrlEncode(hexToBytes(private)));
-      return key;
-    } else if (did.startsWith('did:key:z6Mk')) {
-      var private = await _getPrivateKeyForCredentialDidEd(did);
-      if (private == null) return null;
-      Map<String, dynamic> key = {};
-      key['kid'] = '$did#${did.split(':').last}';
+    var private = await getPrivateKeyForCredentialDid(did);
+    if (private == null) return null;
+    Map<String, dynamic> key = {};
+    key['kid'] = '$did#${did.split(':').last}';
+
+    if (did.startsWith('did:key:z6Mk')) {
       key['kty'] = 'OKP';
       key['crv'] = 'Ed25519';
       key['d'] = removePaddingFromBase64(
           base64UrlEncode(hexToBytes(private).sublist(0, 32)));
       return key;
     } else {
-      throw Exception('Unknown KeyType');
+      key['kty'] = 'EC';
+      if (did.startsWith('did:ethr') || did.startsWith('did:key:zQ3s')) {
+        key['crv'] = 'secp256k1';
+      } else if (did.startsWith('did:key:zDn')) {
+        key['crv'] = 'P-256';
+      } else if (did.startsWith('did:key:z82')) {
+        key['crv'] = 'P-384';
+      } else if (did.startsWith('did:key:z2J9')) {
+        key['crv'] = 'P-521';
+      } else {
+        throw Exception('Unknown keytyp');
+      }
+      key['d'] = removePaddingFromBase64(base64UrlEncode(hexToBytes(private)));
+      return key;
     }
   }
 
   /// Returns the private key as hex-String associated with [did].
   Future<String?> getPrivateKeyForConnectionDid(String did) async {
-    if (did.startsWith('did:ethr')) {
+    if (did.startsWith('did:ethr') || did.startsWith('did:key:zQ3s')) {
       return _getPrivateKeyForConnectionDidEthr(did);
     } else if (did.startsWith('did:key:z6Mk')) {
       return _getPrivateKeyForConnectionDidEd(did);
     } else if (did.startsWith('did:key:z6LS')) {
       return _getPrivateKeyForConnectionDidX(did);
+    } else if (did.startsWith('did:key:zDn')) {
+      return _getPrivateKeyForPConnectionDid(did, getP256());
+    } else if (did.startsWith('did:key:z82')) {
+      return _getPrivateKeyForPConnectionDid(did, getP384());
+    } else if (did.startsWith('did:key:z2J9')) {
+      return _getPrivateKeyForPConnectionDid(did, getP521());
     } else {
       throw Exception('Unknown KeyType');
     }
+  }
+
+  Future<String?> _getPrivateKeyForPConnectionDid(String did, Curve c) async {
+    var con = getConnection(did);
+    if (con == null) return null;
+    return bytesToHex(PrivateKey(c, hexToInt(con.hdPath)).bytes);
   }
 
   String? _getPrivateKeyForConnectionDidEthr(String did) {
@@ -744,19 +868,11 @@ class WalletStore {
 
   Future<Map<String, dynamic>?> getPrivateKeyForConnectionDidAsJwk(
       String did) async {
-    if (did.startsWith('did:ethr')) {
-      var private = _getPrivateKeyForConnectionDidEthr(did);
-      if (private == null) return null;
-      Map<String, dynamic> key = {};
-      key['kid'] = '$did#${did.split(':').last}';
-      key['kty'] = 'EC';
-      key['crv'] = 'secp256k1';
-      key['d'] = removePaddingFromBase64(base64UrlEncode(hexToBytes(private)));
-      return key;
-    } else if (did.startsWith('did:key:z6Mk')) {
-      var private = await _getPrivateKeyForConnectionDidEd(did);
-      if (private == null) return null;
-      Map<String, dynamic> key = {};
+    var private = await getPrivateKeyForConnectionDid(did);
+    if (private == null) return null;
+    Map<String, dynamic> key = {};
+    key['kid'] = '$did#${did.split(':').last}';
+    if (did.startsWith('did:key:z6Mk')) {
       key['kid'] = '$did#${did.split(':').last}';
       key['kty'] = 'OKP';
       key['crv'] = 'Ed25519';
@@ -764,17 +880,26 @@ class WalletStore {
           base64UrlEncode(hexToBytes(private).sublist(0, 32)));
       return key;
     } else if (did.startsWith('did:key:z6LS')) {
-      var private = await _getPrivateKeyForConnectionDidX(did);
-      if (private == null) return null;
-      Map<String, dynamic> key = {};
-      key['kid'] = '$did#${did.split(':').last}';
       key['kty'] = 'OKP';
       key['crv'] = 'X25519';
       key['d'] = removePaddingFromBase64(
           base64UrlEncode(hexToBytes(private).sublist(0, 32)));
       return key;
     } else {
-      throw Exception('Unknown KeyType');
+      key['kty'] = 'EC';
+      if (did.startsWith('did:ethr') || did.startsWith('did:key:zQ3s')) {
+        key['crv'] = 'secp256k1';
+      } else if (did.startsWith('did:key:zDn')) {
+        key['crv'] = 'P-256';
+      } else if (did.startsWith('did:key:z82')) {
+        key['crv'] = 'P-384';
+      } else if (did.startsWith('did:key:z2J9')) {
+        key['crv'] = 'P-521';
+      } else {
+        throw Exception('Unknown keytyp');
+      }
+      key['d'] = removePaddingFromBase64(base64UrlEncode(hexToBytes(private)));
+      return key;
     }
   }
 
@@ -825,7 +950,8 @@ class WalletStore {
         return key;
       }
     } else {
-      throw Exception('unsupported did');
+      //throw Exception('unsupported did');
+      return null;
     }
     return null;
   }
@@ -840,14 +966,21 @@ class WalletStore {
     return _configBox!.get(key);
   }
 
-  String _bip32KeyToDid(BIP32 key) {
+  String _bip32KeyToDid(BIP32 key, [bool isDidKey = false]) {
     var private = EthPrivateKey.fromHex(bytesToHex(key.privateKey!));
     var addr = private.address;
     String network = _configBox!.get('network') as String;
-    if (network == 'mainnet') {
-      return 'did:ethr:${addr.hexEip55}';
+    if (isDidKey) {
+      return 'did:key:z${base58BitcoinEncode(Uint8List.fromList([
+            231,
+            1
+          ] + private.publicKey.getEncoded().toList()))}';
     } else {
-      return 'did:ethr:$network:${addr.hexEip55}';
+      if (network == 'mainnet') {
+        return 'did:ethr:${addr.hexEip55}';
+      } else {
+        return 'did:ethr:$network:${addr.hexEip55}';
+      }
     }
   }
 
@@ -916,4 +1049,4 @@ class WalletStore {
   }
 }
 
-enum KeyType { secp256k1, ed25519, x25519 }
+enum KeyType { secp256k1, ed25519, x25519, p256, p384, p521 }

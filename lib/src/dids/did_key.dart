@@ -43,7 +43,7 @@ DidDocument resolveDidKey(String did) {
   } else if (keyPart.startsWith('82')) {
     return _buildOtherDoc(context2, id, keyPart, 'P384Key2021');
   } else if (keyPart.startsWith('2J9')) {
-    return _buildOtherDoc(context2, id, keyPart, 'P512Key2021');
+    return _buildOtherDoc(context2, id, keyPart, 'P521Key2021');
   } else {
     throw UnimplementedError('Only Ed25519 and X25519 keys are supported now');
   }
@@ -110,5 +110,6 @@ DidDocument _buildOtherDoc(
       assertionMethod: [verificationKeyId],
       authentication: [verificationKeyId],
       capabilityDelegation: [verificationKeyId],
-      capabilityInvocation: [verificationKeyId]);
+      capabilityInvocation: [verificationKeyId],
+      keyAgreement: [verificationKeyId]);
 }

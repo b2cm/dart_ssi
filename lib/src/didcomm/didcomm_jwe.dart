@@ -125,13 +125,15 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     elliptic.Curve? c;
     Object epkPrivate;
     List<int> epkPublic = [];
-    if (curve.startsWith('P')) {
+    if (curve.startsWith('P') || curve.startsWith('secp256k1')) {
       if (curve == 'P-256') {
         c = elliptic.getP256();
       } else if (curve == 'P-384') {
         c = elliptic.getP384();
       } else if (curve == 'P-521') {
         c = elliptic.getP521();
+      } else if (curve == 'secp256k1') {
+        c = elliptic.getSecp256k1();
       } else {
         throw UnimplementedError();
       }
@@ -208,16 +210,17 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
   }
 
   /// Decrypt this encrypted message using keys from [wallet].
-  Future<DidcommMessage> decrypt(WalletStore wallet) async {
+  Future<DidcommMessage> decrypt(WalletStore wallet,
+      {Future<DidDocument> Function(String) didResolver =
+          resolveDidDocument}) async {
     _decodeProtected();
     if (protectedHeaderAlg!.startsWith('ECDH-1PU')) {
       if (protectedHeaderSkid == null) {
         throw Exception('sender id needed when using AuthCrypt');
       }
-      var senderDDO =
-          (await resolveDidDocument(protectedHeaderSkid!.split('#').first))
-              .resolveKeyIds()
-              .convertAllKeysToJwk();
+      var senderDDO = (await didResolver(protectedHeaderSkid!.split('#').first))
+          .resolveKeyIds()
+          .convertAllKeysToJwk();
       for (var key in senderDDO.keyAgreement!) {
         if (key is VerificationMethod) {
           if (key.publicKeyJwk!['kid'] == protectedHeaderSkid) {
@@ -261,13 +264,15 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     elliptic.Curve? c;
     dynamic receiverPrivate, epkPublic;
 
-    if (crv.startsWith('P')) {
+    if (crv.startsWith('P') || crv.startsWith('secp256k1')) {
       if (crv == 'P-256') {
         c = elliptic.getP256();
       } else if (crv == 'P-384') {
         c = elliptic.getP384();
       } else if (crv == 'P-521') {
         c = elliptic.getP521();
+      } else if (crv == 'secp256k1') {
+        c = elliptic.getSecp256k1();
       } else {
         throw UnimplementedError("Curve `$crv` not supported");
       }
@@ -303,7 +308,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       }
       //var senderDid = base64Decode(addPaddingToBase64(apu));
       Object senderPubKey;
-      if (crv.startsWith('P')) {
+      if (crv.startsWith('P') || crv.startsWith('secp256k1')) {
         senderPubKey = elliptic.PublicKey.fromPoint(
             c!,
             elliptic.AffinePoint.fromXY(
@@ -472,7 +477,7 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       }
     } else if (keyWrapAlgorithm.startsWith('ECDH-1PU')) {
       Object staticKeyPrivate, pub;
-      if (curve.startsWith('P')) {
+      if (curve.startsWith('P') || curve.startsWith('secp256k1')) {
         staticKeyPrivate = elliptic.PrivateKey(
             c!,
             bytesToUnsignedInt(
