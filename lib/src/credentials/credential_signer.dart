@@ -42,7 +42,9 @@ abstract class Signer {
 
   /// Verifies a LinkedDataProof / DataIntegrityProof
   FutureOr<bool> verifyProof(dynamic proof, dynamic data, String did,
-      {String? challenge});
+      {String? challenge,
+      Map<String, dynamic>? jwk,
+      Future<DidDocument> Function(String) didResolver});
 
   /// Verifies a (detached) JWS
   FutureOr<bool> verify(String jws,
@@ -225,7 +227,11 @@ class EcdsaRecoverySignature implements Signer {
   }
 
   @override
-  Future<bool> verifyProof(proof, data, String did, {String? challenge}) async {
+  Future<bool> verifyProof(proof, data, String did,
+      {String? challenge,
+      Map<String, dynamic>? jwk,
+      Future<DidDocument> Function(String) didResolver =
+          resolveDidDocument}) async {
     //compare challenge
     if (challenge != null) {
       var containedChallenge = proof['challenge'];
@@ -478,7 +484,11 @@ class EdDsaSigner implements Signer {
   }
 
   @override
-  Future<bool> verifyProof(proof, data, String did, {String? challenge}) async {
+  Future<bool> verifyProof(proof, data, String did,
+      {String? challenge,
+      Map<String, dynamic>? jwk,
+      Future<DidDocument> Function(String) didResolver =
+          resolveDidDocument}) async {
     //compare challenge
     if (challenge != null) {
       var containingChallenge = proof['challenge'];
@@ -506,7 +516,7 @@ class EdDsaSigner implements Signer {
     proof.remove('@context');
     proof['proofValue'] = proofValue;
 
-    var ddo = await resolveDidDocument(did);
+    var ddo = await didResolver(did);
     ddo = ddo.resolveKeyIds().convertAllKeysToJwk();
 
     var verificationMethod = proof['verificationMethod'];
@@ -682,7 +692,10 @@ class Es256Signer implements Signer {
   }
 
   @override
-  FutureOr<bool> verifyProof(proof, data, String did, {String? challenge}) {
+  FutureOr<bool> verifyProof(proof, data, String did,
+      {String? challenge,
+      Map<String, dynamic>? jwk,
+      Future<DidDocument> Function(String) didResolver = resolveDidDocument}) {
     // TODO: implement verifyProof
     throw UnimplementedError();
   }
@@ -799,7 +812,10 @@ class Es256k1Signer implements Signer {
   }
 
   @override
-  FutureOr<bool> verifyProof(proof, data, String did, {String? challenge}) {
+  FutureOr<bool> verifyProof(proof, data, String did,
+      {String? challenge,
+      Map<String, dynamic>? jwk,
+      Future<DidDocument> Function(String) didResolver = resolveDidDocument}) {
     // TODO: implement verifyProof
     throw UnimplementedError();
   }
@@ -865,7 +881,7 @@ class JsonWebSignature2020Signer implements Signer {
     var header = buildJwsHeader(alg: alg, extra: critical);
     var headerEnc = removePaddingFromBase64(header);
 
-    var hashToSign = sha256.convert(utf8.encode('$headerEnc.') + payload).bytes;
+    var hashToSign = utf8.encode('$headerEnc.') + payload;
 
     proofOptions.remove('@context');
 
@@ -906,7 +922,10 @@ class JsonWebSignature2020Signer implements Signer {
 
   @override
   FutureOr<bool> verifyProof(proof, data, String did,
-      {String? challenge}) async {
+      {String? challenge,
+      Map<String, dynamic>? jwk,
+      Future<DidDocument> Function(String) didResolver =
+          resolveDidDocument}) async {
     //compare challenge
     if (challenge != null) {
       var containedChallenge = proof['challenge'];
@@ -933,15 +952,20 @@ class JsonWebSignature2020Signer implements Signer {
     proof['jws'] = jws;
     proof.remove('@context');
 
-    var ddo = await resolveDidDocument(did);
-    ddo = ddo.resolveKeyIds().convertAllKeysToJwk();
-
     var verificationMethod = proof['verificationMethod'];
     dynamic usedJwk;
-    for (var k in ddo.verificationMethod!) {
-      if (k.id == verificationMethod) {
-        usedJwk = k.publicKeyJwk!;
-        break;
+
+    if (jwk != null) {
+      usedJwk = jwk;
+    } else {
+      var ddo = await didResolver(did);
+      ddo = ddo.resolveKeyIds().convertAllKeysToJwk();
+
+      for (var k in ddo.verificationMethod!) {
+        if (k.id == verificationMethod) {
+          usedJwk = k.publicKeyJwk!;
+          break;
+        }
       }
     }
 
@@ -958,7 +982,7 @@ class JsonWebSignature2020Signer implements Signer {
       throw Exception('alg Header missing in jws-header');
     }
 
-    var hashToSign = sha256.convert(utf8.encode('$header.') + payload).bytes;
+    var hashToSign = ascii.encode('$header.') + payload;
 
     var signature = Uint8List.fromList(
         base64Decode(addPaddingToBase64(jws.split('.').last)));
@@ -971,7 +995,7 @@ class JsonWebSignature2020Signer implements Signer {
       var decodedKey = base64Decode(addPaddingToBase64(usedJwk['x']));
       return ed.verify(
           ed.PublicKey(decodedKey), Uint8List.fromList(hashToSign), signature);
-    } else if (alg.startsWith('ES256k')) {
+    } else if (alg.startsWith('ES256K')) {
       var pubKey = EcPublicKey(
           xCoordinate: web3_crypto.bytesToUnsignedInt(
               base64Decode(addPaddingToBase64(usedJwk['x']))),
@@ -983,11 +1007,12 @@ class JsonWebSignature2020Signer implements Signer {
       return verifier.verify(
           Uint8List.fromList(hashToSign), Signature(signature));
     } else if (alg.startsWith('ES256')) {
+      print('ES256');
       var pubKey = EcPublicKey(
           xCoordinate: web3_crypto.bytesToUnsignedInt(
               base64Decode(addPaddingToBase64(usedJwk['x']))),
-          yCoordinate: web3_crypto.bytesToUnsignedInt(
-              base64Decode(addPaddingToBase64(usedJwk['y']))),
+          yCoordinate: web3_crypto
+              .bytesToInt(base64Decode(addPaddingToBase64(usedJwk['y']))),
           curve: curves.p256);
       var verifier = pubKey.createVerifier(algorithms.signing.ecdsa.sha256);
 

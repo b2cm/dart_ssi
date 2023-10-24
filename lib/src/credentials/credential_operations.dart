@@ -3,6 +3,9 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:dart_ssi/credentials.dart';
+import 'package:dart_ssi/did.dart';
+import 'package:dart_ssi/src/credentials/jsonLdContext/did_context.dart';
+import 'package:dart_ssi/src/credentials/jsonLdContext/json_web_signature_2020_context.dart';
 import 'package:http/http.dart';
 import 'package:json_ld_processor/json_ld_processor.dart';
 import 'package:json_path/json_path.dart';
@@ -11,7 +14,6 @@ import 'package:uuid/uuid.dart';
 import 'package:web3dart/credentials.dart';
 import 'package:web3dart/crypto.dart';
 
-import '../dids/did_ethr.dart';
 import '../util/utils.dart';
 import '../wallet/wallet_store.dart';
 
@@ -363,7 +365,8 @@ Future<bool> verifyCredential(dynamic credential,
                 loadDocumentFunction)
         signerSelector = _determineSignerForType,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
-        loadDocumentStrict}) async {
+        loadDocumentStrict,
+    Map<String, dynamic>? issuerJwk}) async {
   Map<String, dynamic> credMap;
   if (credential is VerifiableCredential) {
     credMap = credential.toJson();
@@ -392,8 +395,9 @@ Future<bool> verifyCredential(dynamic credential,
   var verified = true;
   try {
     verified = await signer.verifyProof(proof, credMap, issuerDid,
-        challenge: expectedChallenge);
-  } catch (_) {
+        challenge: expectedChallenge, jwk: issuerJwk);
+  } catch (e) {
+    print(e);
     credMap['proof'] = proof;
     throw SignatureException('Unable to verify credential Signature', 'sigErr');
   }
@@ -510,6 +514,12 @@ class SignatureException implements Exception {
   String code;
 
   SignatureException(this.message, this.code);
+
+  @override
+  String toString() {
+    // TODO: implement toString
+    return '$code: $message';
+  }
 }
 
 /// Builds a presentation for [credentials].
@@ -559,7 +569,11 @@ Future<String> buildPresentation(
           credMap = credentialToMap(element);
         }
         credMapList.add(credMap);
-        holderDids.add(getHolderDidFromCredential(credMap));
+        if (!VerifiableCredential.fromJson(credMap)
+            .type
+            .contains('PublicKeyCertificate')) {
+          holderDids.add(getHolderDidFromCredential(credMap));
+        }
       }
     }
   }
@@ -575,7 +589,10 @@ Future<String> buildPresentation(
   //TODO dynamically build context based on proof methods
   List<String> context = [
     'https://www.w3.org/2018/credentials/v1',
-    ed25519ContextIri
+    'https://demo.shop.kaprion.net/assets/credentialSubject/v4/id-ideal-ld-doc-v4.jsonld',
+    ed25519ContextIri,
+    didContextIri,
+    jsonWebSignature2020ContextIri2
   ];
   List<String> type = ['VerifiablePresentation'];
   if (submission != null) {
@@ -614,6 +631,7 @@ Future<String> buildPresentation(
   List<Map<String, dynamic>> proofList = [];
   Set<Type> signerTypes = {};
   for (var element in holderDids) {
+    print(element);
     var signer = _determineSignerForDid(element!, loadDocumentFunction);
     signerTypes.add(signer.runtimeType);
     proofList.add(await signer.buildProof(presentation, wallet, element,
@@ -655,7 +673,9 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
                 loadDocumentFunction)
         signerSelector = _determineSignerForType,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
-        loadDocumentStrict}) async {
+        loadDocumentStrict,
+    Future<DidDocument> Function(String) didResolver =
+        resolveDidDocument}) async {
   // datatype conversion
   Map<String, dynamic> presentationMap;
   if (presentation is VerifiablePresentation) {
@@ -678,19 +698,41 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
   // verify credentials
   if (presentationMap.containsKey('verifiableCredential')) {
     credentials = presentationMap['verifiableCredential'] as List;
+
+    // get potential issuer jwks
+    Map<String, Map<String, dynamic>> issuerJwk = {};
+    for (var vc in credentials) {
+      var asVc = VerifiableCredential.fromJson(vc);
+      if (asVc.type.contains('PublicKeyCertificate')) {
+        issuerJwk[asVc.credentialSubject['id']] = asVc
+            .credentialSubject['publicKey']['publicKeyJwk']
+            .cast<String, dynamic>();
+      }
+    }
+
     await Future.forEach(credentials, (dynamic element) async {
-      bool verified = await verifyCredential(element,
-          erc1056: erc1056,
-          revocationRegistry: revocationRegistry,
-          signerSelector: signerSelector,
-          loadDocumentFunction: loadDocumentFunction);
+      bool verified = true;
+      if (!VerifiableCredential.fromJson(element)
+          .type
+          .contains('PublicKeyCertificate')) {
+        verified = await verifyCredential(element,
+            erc1056: erc1056,
+            revocationRegistry: revocationRegistry,
+            signerSelector: signerSelector,
+            loadDocumentFunction: loadDocumentFunction,
+            issuerJwk: issuerJwk[getIssuerDidFromCredential(element)]);
+      }
       if (!verified) {
         throw Exception('A credential could not been verified');
       } else {
         var did = getHolderDidFromCredential(element);
         if (erc1056 != null) did = await erc1056.identityOwner(did);
         if (did.isNotEmpty && did.startsWith('did:')) {
-          holderDids.add(did);
+          if (!VerifiableCredential.fromJson(element)
+              .type
+              .contains('PublicKeyCertificate')) {
+            holderDids.add(did);
+          }
         }
       }
     });

@@ -1,5 +1,9 @@
 const String jsonWebSignature2020ContextIri =
     'https://w3c.github.io/vc-jws-2020/contexts/v1/';
+
+const String jsonWebSignature2020ContextIri2 =
+    'https://w3id.org/security/suites/jws-2020/v1';
+
 const Map<String, dynamic> jsonWebSignature2020Context = {
   "@context": {
     "type": "@type",

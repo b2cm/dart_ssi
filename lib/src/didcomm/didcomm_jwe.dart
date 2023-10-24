@@ -161,7 +161,12 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
     jweHeader['epk'] = epkJwk;
 
     //3) generate symmetric CEK
-    var cek = SymmetricKey.generate(256);
+    SymmetricKey cek;
+    if (encryptionAlgorithm == EncryptionAlgorithm.a256cbc) {
+      cek = SymmetricKey.generate(512);
+    } else {
+      cek = SymmetricKey.generate(256);
+    }
     Encrypter e;
     if (encryptionAlgorithm == EncryptionAlgorithm.a256cbc) {
       e = cek.createEncrypter(algorithms.encryption.aes.cbcWithHmac.sha512);
@@ -223,7 +228,8 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
           .convertAllKeysToJwk();
       for (var key in senderDDO.keyAgreement!) {
         if (key is VerificationMethod) {
-          if (key.publicKeyJwk!['kid'] == protectedHeaderSkid) {
+          if (key.publicKeyJwk!['kid'] == protectedHeaderSkid ||
+              key.id == protectedHeaderSkid) {
             return decryptWithJwk(
                 await _searchPrivateKey(wallet), key.publicKeyJwk);
           }
