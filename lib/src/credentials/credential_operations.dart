@@ -1274,6 +1274,7 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
       //credentials per descriptor
       var filteredCreds =
           _processInputDescriptor(descriptor, globalFormat, creds);
+      print(filteredCreds.credentials.length);
       filterResultPerDescriptor[descriptor.id] = filteredCreds;
     }
 
@@ -1283,7 +1284,8 @@ List<FilterResult> searchCredentialsForPresentationDefinition(
       finalCredList.add(_processSubmissionRequirement(filterResultPerDescriptor,
           descriptorGroups, requirement, presentationDefinition.id));
     }
-
+    print(
+        '${finalCredList.length} / ${finalCredList.first.credentials.length}');
     return finalCredList;
   } else {
     List<VerifiableCredential> inputCreds = creds;
@@ -1343,14 +1345,12 @@ FilterResult _processSubmissionRequirement(
       creds = credsForDescriptor;
     } else {
       List<VerifiableCredential> toAdd = [];
-      for (var c1 in creds) {
-        for (var c2 in credsForDescriptor) {
-          //TODO find better criteria to compare
-          if (c1.id != c2.id) toAdd.add(c2);
-        }
+      for (var c1 in credsForDescriptor) {
+        if (!_containsCredential(creds, c1)) toAdd.add(c1);
       }
       creds += toAdd;
     }
+    print(creds.length);
   }
 
   if (requirement.rule == SubmissionRequirementRule.pick) {
@@ -1370,6 +1370,17 @@ FilterResult _processSubmissionRequirement(
       submissionRequirement: requirement,
       presentationDefinitionId: definitionId,
       fulfilled: fulfilled);
+}
+
+bool _containsCredential(
+    List<VerifiableCredential> toCheck, VerifiableCredential candidate) {
+  for (var c in toCheck) {
+    if (c.id == candidate.id) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 FilterResult _processInputDescriptor(InputDescriptor descriptor,
