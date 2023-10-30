@@ -522,6 +522,16 @@ class SignatureException implements Exception {
   }
 }
 
+String _findContext(String did) {
+  if (did.startsWith('did:key:z6Mk')) {
+    return ed25519ContextIri;
+  } else if (did.startsWith('did:ethr')) {
+    return ecdsaRecoveryContextIri;
+  } else {
+    return jsonWebSignature2020ContextIri2;
+  }
+}
+
 /// Builds a presentation for [credentials].
 ///
 /// If not only the ownership of the dids in the credentials should be proofed a List of [additionalDids]
@@ -536,6 +546,7 @@ Future<String> buildPresentation(
         loadDocumentStrict}) async {
   List<Map<String, dynamic>?> credMapList = [];
   List<String?> holderDids = [];
+  Set<String> signatureContext = {};
 
   PresentationSubmission? submission;
   if (credentials != null) {
@@ -548,7 +559,9 @@ Future<String> buildPresentation(
         for (var cred in element.credentials) {
           var credEntry = cred.toJson();
           credMapList.add(credEntry);
-          holderDids.add(getHolderDidFromCredential(credEntry));
+          var tmp = getHolderDidFromCredential(credEntry);
+          holderDids.add(tmp);
+          signatureContext.add(_findContext(tmp));
           for (var descriptor in element.matchingDescriptorIds) {
             var map = InputDescriptorMappingObject(
                 id: descriptor,
@@ -572,7 +585,11 @@ Future<String> buildPresentation(
         if (!VerifiableCredential.fromJson(credMap)
             .type
             .contains('PublicKeyCertificate')) {
-          holderDids.add(getHolderDidFromCredential(credMap));
+          var tmp = getHolderDidFromCredential(credMap);
+          holderDids.add(tmp);
+          signatureContext.add(_findContext(tmp));
+        } else {
+          signatureContext.add(didContextIri);
         }
       }
     }
@@ -589,11 +606,8 @@ Future<String> buildPresentation(
   //TODO dynamically build context based on proof methods
   List<String> context = [
     'https://www.w3.org/2018/credentials/v1',
-    'https://demo.shop.kaprion.net/assets/credentialSubject/v4/id-ideal-ld-doc-v4.jsonld',
-    ed25519ContextIri,
-    didContextIri,
-    jsonWebSignature2020ContextIri2
   ];
+  context.addAll(signatureContext);
   List<String> type = ['VerifiablePresentation'];
   if (submission != null) {
     context.add(

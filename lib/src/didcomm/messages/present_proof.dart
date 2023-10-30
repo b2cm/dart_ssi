@@ -93,7 +93,7 @@ class ProposePresentation extends DidcommPlaintextMessage {
 }
 
 class RequestPresentation extends DidcommPlaintextMessage {
-  late bool willConfirm;
+  bool? willConfirm;
   String? goalCode;
   String? comment;
   late List<PresentationDefinitionWithOptions> presentationDefinition;
@@ -157,7 +157,9 @@ class RequestPresentation extends DidcommPlaintextMessage {
     }
     goalCode = body['goal_code'];
     comment = body['comment'];
-    willConfirm = body['will_confirm'];
+    if (body['will_confirm'] != null) {
+      willConfirm = body['will_confirm'];
+    }
 
     if (attachments != null && attachments!.isNotEmpty) {
       presentationDefinition = [];
