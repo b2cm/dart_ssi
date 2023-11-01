@@ -95,7 +95,7 @@ class EcdsaRecoverySignature implements Signer {
 
     var hashToSign = sha256.convert(utf8.encode('$headerEnc.') + payload).bytes;
 
-    proofOptions.remove('@context');
+    //proofOptions.remove('@context');
 
     var privateKeyHex = await wallet.getPrivateKeyForCredentialDid(did);
     privateKeyHex ??= await wallet.getPrivateKeyForConnectionDid(did);
@@ -397,7 +397,7 @@ class EdDsaSigner implements Signer {
     String pOptions = await JsonLdProcessor.normalize(proofOptions,
         options: JsonLdOptions(safeMode: true, documentLoader: loadDocument));
 
-    proofOptions.remove('@context');
+    //proofOptions.remove('@context');
 
     List<int> hashToSign = await _dataToHash(data);
 
@@ -872,7 +872,7 @@ class JsonWebSignature2020Signer implements Signer {
       a = algorithms.signing.ecdsa.sha512;
     } else {
       c = curves.p256;
-      alg = 'ES256K';
+      alg = 'ES256';
       a = algorithms.signing.ecdsa.sha256;
     }
 
@@ -883,7 +883,7 @@ class JsonWebSignature2020Signer implements Signer {
 
     var hashToSign = utf8.encode('$headerEnc.') + payload;
 
-    proofOptions.remove('@context');
+    // proofOptions.remove('@context');
 
     var privateKeyHex = await wallet.getPrivateKeyForCredentialDid(did);
     privateKeyHex ??= await wallet.getPrivateKeyForConnectionDid(did);

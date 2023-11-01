@@ -1264,6 +1264,75 @@ void main() async {
           true);
     });
 
+    test('ed25519', () async {
+      var issuer = await wallet.getNextCredentialDID(KeyType.ed25519);
+      var credential = VerifiableCredential(
+          context: [credentialsV1Iri, schemaOrgIri],
+          type: ['VerifiableCredential', 'NameCredential'],
+          issuer: issuer,
+          credentialSubject: {'name': 'Mustermann'},
+          issuanceDate: DateTime.now());
+      var signed = await signCredential(wallet, credential);
+      var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      print(signed);
+      expect(signedMap.containsKey('proof'), true);
+      expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
+      expect(signedMap['proof'].containsKey('created'), true);
+
+      expect(await verifyCredential(signedMap), true);
+    });
+
+    test('p256', () async {
+      var issuer = await wallet.getNextCredentialDID(KeyType.p256);
+      var credential = VerifiableCredential(
+          context: [credentialsV1Iri, schemaOrgIri],
+          type: ['VerifiableCredential', 'NameCredential'],
+          issuer: issuer,
+          credentialSubject: {'name': 'Mustermann'},
+          issuanceDate: DateTime.now());
+      var signed = await signCredential(wallet, credential);
+      var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      expect(signedMap.containsKey('proof'), true);
+      expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
+      expect(signedMap['proof'].containsKey('created'), true);
+
+      expect(await verifyCredential(signedMap), true);
+    });
+
+    test('p384', () async {
+      var issuer = await wallet.getNextCredentialDID(KeyType.p384);
+      var credential = VerifiableCredential(
+          context: [credentialsV1Iri, schemaOrgIri],
+          type: ['VerifiableCredential', 'NameCredential'],
+          issuer: issuer,
+          credentialSubject: {'name': 'Mustermann'},
+          issuanceDate: DateTime.now());
+      var signed = await signCredential(wallet, credential);
+      var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      expect(signedMap.containsKey('proof'), true);
+      expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
+      expect(signedMap['proof'].containsKey('created'), true);
+
+      expect(await verifyCredential(signedMap), true);
+    });
+
+    test('p521', () async {
+      var issuer = await wallet.getNextCredentialDID(KeyType.p521);
+      var credential = VerifiableCredential(
+          context: [credentialsV1Iri, schemaOrgIri],
+          type: ['VerifiableCredential', 'NameCredential'],
+          issuer: issuer,
+          credentialSubject: {'name': 'Mustermann'},
+          issuanceDate: DateTime.now());
+      var signed = await signCredential(wallet, credential);
+      var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      expect(signedMap.containsKey('proof'), true);
+      expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
+      expect(signedMap['proof'].containsKey('created'), true);
+
+      expect(await verifyCredential(signedMap), true);
+    });
+
     test(
         'check signed credential; no proof Options given; with manipulation in data',
         () async {
