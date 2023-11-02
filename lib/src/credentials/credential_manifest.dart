@@ -131,7 +131,7 @@ class IssuerProperty implements JsonObject {
 
   @override
   Map<String, dynamic> toJson() {
-    var map = {
+    var map = <String, dynamic>{
       'id': id,
     };
     if (name != null) map['name'] = name!;
