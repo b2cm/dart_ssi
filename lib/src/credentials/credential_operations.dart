@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
-import 'package:dart_ssi/src/credentials/jsonLdContext/did_context.dart';
 import 'package:dart_ssi/src/credentials/jsonLdContext/json_web_signature_2020_context.dart';
 import 'package:http/http.dart';
 import 'package:json_ld_processor/json_ld_processor.dart';
@@ -588,8 +587,6 @@ Future<String> buildPresentation(
           var tmp = getHolderDidFromCredential(credMap);
           holderDids.add(tmp);
           signatureContext.add(_findContext(tmp));
-        } else {
-          signatureContext.add(didContextIri);
         }
       }
     }
@@ -688,8 +685,8 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
         signerSelector = _determineSignerForType,
     Function(Uri url, LoadDocumentOptions? options) loadDocumentFunction =
         loadDocumentStrict,
-    Future<DidDocument> Function(String) didResolver =
-        resolveDidDocument}) async {
+    Future<DidDocument> Function(String) didResolver = resolveDidDocument,
+    Map<String, Map<String, dynamic>>? issuerJwks}) async {
   // datatype conversion
   Map<String, dynamic> presentationMap;
   if (presentation is VerifiablePresentation) {
@@ -723,6 +720,11 @@ Future<bool> verifyPresentation(dynamic presentation, String challenge,
             .cast<String, dynamic>();
       }
     }
+
+    if (issuerJwks != null) {
+      issuerJwk.addAll(issuerJwks);
+    }
+    print(issuerJwk);
 
     await Future.forEach(credentials, (dynamic element) async {
       bool verified = true;
