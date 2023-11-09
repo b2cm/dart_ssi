@@ -257,7 +257,7 @@ bool compareW3cCredentialAndPlaintext(dynamic w3cCred, dynamic plaintext) {
   return _checkHashes(w3cMap, plainMap);
 }
 
-/// Signs a W3C-Standard conform [credentialToSign] with the private key for issuer-did in the credential.
+/// Signs a W3C-Standard conform [credentialToSign] with the private key for issuer-did in the credential using linked data proof.
 Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
     {String? challenge,
     Signer? signer,
@@ -274,6 +274,15 @@ Future<String> signCredential(WalletStore wallet, dynamic credentialToSign,
   if (issuerDid == '') {
     throw Exception('Could not examine IssuerDID');
   }
+  var contextIri = _findContext(issuerDid);
+  List? context = credential['@context'];
+  if (context == null) {
+    throw Exception('Unable to sign: No @context field found.');
+  }
+  if (!context.contains(contextIri)) {
+    context.add(contextIri);
+  }
+
   signer ??= _determineSignerForDid(issuerDid, loadDocumentFunction);
   credential['proof'] = await signer.buildProof(credential, wallet, issuerDid,
       challenge: challenge);
@@ -393,7 +402,8 @@ Future<bool> verifyCredential(dynamic credential,
   credMap.remove('proof');
   var verified = true;
   try {
-    verified = await signer.verifyProof(proof, credMap, issuerDid,
+    verified = await signer.verifyProof(
+        Map<String, dynamic>.from(proof), credMap, issuerDid,
         challenge: expectedChallenge, jwk: issuerJwk);
   } catch (e) {
     print(e);

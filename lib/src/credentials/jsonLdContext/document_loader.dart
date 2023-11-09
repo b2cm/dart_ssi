@@ -10,7 +10,9 @@ RemoteDocument loadDocumentStrict(Uri url, LoadDocumentOptions? options) {
     return RemoteDocument(document: ecdsaRecoveryContext);
   } else if (url.toString() == ed25519ContextIri) {
     return RemoteDocument(document: ed25519SignatureContext);
-  } else if (url.toString().contains('schema.org')) {
+  } else if (url.toString() == schemaOrgIri ||
+      url.toString() == 'http://schema.org' ||
+      url.toString() == 'schema.org') {
     return RemoteDocument(document: schemaOrgContext);
   } else if (url.toString() == presentationSubmissionContextIri) {
     return RemoteDocument(document: presentationSubmissionContext);
@@ -37,7 +39,9 @@ Future<RemoteDocument> loadDocumentFast(
     return RemoteDocument(document: ecdsaRecoveryContext);
   } else if (url.toString() == ed25519ContextIri) {
     return RemoteDocument(document: ed25519SignatureContext);
-  } else if (url.toString().contains('schema.org')) {
+  } else if (url.toString() == schemaOrgIri ||
+      url.toString() == 'http://schema.org' ||
+      url.toString() == 'schema.org') {
     return RemoteDocument(document: schemaOrgContext);
   } else if (url.toString() == presentationSubmissionContextIri) {
     return RemoteDocument(document: presentationSubmissionContext);

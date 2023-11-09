@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:dart_ssi/src/credentials/revocation_list_2020.dart';
-
 import '../util/types.dart';
 import '../util/utils.dart';
 import 'credential_manifest.dart';
+import 'jsonLdContext/credentials_v1.dart';
 import 'presentation_exchange.dart';
+import 'revocation_list_2020.dart';
 
 class VerifiableCredential implements JsonObject {
   late List<dynamic> context;
@@ -30,7 +30,19 @@ class VerifiableCredential implements JsonObject {
       this.status,
       this.credentialSchema,
       this.expirationDate,
-      this.proof});
+      this.proof}) {
+    if (context.first != credentialsV1Iri) {
+      throw FormatException(
+          'The context-Array must start with $credentialsV1Iri');
+    }
+    for (var iri in context) {
+      if (iri is String) {
+        if (!isUri(iri)) {
+          throw FormatException('$iri is no valid iri.');
+        }
+      }
+    }
+  }
 
   VerifiableCredential.fromJson(dynamic jsonObject) {
     var credential = credentialToMap(jsonObject);

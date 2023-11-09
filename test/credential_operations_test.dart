@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/did.dart';
+import 'package:dart_ssi/src/credentials/jsonLdContext/json_web_signature_2020_context.dart';
 import 'package:dart_ssi/wallet.dart';
 import 'package:http/http.dart';
 import 'package:json_schema/json_schema.dart';
@@ -1272,9 +1273,11 @@ void main() async {
           issuer: issuer,
           credentialSubject: {'name': 'Mustermann'},
           issuanceDate: DateTime.now());
-      var signed = await signCredential(wallet, credential);
+      var signed = await signCredential(wallet, credential.toJson());
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
       print(signed);
+      List signedContext = signedMap['@context'];
+      expect(signedContext.contains(ed25519ContextIri), true);
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);
@@ -1292,6 +1295,8 @@ void main() async {
           issuanceDate: DateTime.now());
       var signed = await signCredential(wallet, credential);
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      List signedContext = signedMap['@context'];
+      expect(signedContext.contains(jsonWebSignature2020ContextIri2), true);
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);
@@ -1309,6 +1314,8 @@ void main() async {
           issuanceDate: DateTime.now());
       var signed = await signCredential(wallet, credential);
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      List signedContext = signedMap['@context'];
+      expect(signedContext.contains(jsonWebSignature2020ContextIri2), true);
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);
@@ -1319,13 +1326,18 @@ void main() async {
     test('p521', () async {
       var issuer = await wallet.getNextCredentialDID(KeyType.p521);
       var credential = VerifiableCredential(
-          context: [credentialsV1Iri, schemaOrgIri],
+          context: [
+            credentialsV1Iri,
+            {'name': 'https://schema.org'}
+          ],
           type: ['VerifiableCredential', 'NameCredential'],
           issuer: issuer,
           credentialSubject: {'name': 'Mustermann'},
           issuanceDate: DateTime.now());
       var signed = await signCredential(wallet, credential);
       var signedMap = jsonDecode(signed) as Map<String, dynamic>;
+      List signedContext = signedMap['@context'];
+      expect(signedContext.contains(jsonWebSignature2020ContextIri2), true);
       expect(signedMap.containsKey('proof'), true);
       expect(signedMap['proof']['proofPurpose'], 'assertionMethod');
       expect(signedMap['proof'].containsKey('created'), true);

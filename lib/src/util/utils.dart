@@ -21,6 +21,15 @@ Uint8List _multibaseToUint8List(String multibase) {
   }
 }
 
+bool isUri(String uri) {
+  try {
+    Uri.parse(uri);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 String multibaseToBase64Url(String multibase) {
   return base64UrlEncode(_multibaseToUint8List(multibase));
 }
