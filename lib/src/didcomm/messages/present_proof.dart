@@ -173,7 +173,7 @@ class RequestPresentation extends DidcommPlaintextMessage {
         } else if (a.format == AttachmentFormat.indyProofRequest) {
           throw UnimplementedError('Indy proof request is not supported');
         } else {
-          throw Exception('Unknown type');
+          //throw Exception('Unknown type');
         }
       }
     }
@@ -262,7 +262,7 @@ class Presentation extends DidcommPlaintextMessage {
         } else if (a.format == AttachmentFormat.indyProof) {
           throw UnimplementedError('Indy proof request is not supported');
         } else {
-          throw Exception('Unknown type: ${a.format}');
+          //throw Exception('Unknown type: ${a.format}');
         }
       }
     }
