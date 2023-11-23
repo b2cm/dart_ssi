@@ -167,17 +167,13 @@ class StatusList2021Credential extends RevocationList2020Credential {
       {String? subjectId,
       required BitString revocationList,
       required this.statusPurpose,
-      required String id,
-      required DateTime issuanceDate,
-      dynamic issuer,
-      required DateTime expirationDate})
+      required super.id,
+      required super.issuanceDate,
+      super.issuer,
+      required super.expirationDate})
       : super(
             subjectId: subjectId,
-            revocationList: revocationList,
-            id: id,
-            issuanceDate: issuanceDate,
-            issuer: issuer,
-            expirationDate: expirationDate) {
+            revocationList: revocationList) {
     type = ["VerifiableCredential", "StatusList2021Credential"];
     context = [credentialsV1Iri, statusList2021ContextIri];
     credentialSubject = {
@@ -190,8 +186,8 @@ class StatusList2021Credential extends RevocationList2020Credential {
     }
   }
 
-  StatusList2021Credential.fromJson(dynamic jsonData)
-      : super.fromJson(jsonData) {
+  StatusList2021Credential.fromJson(super.jsonData)
+      : super.fromJson() {
     var purpose = credentialSubject['statusPurpose'];
     if (purpose == CredentialStatus2021Purpose.revocation.value) {
       statusPurpose = CredentialStatus2021Purpose.revocation;
@@ -210,18 +206,14 @@ class RevocationList2020Credential extends VerifiableCredential {
   RevocationList2020Credential(
       {this.subjectId,
       required this.revocationList,
-      required String id,
-      required DateTime issuanceDate,
-      dynamic issuer,
-      required DateTime expirationDate})
+      required String super.id,
+      required super.issuanceDate,
+      super.issuer,
+      required DateTime super.expirationDate})
       : super(
-            id: id,
             context: [credentialsV1Iri, revocationList202ContextIri],
             type: ["VerifiableCredential", "RevocationList2020Credential"],
-            credentialSubject: {},
-            issuanceDate: issuanceDate,
-            issuer: issuer,
-            expirationDate: expirationDate) {
+            credentialSubject: {}) {
     credentialSubject = {
       'type': 'RevocationList2020',
       'encodedList': revocationList.toEncodedString()
@@ -231,8 +223,8 @@ class RevocationList2020Credential extends VerifiableCredential {
     }
   }
 
-  RevocationList2020Credential.fromJson(dynamic jsonData)
-      : super.fromJson(jsonData) {
+  RevocationList2020Credential.fromJson(super.jsonData)
+      : super.fromJson() {
     subjectId = credentialSubject['id'];
 
     var type = credentialSubject['type'];

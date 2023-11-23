@@ -12,8 +12,8 @@ class DidExchangeRequest extends DidcommPlaintextMessage {
 
   DidExchangeRequest(
       {String? id,
-      required String parentThreadId,
-      String? threadId,
+      required String super.parentThreadId,
+      super.threadId,
       this.label,
       this.goal,
       this.goalCode,
@@ -22,9 +22,7 @@ class DidExchangeRequest extends DidcommPlaintextMessage {
       : super(
             id: id ?? Uuid().v4(),
             type: 'https://didcomm.org/didexchange/2.0/request',
-            body: {},
-            threadId: threadId,
-            parentThreadId: parentThreadId) {
+            body: {}) {
     body['did'] = did;
     if (label != null) body['label'] = label;
     if (goalCode != null) body['goal_code'] = goalCode;
@@ -39,7 +37,7 @@ class DidExchangeRequest extends DidcommPlaintextMessage {
     }
   }
 
-  DidExchangeRequest.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  DidExchangeRequest.fromJson(super.jsonObject) : super.fromJson() {
     if (type != 'https://didcomm.org/didexchange/2.0/request') {
       throw Exception('Wrong type');
     }
@@ -83,8 +81,8 @@ class DidExchangeResponse extends DidcommPlaintextMessage {
     }
   }
 
-  DidExchangeResponse.fromJson(dynamic jsonObject)
-      : super.fromJson(jsonObject) {
+  DidExchangeResponse.fromJson(super.jsonObject)
+      : super.fromJson() {
     if (type != 'https://didcomm.org/didexchange/2.0/response') {
       throw Exception('Wrong type');
     }

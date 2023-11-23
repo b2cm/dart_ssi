@@ -19,38 +19,24 @@ class ProposePresentation extends DidcommPlaintextMessage {
       this.presentationDefinition,
       this.goalCode,
       this.comment,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.proposePresentation,
-            body: {},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     attachments = [];
@@ -66,8 +52,8 @@ class ProposePresentation extends DidcommPlaintextMessage {
     }
   }
 
-  ProposePresentation.fromJson(dynamic jsonObject)
-      : super.fromJson(jsonObject) {
+  ProposePresentation.fromJson(super.jsonObject)
+      : super.fromJson() {
     if (type != DidcommMessages.proposePresentation) {
       throw Exception('Unsupported type or version');
     }
@@ -104,38 +90,24 @@ class RequestPresentation extends DidcommPlaintextMessage {
       this.willConfirm = false,
       this.goalCode,
       this.comment,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.requestPresentation,
-            body: {},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     body['will_confirm'] = willConfirm;
@@ -150,8 +122,8 @@ class RequestPresentation extends DidcommPlaintextMessage {
     }
   }
 
-  RequestPresentation.fromJson(dynamic jsonObject)
-      : super.fromJson(jsonObject) {
+  RequestPresentation.fromJson(super.jsonObject)
+      : super.fromJson() {
     if (type != DidcommMessages.requestPresentation) {
       throw Exception('Unsupported type or version');
     }
@@ -190,38 +162,24 @@ class Presentation extends DidcommPlaintextMessage {
       required this.verifiablePresentation,
       this.goalCode,
       this.comment,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.presentation,
-            body: {},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     if (goalCode != null) body['goal_code'] = goalCode;
     if (comment != null) body['comment'] = comment;
     attachments = [];
@@ -239,7 +197,7 @@ class Presentation extends DidcommPlaintextMessage {
     }
   }
 
-  Presentation.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  Presentation.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.presentation) {
       throw Exception('Unsupported type or version');
     }

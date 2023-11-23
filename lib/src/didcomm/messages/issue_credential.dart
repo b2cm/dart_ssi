@@ -21,38 +21,24 @@ class ProposeCredential extends DidcommPlaintextMessage {
       this.comment,
       this.credentialPreview,
       this.detail,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             type: DidcommMessages.proposeCredential,
             id: id ?? Uuid().v4(),
-            body: {},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (credentialPreview != null) {
@@ -70,7 +56,7 @@ class ProposeCredential extends DidcommPlaintextMessage {
     }
   }
 
-  ProposeCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  ProposeCredential.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.proposeCredential) {
       throw Exception('Unknown Message type or version');
     }
@@ -121,38 +107,24 @@ class OfferCredential extends DidcommPlaintextMessage {
       this.detail,
       this.credentialManifest,
       this.fulfillment,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             type: DidcommMessages.offerCredential,
             id: id ?? Uuid().v4(),
-            body: {},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (replacementId != null) body['replacement_id'] = replacementId;
@@ -188,7 +160,7 @@ class OfferCredential extends DidcommPlaintextMessage {
     }
   }
 
-  OfferCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  OfferCredential.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.offerCredential) {
       throw Exception('Unknown Message type or version');
     }
@@ -245,38 +217,24 @@ class RequestCredential extends DidcommPlaintextMessage {
       this.comment,
       this.detail,
       this.credentialApplication,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             type: DidcommMessages.requestCredential,
             id: id ?? Uuid().v4(),
-            body: {},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (detail != null) {
@@ -299,7 +257,7 @@ class RequestCredential extends DidcommPlaintextMessage {
     }
   }
 
-  RequestCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  RequestCredential.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.requestCredential) {
       throw Exception('Unknown Message type or version');
     }
@@ -345,38 +303,24 @@ class IssueCredential extends DidcommPlaintextMessage {
       this.replacementId,
       this.credentials,
       this.credentialFulfillment,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             type: DidcommMessages.issueCredential,
             id: id ?? Uuid().v4(),
-            body: {},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     if (comment != null) body['comment'] = comment;
     if (goalCode != null) body['goal_code'] = goalCode;
     if (replacementId != null) body['replacement_id'] = replacementId;
@@ -400,7 +344,7 @@ class IssueCredential extends DidcommPlaintextMessage {
     }
   }
 
-  IssueCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  IssueCredential.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.issueCredential) {
       throw Exception('Unknown Message type or version');
     }
@@ -435,40 +379,26 @@ class PreviewCredential extends DidcommPlaintextMessage {
   PreviewCredential(
       {String? id,
       required this.attributes,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.previewCredential,
-            body: {'attributes': attributes},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ);
+            body: {'attributes': attributes});
 
-  PreviewCredential.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  PreviewCredential.fromJson(super.jsonObject) : super.fromJson() {
     if (type ==
             'https://didcomm.org/issue-credential/3.0/credential-credential' ||
         type == DidcommMessages.previewCredential) {
@@ -499,7 +429,7 @@ class PreviewCredentialAttribute implements JsonObject {
       throw FormatException(
           'name property needed in Attribute for Credential Preview');
     }
-    if (previewAttribute.containsKey(['value'])) {
+    if (previewAttribute.containsKey('value')) {
       value = previewAttribute['value'];
     } else {
       throw FormatException(
@@ -589,7 +519,7 @@ class LdProofVcDetailOptions implements JsonObject {
     domain = options['domain'];
     if (options.containsKey('credentialStatus')) {
       Map<String, dynamic> tmp = options['credentialStatus'];
-      if (tmp.containsKey(['type'])) {
+      if (tmp.containsKey('type')) {
         credentialStatusType = tmp['type'];
       } else {
         throw FormatException('type property is needed for credential Status');

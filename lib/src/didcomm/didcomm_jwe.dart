@@ -83,6 +83,12 @@ class DidcommEncryptedMessage implements JsonObject, DidcommMessage {
       required Map<String, dynamic> senderPrivateKeyJwk,
       required List<Map<String, dynamic>> recipientPublicKeyJwk,
       required DidcommMessage plaintext}) {
+    if (keyWrapAlgorithm == KeyWrapAlgorithm.ecdh1PU &&
+        plaintext is DidcommPlaintextMessage &&
+        plaintext.from == null) {
+      throw Exception(
+          'For authcrypted messages the from-header of the plaintext message must not be null');
+    }
     Map<String, dynamic> jweHeader = {};
     jweHeader['enc'] = encryptionAlgorithm.value;
     jweHeader['alg'] = keyWrapAlgorithm.value;

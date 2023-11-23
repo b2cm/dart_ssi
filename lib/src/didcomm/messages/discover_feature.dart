@@ -12,41 +12,26 @@ class QueryMessage extends DidcommPlaintextMessage {
 
   QueryMessage(
       {String? id,
-      String? parentThreadId,
-      List<String>? ack,
+      super.parentThreadId,
+      super.ack,
       required this.queries,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.discoverFeatureQuery,
-            body: {},
-            parentThreadId: parentThreadId,
-            threadId: threadId,
-            replyUrl: replyUrl,
-            ack: ack,
-            additionalHeaders: additionalHeaders,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            from: from,
-            fromPrior: fromPrior,
-            pleaseAck: pleaseAck,
-            replyTo: replyTo,
-            to: to,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     List<Map<String, dynamic>> q = [];
     for (var query in queries) {
       q.add(query.toJson());
@@ -54,7 +39,7 @@ class QueryMessage extends DidcommPlaintextMessage {
     body['queries'] = q;
   }
 
-  QueryMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  QueryMessage.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.discoverFeatureQuery) {
       throw Exception('Wrong message type');
     }
@@ -75,41 +60,26 @@ class DiscloseMessage extends DidcommPlaintextMessage {
 
   DiscloseMessage(
       {String? id,
-      String? parentThreadId,
-      List<String>? ack,
+      super.parentThreadId,
+      super.ack,
       required this.disclosures,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      DidcommMessageTyp? typ})
+      super.replyUrl,
+      super.replyTo,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.webRedirect,
+      super.returnRoute,
+      super.typ})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.discoverFeatureDisclose,
-            body: {},
-            parentThreadId: parentThreadId,
-            threadId: threadId,
-            replyUrl: replyUrl,
-            ack: ack,
-            additionalHeaders: additionalHeaders,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            from: from,
-            fromPrior: fromPrior,
-            pleaseAck: pleaseAck,
-            replyTo: replyTo,
-            to: to,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     List<Map<String, dynamic>> d = [];
     for (var dis in disclosures) {
       d.add(dis.toJson());
@@ -117,7 +87,7 @@ class DiscloseMessage extends DidcommPlaintextMessage {
     body['disclosures'] = d;
   }
 
-  DiscloseMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  DiscloseMessage.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.discoverFeatureDisclose) {
       throw Exception('Wrong message type');
     }

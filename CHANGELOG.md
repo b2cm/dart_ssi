@@ -1,3 +1,8 @@
+## 3.1.0
+- add P-256, P-384 and P-521 as possible keytypes to wallet implementation
+- add JsonWebSignature2020 for Credential signing
+- bugfixes
+
 ## 3.0.1
 - change dependency: json_schema2 => json_schema
 

@@ -9,42 +9,28 @@ import '../types.dart';
 class EmptyMessage extends DidcommPlaintextMessage {
   EmptyMessage(
       {String? id,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      String? from,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
-      DidcommMessageTyp? typ,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute,
-      List<String>? ack})
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      super.from,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
+      super.typ,
+      super.webRedirect,
+      super.returnRoute,
+      super.ack,
+      super.attachments})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.emptyMessage,
-            body: {},
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            typ: typ,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            ack: ack);
+            body: {});
 
-  EmptyMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  EmptyMessage.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.emptyMessage) {
       throw Exception('Wrong message type');
     }
@@ -60,51 +46,36 @@ class ProblemReport extends DidcommPlaintextMessage {
 
   ProblemReport({
     String? id,
-    required String parentThreadId,
-    List<String>? ack,
+    required String super.parentThreadId,
+    super.ack,
     required this.code,
     this.comment,
     this.args,
     this.escalateTo,
-    String? replyUrl,
-    List<String>? replyTo,
-    String? threadId,
-    String? from,
-    List<String>? to,
-    DateTime? createdTime,
-    DateTime? expiresTime,
-    bool pleaseAck = false,
-    FromPriorJWT? fromPrior,
-    Map<String, dynamic>? additionalHeaders,
-    DidcommMessageTyp? typ,
-    WebRedirect? webRedirect,
-    ReturnRouteValue? returnRoute,
+    super.replyUrl,
+    super.replyTo,
+    super.threadId,
+    super.from,
+    List<String>? super.to,
+    super.createdTime,
+    super.expiresTime,
+    super.pleaseAck,
+    super.fromPrior,
+    super.additionalHeaders,
+    super.typ,
+    super.webRedirect,
+    super.returnRoute,
   }) : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.problemReport,
-            body: {},
-            parentThreadId: parentThreadId,
-            ack: ack,
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            from: from,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute,
-            typ: typ) {
+            body: {}) {
     body['code'] = code;
     if (comment != null) body['comment'] = comment;
     if (args != null) body['args'] = args;
     if (escalateTo != null) body['escalated_to'] = escalateTo;
   }
 
-  ProblemReport.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  ProblemReport.fromJson(super.jsonObject) : super.fromJson() {
     if (![
       DidcommMessages.problemReport,
       DidcommMessages.issueCredentialProblem,
@@ -153,43 +124,29 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
 
   OutOfBandMessage(
       {String? id,
-      required String from,
+      required String super.from,
       this.goalCode,
       this.goal,
       this.accept = const [DidcommProfiles.v2],
-      List<Attachment>? attachments,
-      String? replyUrl,
-      List<String>? replyTo,
-      String? parentThreadId,
-      String? threadId,
-      List<String>? to,
-      DateTime? createdTime,
-      DateTime? expiresTime,
-      bool pleaseAck = false,
-      FromPriorJWT? fromPrior,
-      Map<String, dynamic>? additionalHeaders,
+      super.attachments,
+      super.replyUrl,
+      super.replyTo,
+      super.parentThreadId,
+      super.threadId,
+      List<String>? super.to,
+      super.createdTime,
+      super.expiresTime,
+      super.pleaseAck,
+      super.fromPrior,
+      super.additionalHeaders,
       DidcommMessageTyp? typ,
-      WebRedirect? webRedirect,
-      ReturnRouteValue? returnRoute})
+      super.webRedirect,
+      super.returnRoute})
       : super(
             id: id ?? Uuid().v4(),
             type: DidcommMessages.invitation,
             body: {},
-            typ: DidcommMessageTyp.plain,
-            from: from,
-            attachments: attachments,
-            replyUrl: replyUrl,
-            replyTo: replyTo,
-            threadId: threadId,
-            parentThreadId: parentThreadId,
-            to: to,
-            createdTime: createdTime,
-            expiresTime: expiresTime,
-            pleaseAck: pleaseAck,
-            fromPrior: fromPrior,
-            additionalHeaders: additionalHeaders,
-            webRedirect: webRedirect,
-            returnRoute: returnRoute) {
+            typ: DidcommMessageTyp.plain) {
     if (goal != null) body['goal'] = goal;
     if (goalCode != null) body['goal_code'] = goalCode;
     List<String> tmp = [];
@@ -199,7 +156,7 @@ class OutOfBandMessage extends DidcommPlaintextMessage {
     body['accept'] = tmp;
   }
 
-  OutOfBandMessage.fromJson(dynamic jsonObject) : super.fromJson(jsonObject) {
+  OutOfBandMessage.fromJson(super.jsonObject) : super.fromJson() {
     if (type != DidcommMessages.invitation) {
       throw Exception('Wrong message type');
     }

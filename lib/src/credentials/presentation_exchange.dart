@@ -605,13 +605,13 @@ class FormatProperty implements JsonObject {
     if (format.containsKey('jwt_vc')) {
       jwtVc = JwtFormat.fromJson(format['jwt_vc']);
     }
-    if (format.containsKey(['jwt_vp'])) {
+    if (format.containsKey('jwt_vp')) {
       jwtVp = JwtFormat.fromJson(format['jwt_vp']);
     }
-    if (format.containsKey(['ldp'])) {
+    if (format.containsKey('ldp')) {
       ldp = LinkedDataProofFormat.fromJson(format['ldp']);
     }
-    if (format.containsKey(['ldp_vc'])) {
+    if (format.containsKey('ldp_vc')) {
       ldpVc = LinkedDataProofFormat.fromJson(format['ldp_vc']);
     }
     if (format.containsKey('ldp_vp')) {

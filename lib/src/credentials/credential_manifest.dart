@@ -332,10 +332,9 @@ class LabeledDisplayMappingObject extends DisplayMappingObject {
 
   LabeledDisplayMappingObject(
       {required this.label,
-      required List<JsonPath> path,
-      required SchemaObject schema,
-      String? fallback})
-      : super(path: path, schema: schema, fallback: fallback);
+      required List<JsonPath> super.path,
+      required SchemaObject super.schema,
+      super.fallback});
 
   LabeledDisplayMappingObject.fromJson(dynamic jsonObject)
       : super.fromJson(jsonObject) {
