@@ -408,7 +408,8 @@ Future<bool> verifyCredential(dynamic credential,
   } catch (e) {
     print(e);
     credMap['proof'] = proof;
-    throw SignatureException('Unable to verify credential Signature', 'sigErr');
+    throw SignatureException(
+        'Unable to verify credential Signature: $e', 'sigErr');
   }
   credMap['proof'] = proof;
   if (!verified) {

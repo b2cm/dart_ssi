@@ -98,7 +98,8 @@ Map<String, dynamic> credentialToMap(dynamic credential) {
   } else if (credential is Map<String, dynamic>) {
     return credential;
   } else {
-    throw Exception('unknown type for $credential');
+    throw Exception(
+        'Unknown datatype ${credential.runtimeType} for $credential. Only String or Map<String, dynamic> accepted');
   }
 }
 

@@ -7,9 +7,14 @@ class OidcCredentialOffer implements JsonObject {
   late String credentialIssuer;
   late List<dynamic> credentials;
   Map<String, dynamic>? grants;
+  String? preAuthCode;
+  bool? userPinRequired;
 
   OidcCredentialOffer(
-      {required this.credentialIssuer, required this.credentials, this.grants});
+      {required this.credentialIssuer,
+      required this.credentials,
+      this.preAuthCode,
+      this.userPinRequired = false});
 
   OidcCredentialOffer.fromJson(dynamic data) {
     _parseJson(data);
@@ -39,6 +44,23 @@ class OidcCredentialOffer implements JsonObject {
 
     if (jsonObject.containsKey('grants')) {
       grants = jsonObject['grants'] as Map<String, dynamic>;
+      if (grants!.containsKey(
+          'urn:ietf:params:oauth:grant-type:pre-authorized_code')) {
+        var tmp =
+            grants!['urn:ietf:params:oauth:grant-type:pre-authorized_code']
+                as Map<String, dynamic>;
+        if (tmp.containsKey('pre-authorized_code')) {
+          preAuthCode = tmp['pre-authorized_code'];
+        } else {
+          throw Exception('Pre-Authorized code required');
+        }
+
+        if (tmp.containsKey('user_pin_required')) {
+          userPinRequired = tmp['user_pin_required'];
+        } else {
+          userPinRequired = false;
+        }
+      }
     }
   }
 

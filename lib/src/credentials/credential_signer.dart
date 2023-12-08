@@ -487,8 +487,7 @@ class EdDsaSigner implements Signer {
   Future<bool> verifyProof(proof, data, String did,
       {String? challenge,
       Map<String, dynamic>? jwk,
-      Future<DidDocument> Function(String) didResolver =
-          resolveDidDocument}) async {
+      Future<DidDocument> Function(String)? didResolver}) async {
     //compare challenge
     if (challenge != null) {
       var containingChallenge = proof['challenge'];
@@ -511,12 +510,16 @@ class EdDsaSigner implements Signer {
                 JsonLdOptions(safeMode: true, documentLoader: loadDocument))))
         .bytes;
     var hashToSign = proofHash + hash;
-    // print(hashToSign);
 
     proof.remove('@context');
     proof['proofValue'] = proofValue;
 
-    var ddo = await didResolver(did);
+    DidDocument ddo;
+    if (didResolver != null) {
+      ddo = await didResolver(did);
+    } else {
+      ddo = await resolveDidDocument(did);
+    }
     ddo = ddo.resolveKeyIds().convertAllKeysToJwk();
 
     var verificationMethod = proof['verificationMethod'];
