@@ -13,6 +13,7 @@ class OidcCredentialOffer implements JsonObject {
   OidcCredentialOffer(
       {required this.credentialIssuer,
       required this.credentials,
+      this.grants,
       this.preAuthCode,
       this.userPinRequired = false});
 
