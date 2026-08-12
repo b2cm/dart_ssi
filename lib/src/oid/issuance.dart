@@ -516,11 +516,57 @@ class OidTokenResponse extends JsonObject {
   }
 }
 
+class EncryptionInformation extends JsonObject {
+  List<String>? algValuesSupported, encValuesSupported, zipValuesSupported;
+  List<Map<String, dynamic>>? keySet;
+  bool encryptionRequired;
+
+  EncryptionInformation(
+      {required this.encryptionRequired,
+      this.algValuesSupported,
+      this.encValuesSupported,
+      this.zipValuesSupported,
+      this.keySet});
+
+  factory EncryptionInformation.fromJson(dynamic jsonObject) {
+    var data = credentialToMap(jsonObject);
+    Map? keySet = data['jwks'];
+    List<Map<String, dynamic>>? tmp;
+    if (keySet != null) {
+      List keys = keySet['keys'];
+      tmp = keys
+          .map((e) => (e as Map).map((k, v) => MapEntry(k as String, v)))
+          .toList();
+    }
+    return EncryptionInformation(
+        encryptionRequired: data['encryption_required'],
+        algValuesSupported: data.containsKey('alg_values_supported')
+            ? (data['alg_values_supported'] as List).cast<String>()
+            : null,
+        encValuesSupported:
+            (data['enc_values_supported'] as List).cast<String>(),
+        zipValuesSupported: data.containsKey('zip_values_supported')
+            ? (data['zip_values_supported'] as List).cast<String>()
+            : null,
+        keySet: tmp);
+  }
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'encryption_required': encryptionRequired,
+      if (algValuesSupported != null) 'alg_vales_supported': algValuesSupported,
+      'enc_values_supported': encValuesSupported,
+      if (zipValuesSupported != null) 'zip_values_supported': zipValuesSupported
+    };
+  }
+}
+
 class CredentialIssuerMetaData extends JsonObject {
   late String credentialIssuer;
   List<String>? authorizationServer,
       credentialResponseEncryptionAlgSupported,
-      credentialResponseEncryptionEncSupported;
+      credentialResponseEncryptionEncSupported,
+      credentialResponseEncryptionZipSupported;
   late String credentialEndpoint;
   String? batchCredentialEndpoint,
       deferredCredentialEndpoint,
@@ -532,6 +578,7 @@ class CredentialIssuerMetaData extends JsonObject {
 
   /// If not null, batch issuance at credential endpoint is supported
   int? batchCredentialIssuanceBatchSize;
+  EncryptionInformation? credentialRequestEncryption;
 
   CredentialIssuerMetaData(
       {required this.credentialIssuer,
@@ -539,7 +586,17 @@ class CredentialIssuerMetaData extends JsonObject {
       required this.credentialEndpoint,
       this.batchCredentialEndpoint,
       required this.credentialsSupported,
-      this.display});
+      this.display,
+      this.batchCredentialIssuanceBatchSize,
+      this.credentialIdentifiersSupported,
+      this.credentialRequestEncryption,
+      this.credentialResponseEncryptionAlgSupported,
+      this.credentialResponseEncryptionEncSupported,
+      this.credentialResponseEncryptionRequired,
+      this.credentialResponseEncryptionZipSupported,
+      this.deferredCredentialEndpoint,
+      this.nonceEndpoint,
+      this.notificationEndpoint});
 
   CredentialIssuerMetaData.fromJson(dynamic data) {
     var jsonObject = credentialToMap(data);
@@ -564,6 +621,12 @@ class CredentialIssuerMetaData extends JsonObject {
     deferredCredentialEndpoint = jsonObject['deferred_credential_endpoint'];
     notificationEndpoint = jsonObject['notification_endpoint'];
     nonceEndpoint = jsonObject['nonce_endpoint'];
+
+    // request encryption, introduced with V1
+    if (jsonObject.containsKey('credential_request_encryption')) {
+      credentialRequestEncryption = EncryptionInformation.fromJson(
+          jsonObject['credential_request_encryption']);
+    }
 
     // batch issuance as per draft 14
     batchCredentialIssuanceBatchSize =
@@ -596,6 +659,8 @@ class CredentialIssuerMetaData extends JsonObject {
           (tmp['alg_values_supported'] as List).cast<String>();
       credentialResponseEncryptionEncSupported =
           (tmp['enc_values_supported'] as List).cast<String>();
+      credentialResponseEncryptionZipSupported =
+          (tmp['zip_values_supported'] as List?)?.cast<String>();
       credentialResponseEncryptionRequired = tmp['encryption_required'];
     }
 
@@ -665,6 +730,10 @@ class CredentialIssuerMetaData extends JsonObject {
     }
     if (nonceEndpoint != null) {
       jsonObject['nonce_endpoint'] = nonceEndpoint;
+    }
+    if (credentialRequestEncryption != null) {
+      jsonObject['credential_request_encryption'] =
+          credentialRequestEncryption!.toJson();
     }
     if (credentialResponseEncryptionEncSupported != null &&
         credentialResponseEncryptionAlgSupported != null &&
@@ -807,10 +876,11 @@ class ProofTypesSupportedDetails extends JsonObject {
 class CredentialsSupportedObject extends JsonObject {
   String format;
   String? scope;
+  List<dynamic>? credentialSigningAlgValues;
   List<String>? cryptographicBindingMethods,
 
       /// in draft 11 and 12 called cryptographic_suites_supported
-      credentialSigningAlgValues,
+
       order;
 
   /// in draft 12 this is only a list of the proof types,
@@ -851,7 +921,8 @@ class CredentialsSupportedObject extends JsonObject {
     var jsonObject = credentialToMap(data);
     var format = jsonObject['format'];
     String? scope = jsonObject['scope'];
-    List<String>? cbm, cs, o;
+    List<dynamic>? cs;
+    List<String>? cbm, o;
     Map<String, ProofTypesSupportedDetails>? pt;
     List<OidDisplayObject>? display;
     if (jsonObject.containsKey('cryptographic_binding_methods_supported')) {
@@ -876,8 +947,7 @@ class CredentialsSupportedObject extends JsonObject {
       }
     }
     if (jsonObject.containsKey('credential_signing_alg_values_supported')) {
-      cs = (jsonObject['credential_signing_alg_values_supported'] as List)
-          .cast<String>();
+      cs = (jsonObject['credential_signing_alg_values_supported'] as List);
     }
     if (jsonObject.containsKey('cryptographic_suites_supported')) {
       cs =
@@ -891,9 +961,25 @@ class CredentialsSupportedObject extends JsonObject {
       display = tmp.map((e) => OidDisplayObject.fromJson(e)).toList();
     }
 
+    // with OID4VCI 1.0 credential_metadata key spawned
+    // its object contains display and claims
+    Map? credentialMetadata;
+    List<ClaimsDescriptionObject>? descriptionObjects;
+    if (jsonObject.containsKey('credential_metadata')) {
+      credentialMetadata = jsonObject['credential_metadata'];
+      if (credentialMetadata!.containsKey('display')) {
+        List tmp = credentialMetadata['display'];
+        display = tmp.map((e) => OidDisplayObject.fromJson(e)).toList();
+      }
+      if (credentialMetadata.containsKey('claims')) {
+        descriptionObjects = (credentialMetadata['claims'] as List)
+            .map((e) => ClaimsDescriptionObject.fromJson(e))
+            .toList();
+      }
+    }
+
     if (format == OidCredentialFormat.msoMdoc) {
       Map<String, dynamic>? claims;
-      List<ClaimsDescriptionObject>? descriptionObjects;
       if (jsonObject.containsKey('claims')) {
         dynamic tmp = jsonObject['claims'];
         if (tmp is List) {
@@ -917,7 +1003,7 @@ class CredentialsSupportedObject extends JsonObject {
     } else if (format == OidCredentialFormat.sdJwt ||
         format == OidCredentialFormat.sdJwtDc) {
       Map<String, dynamic>? claims;
-      List<ClaimsDescriptionObject>? cd;
+
       String cType;
       // draft 11 and 12 do not mention sd-jwt, therefor we assume it is handled as other jwt types
       if (jsonObject.containsKey('credential_definition')) {
@@ -935,7 +1021,8 @@ class CredentialsSupportedObject extends JsonObject {
         if (jsonObject.containsKey('claims')) {
           dynamic tmp = jsonObject['claims'];
           if (tmp is List) {
-            cd = tmp.map((e) => ClaimsDescriptionObject.fromJson(e)).toList();
+            descriptionObjects =
+                tmp.map((e) => ClaimsDescriptionObject.fromJson(e)).toList();
           } else {
             claims = _parseStuff(jsonObject['claims']);
           }
@@ -944,7 +1031,7 @@ class CredentialsSupportedObject extends JsonObject {
       return CredentialsSupportedObject(
           credentialType: [cType],
           claims: claims,
-          claimDescriptions: cd,
+          claimDescriptions: descriptionObjects,
           order: o,
           format: format,
           scope: scope,
@@ -956,7 +1043,6 @@ class CredentialsSupportedObject extends JsonObject {
         format == OidCredentialFormat.jwtVcJsonLd) {
       List? context, type;
       Map<String, dynamic>? claims;
-      List<ClaimsDescriptionObject>? cd;
       if (jsonObject.containsKey('credential_definition')) {
         Map definition = jsonObject['credential_definition'];
         context = definition['@context'];
@@ -974,11 +1060,12 @@ class CredentialsSupportedObject extends JsonObject {
       }
       if (jsonObject.containsKey('claims')) {
         var tmp = jsonObject['claims'] as List;
-        cd = tmp.map((e) => ClaimsDescriptionObject.fromJson(e)).toList();
+        descriptionObjects =
+            tmp.map((e) => ClaimsDescriptionObject.fromJson(e)).toList();
       }
       return CredentialsSupportedObject(
           claims: claims,
-          claimDescriptions: cd,
+          claimDescriptions: descriptionObjects,
           order: o,
           credentialSigningAlgValues: cs,
           cryptographicBindingMethods: cbm,
@@ -990,7 +1077,6 @@ class CredentialsSupportedObject extends JsonObject {
           credentialType: type!.cast<String>());
     } else if (format == OidCredentialFormat.jwtVcJson) {
       Map<String, dynamic>? claims;
-      List<ClaimsDescriptionObject>? cd;
       List type;
       if (jsonObject.containsKey('credential_definition')) {
         Map definition = jsonObject['credential_definition'];
@@ -1007,11 +1093,12 @@ class CredentialsSupportedObject extends JsonObject {
       }
       if (jsonObject.containsKey('claims')) {
         var tmp = jsonObject['claims'] as List;
-        cd = tmp.map((e) => ClaimsDescriptionObject.fromJson(e)).toList();
+        descriptionObjects =
+            tmp.map((e) => ClaimsDescriptionObject.fromJson(e)).toList();
       }
       return CredentialsSupportedObject(
           claims: claims,
-          claimDescriptions: cd,
+          claimDescriptions: descriptionObjects,
           order: o,
           credentialSigningAlgValues: cs,
           cryptographicBindingMethods: cbm,
@@ -1404,28 +1491,24 @@ class OidCredentialRequest extends JsonObject {
       jsonObject['format'] = format;
     }
     if (proof != null) {
-      if (proof!.length == 1) {
-        jsonObject['proof'] = proof!.first.toJson();
-      } else {
-        List<String> jwt = [];
-        List<Map> ldp = [];
-        for (var entry in proof!) {
-          if (entry.proofType == 'jwt') {
-            jwt.add(entry.proofValue);
-          }
-          if (entry.proofType == 'ldp_vp') {
-            ldp.add(entry.proofValue);
-          }
+      List<String> jwt = [];
+      List<Map> ldp = [];
+      for (var entry in proof!) {
+        if (entry.proofType == 'jwt') {
+          jwt.add(entry.proofValue);
         }
-        Map<String, dynamic> proofObject = {};
-        if (jwt.isNotEmpty) {
-          proofObject['jwt'] = jwt;
+        if (entry.proofType == 'ldp_vp') {
+          ldp.add(entry.proofValue);
         }
-        if (ldp.isNotEmpty) {
-          proofObject['ldp_vp'] = ldp;
-        }
-        jsonObject['proofs'] = proofObject;
       }
+      Map<String, dynamic> proofObject = {};
+      if (jwt.isNotEmpty) {
+        proofObject['jwt'] = jwt;
+      }
+      if (ldp.isNotEmpty) {
+        proofObject['ldp_vp'] = ldp;
+      }
+      jsonObject['proofs'] = proofObject;
     }
     if (responseEncryptionJwk != null && responseEncryptionAlg != null) {
       Map<String, dynamic> tmp = {};

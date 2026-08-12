@@ -723,6 +723,117 @@ void main() {
       expect(metadata.credentialResponseEncryptionAlgSupported,
           metadata2.credentialResponseEncryptionAlgSupported);
     });
+
+    test('V1, jwt_vc_json', () {
+      var data = {
+        "credential_issuer": "https://credential-issuer.example.com",
+        "authorization_servers": ["https://server.example.com"],
+        "credential_endpoint": "https://credential-issuer.example.com",
+        "batch_credential_endpoint":
+            "https://credential-issuer.example.com/batch_credential",
+        "deferred_credential_endpoint":
+            "https://credential-issuer.example.com/deferred_credential",
+        "credential_response_encryption": {
+          "alg_values_supported": ["ECDH-ES"],
+          "enc_values_supported": ["A128GCM"],
+          "encryption_required": false
+        },
+        "display": [
+          {"name": "Example University", "locale": "en-US"},
+          {"name": "Example Université", "locale": "fr-FR"}
+        ],
+        "credential_configurations_supported": {
+          "UniversityDegreeCredential": {
+            "format": "jwt_vc_json",
+            "scope": "UniversityDegree",
+            "cryptographic_binding_methods_supported": ["did:example"],
+            "credential_signing_alg_values_supported": [-7],
+            "credential_definition": {
+              "type": ["VerifiableCredential", "UniversityDegreeCredential"]
+            },
+            "proof_types_supported": {
+              "jwt": {
+                "proof_signing_alg_values_supported": ["ES256"]
+              }
+            },
+            "credential_metadata": {
+              "claims": [
+                {
+                  "path": ["credentialSubject", "given_name"],
+                  "display": [
+                    {"name": "Given Name", "locale": "en-US"}
+                  ]
+                },
+                {
+                  "path": ["credentialSubject", "family_name"],
+                  "display": [
+                    {"name": "Surname", "locale": "en-US"}
+                  ]
+                },
+                {
+                  "path": ["credentialSubject", "degree"]
+                },
+                {
+                  "path": ["credentialSubject", "gpa"],
+                  "mandatory": true,
+                  "display": [
+                    {"name": "GPA"}
+                  ]
+                }
+              ],
+              "display": [
+                {
+                  "name": "University Credential",
+                  "locale": "en-US",
+                  "logo": {
+                    "uri": "https://university.example.edu/public/logo.png",
+                    "alt_text": "a square logo of a university"
+                  },
+                  "background_color": "#12107c",
+                  "text_color": "#FFFFFF"
+                }
+              ]
+            }
+          }
+        }
+      };
+      var metadata = CredentialIssuerMetaData.fromJson(data);
+      print(metadata);
+      var metadata2 = CredentialIssuerMetaData.fromJson(metadata.toJson());
+
+      expect(
+          metadata.credentialsSupported['UniversityDegreeCredential']
+              ?.claimDescriptions,
+          isNotEmpty);
+      expect(
+          metadata.credentialsSupported['UniversityDegreeCredential']
+              ?.proofTypesSupported?.length,
+          1);
+      print(metadata.credentialsSupported['UniversityDegreeCredential']
+          ?.proofTypesSupported);
+      print(metadata2.credentialsSupported['UniversityDegreeCredential']
+          ?.proofTypesSupported);
+
+      expect(metadata.credentialsSupported.length,
+          metadata2.credentialsSupported.length);
+      expect(metadata.credentialsSupported.length, 1);
+      expect(metadata.authorizationServer, metadata2.authorizationServer);
+      expect(metadata.authorizationServer?.length, 1);
+      expect(metadata.credentialEndpoint, metadata2.credentialEndpoint);
+      expect(metadata.credentialIssuer, metadata2.credentialIssuer);
+      expect(
+          metadata.batchCredentialEndpoint, metadata2.batchCredentialEndpoint);
+      expect(metadata.deferredCredentialEndpoint,
+          metadata2.deferredCredentialEndpoint);
+      expect(metadata.display?.length, metadata2.display?.length);
+      expect(metadata.display?.length, 2);
+      expect(metadata.credentialResponseEncryptionRequired, isFalse);
+      expect(metadata2.credentialResponseEncryptionRequired, isFalse);
+      expect(metadata.credentialResponseEncryptionEncSupported,
+          metadata2.credentialResponseEncryptionEncSupported);
+      expect(metadata.credentialResponseEncryptionAlgSupported,
+          metadata2.credentialResponseEncryptionAlgSupported);
+    });
   });
 
   group('credential request', () {

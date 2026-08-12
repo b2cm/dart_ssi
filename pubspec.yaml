@@ -13,7 +13,7 @@ dependencies:
   json_schema: ^5.1.2
   asn1lib: ^1.1.0
   x25519: ^0.1.1
-  json_path: ^0.8.0
+  json_path: ^0.9.0
   base_codecs: ^1.0.1
   ed25519_edwards: ^0.3.1
   ed25519_hd_key: ^2.2.0
@@ -27,7 +27,7 @@ dependencies:
       ref: main
 #    path: ../cbor_test
   sd_jwt: #^1.0.0
-  # path: ../sd-jwt
+#   path: ../sd-jwt
     git:
       url: https://github.com/b2cm/sd_jwt
       ref: development

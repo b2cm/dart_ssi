@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dart_ssi/credentials.dart';
 import 'package:dart_ssi/oid.dart';
 import 'package:dart_ssi/src/util/types.dart';
@@ -15,6 +17,7 @@ class RequestObject extends JsonObject {
   String? presentationDefinitionUri;
   DcqlQuery? dcqlQuery;
   ClientMetaData? clientMetaData;
+  List<String>? transactionData;
 
   RequestObject(
       {this.clientId,
@@ -28,7 +31,8 @@ class RequestObject extends JsonObject {
       this.clientMetaData,
       this.clientMetaDataUri,
       this.dcqlQuery,
-      this.presentationDefinitionUri});
+      this.presentationDefinitionUri,
+      this.transactionData});
 
   RequestObject.fromJson(dynamic data) {
     var jsonObject = credentialToMap(data);
@@ -54,6 +58,17 @@ class RequestObject extends JsonObject {
 
     if (jsonObject.containsKey('client_metadata')) {
       clientMetaData = ClientMetaData.fromJson(jsonObject['client_metadata']);
+    }
+
+    if (jsonObject.containsKey('transaction_data')) {
+      var raw = jsonObject['transaction_data'];
+      List td;
+      if (raw is String) {
+        td = jsonDecode(raw) as List;
+      } else {
+        td = raw;
+      }
+      transactionData = td.cast<String>();
     }
   }
 
@@ -99,6 +114,9 @@ class RequestObject extends JsonObject {
     if (clientMetaDataUri != null) {
       jsonObject['client_metadata_uri'] = clientMetaDataUri;
     }
+    if (transactionData != null) {
+      jsonObject['transaction_data'] = jsonEncode(transactionData);
+    }
     return jsonObject;
   }
 }
@@ -109,6 +127,7 @@ class ClientMetaData extends JsonObject {
   String? authEncryptedResponseAlg,
       authEncryptedResponseEnc,
       authSignedResponseAlg;
+  List<String>? encryptedResponseEncValuesSupported;
   VpFormats? vpFormats;
 
   ClientMetaData(
@@ -117,7 +136,8 @@ class ClientMetaData extends JsonObject {
       this.vpFormats,
       this.authEncryptedResponseAlg,
       this.authEncryptedResponseEnc,
-      this.authSignedResponseAlg});
+      this.authSignedResponseAlg,
+      this.encryptedResponseEncValuesSupported});
 
   ClientMetaData.fromJson(dynamic data) {
     var jsonData = credentialToMap(data);
@@ -154,6 +174,12 @@ class ClientMetaData extends JsonObject {
     if (jsonData.containsKey('vp_formats_supported')) {
       vpFormats = VpFormats.fromJson(jsonData['vp_formats_supported']);
     }
+
+    if (jsonData.containsKey('encrypted_response_enc_values_supported')) {
+      encryptedResponseEncValuesSupported =
+          (jsonData['encrypted_response_enc_values_supported'] as List)
+              .cast<String>();
+    }
   }
   @override
   Map<String, dynamic> toJson() {
@@ -178,6 +204,11 @@ class ClientMetaData extends JsonObject {
 
     if (vpFormats != null) {
       json['vp_formats_supported'] = vpFormats!.toJson();
+    }
+
+    if (encryptedResponseEncValuesSupported != null) {
+      json['encrypted_response_enc_values_supported'] =
+          encryptedResponseEncValuesSupported;
     }
 
     return json;
